@@ -263,46 +263,33 @@
 
 <body >
 
-    <!-- Navbar -->
-    <nav class="navbar" style="margin-bottom:0">
-        <div class="container-fluid">
-            <!-- Brand and toggle get grouped for better mobile display -->
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#buttons-navbar-collapse-1">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-
-                <div class="navbar-header" title="Design Explorer">
-                    <a href="http://designexplorer.deerns.com/> <img style="max-width:350px; padding-top: 10px;" src="./img/DesignExplorerLogo3.png"></a>
-                </div>
-            </div>
-
-            <!-- Collect the nav links, forms, and other content for toggling -->
-            <div class="collapse navbar-collapse" id="buttons-navbar-collapse-1">
-                <ul class="nav navbar-nav">
-                    <li>
-                        <!--button to load csv uncommented-->
-                        <p class="navbar-text">
-                            <button id="showLoadData" class="file-upload" style="border-radius: 20px;">Get Data</button>
-                        </p>
-                    </li>
-                </ul>
-                <div id = "navbar-studyInfo">
-                    <h4></h4>
-                    <h6></h6>
-                </div>
-            </div>
-            <div class="navbar" style="position: relative; height: 60px;">
-                <img src="./img/Deerns-logotype_2-colour-positive_RGB.svg" alt="Logo"
-                     style="position: absolute; left: 50%; transform: translateX(-50%); height: 40px;">
-              </div>
-            <!-- /.navbar-collapse -->
-
+<!-- Navbar -->
+<nav class="navbar" style="margin-bottom: 0;">
+    <div class="container-fluid">
+      <div class="row w-100 align-items-center" style="display: flex;">
+        
+        <!-- Left: Design Explorer Logo -->
+        <div class="col-sm-4 text-left">
+          <a href="http://designexplorer.deerns.com/" title="Design Explorer">
+            <img src="./img/DesignExplorerLogo3.png" alt="Design Explorer Logo" style="max-width: 200px; padding-top: 10px;">
+          </a>
         </div>
-    </nav>
+  
+        <!-- Center: Get Data Button -->
+        <div class="col-sm-4 text-center">
+          <button id="showLoadData" class="file-upload btn btn-default" style="border-radius: 20px;">
+            Get Data
+          </button>
+        </div>
+  
+        <!-- Right: SVG Logo -->
+        <div class="col-sm-4 text-right">
+          <img src="./img/Deerns-logotype_2-colour-positive_RGB.svg" alt="Centered Logo" style="height: 40px;">
+        </div>
+  
+      </div>
+    </div>
+  </nav>
 
     <div id="wrapper" class="toggled">
         <!-- Sidebar -->
