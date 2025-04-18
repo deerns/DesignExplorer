@@ -264,16 +264,14 @@
 <body >
 
 <!-- Navbar -->
-<nav class="navbar" style="margin-bottom: 0;">
-    <div class="container-fluid d-flex align-items-center justify-content-between position-relative" style="min-height: 70px;">
+<nav class="navbar" style="margin-bottom: 0; background-color: white;">
+    <div class="container-fluid d-flex align-items-center justify-content-between" style="min-height: 70px;">
   
-      <!-- Left group: DesignExplorer logo + Get Data button -->
-      <div class="d-flex align-items-center">
+      <!-- Left: DesignExplorer logo + Get Data button -->
+      <div class="d-flex align-items-center" style="flex: 1;">
         <a href="http://designexplorer.deerns.com/" title="Design Explorer" class="d-flex align-items-center">
           <img src="./img/DesignExplorerLogo3.png" alt="Design Explorer Logo" style="height: 40px;">
         </a>
-  
-        <!-- Rounded Get Data button with centered text and spacing -->
         <button id="showLoadData"
                 class="file-upload"
                 style="
@@ -293,11 +291,15 @@
         </button>
       </div>
   
-      <!-- Centered clickable SVG logo -->
-      <a href="https://www.deerns.com/" target="_blank" title="Deerns"
-         class="position-absolute top-50 start-50 translate-middle d-flex align-items-center">
-        <img src="./img/Deerns-logotype_2-colour-positive_RGB.svg" alt="Deerns Logo" style="height: 40px;">
-      </a>
+      <!-- Center: SVG logo centered in column -->
+      <div class="d-flex justify-content-center align-items-center" style="flex: 1;">
+        <a href="https://www.deerns.com/" target="_blank" title="Deerns">
+          <img src="./img/Deerns-logotype_2-colour-positive_RGB.svg" alt="Deerns Logo" style="height: 40px;">
+        </a>
+      </div>
+  
+      <!-- Right: Empty space to balance layout -->
+      <div style="flex: 1;"></div>
   
     </div>
   </nav>
