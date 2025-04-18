@@ -264,30 +264,27 @@
 <body >
 
 <!-- Navbar -->
-<nav class="navbar" style="margin-bottom: 0;">
-    <div class="container-fluid">
-      <div class="row w-100 align-items-center" style="display: flex;">
-        
-        <!-- Left: Design Explorer Logo -->
-        <div class="col-sm-4 text-left">
-          <a href="http://designexplorer.deerns.com/" title="Design Explorer">
-            <img src="./img/DesignExplorerLogo3.png" alt="Design Explorer Logo" style="max-width: 200px; padding-top: 10px;">
-          </a>
-        </div>
+<nav class="navbar" style="margin-bottom: 0; position: relative;">
+    <div class="container-fluid d-flex align-items-center justify-content-start">
   
-        <!-- Center: Get Data Button -->
-        <div class="col-sm-4 text-center">
-          <button id="showLoadData" class="file-upload btn btn-default" style="border-radius: 20px;">
-            Get Data
-          </button>
-        </div>
+      <!-- Left group: logo + button -->
+      <div class="d-flex align-items-center">
+        <!-- Design Explorer logo -->
+        <a href="http://designexplorer.deerns.com/" title="Design Explorer">
+          <img src="./img/DesignExplorerLogo3.png" alt="Design Explorer Logo" style="max-width: 200px; padding-top: 10px;">
+        </a>
   
-        <!-- Right: SVG Logo -->
-        <div class="col-sm-4 text-right">
-          <img src="./img/Deerns-logotype_2-colour-positive_RGB.svg" alt="Centered Logo" style="height: 40px;">
-        </div>
-  
+        <!-- Get Data button -->
+        <button id="showLoadData" class="file-upload btn btn-default ms-3" style="border-radius: 20px;">
+          Get Data
+        </button>
       </div>
+  
+      <!-- Centered logo.svg -->
+      <div class="position-absolute start-50 translate-middle-x">
+        <img src="./img/Deerns-logotype_2-colour-positive_RGB.svg" alt="Centered Logo" style="height: 40px;">
+      </div>
+  
     </div>
   </nav>
 
