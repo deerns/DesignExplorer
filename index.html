@@ -265,17 +265,17 @@
 
 <!-- Navbar -->
 <nav class="navbar" style="margin-bottom: 0;">
-    <div class="container-fluid d-flex align-items-center justify-content-between position-relative" style="min-height: 60px;">
+    <div class="container-fluid d-flex align-items-center justify-content-between position-relative" style="min-height: 70px;">
   
       <!-- Left group: DesignExplorer logo + Get Data button -->
       <div class="d-flex align-items-center">
-        <a href="http://designexplorer.deerns.com/" title="Design Explorer">
-          <img src="./img/DesignExplorerLogo3.png" alt="Design Explorer Logo" style="max-width: 200px; padding-top: 5px;">
+        <a href="http://designexplorer.deerns.com/" title="Design Explorer" class="d-flex align-items-center">
+          <img src="./img/DesignExplorerLogo3.png" alt="Design Explorer Logo" style="height: 40px;">
         </a>
   
-        <!-- Rounded Get Data button -->
+        <!-- Rounded Get Data button with centered text and spacing -->
         <button id="showLoadData"
-                class="file-upload ms-3"
+                class="file-upload"
                 style="
                   background-color: #033899;
                   color: #ffffff;
@@ -283,14 +283,19 @@
                   border-radius: 25px;
                   padding: 8px 20px;
                   font-weight: 500;
+                  margin-left: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  height: 40px;
                 ">
           Get Data
         </button>
       </div>
   
-      <!-- Centered logo.svg linking to deerns.com -->
+      <!-- Centered clickable SVG logo -->
       <a href="https://www.deerns.com/" target="_blank" title="Deerns"
-         class="position-absolute top-50 start-50 translate-middle">
+         class="position-absolute top-50 start-50 translate-middle d-flex align-items-center">
         <img src="./img/Deerns-logotype_2-colour-positive_RGB.svg" alt="Deerns Logo" style="height: 40px;">
       </a>
   
