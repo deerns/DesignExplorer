@@ -215,6 +215,7 @@ a#copyRightButton {
 
 #welcomeContainer .col-sm-4 {
     width: 33.33333333%;
+    height: 50%;
     float: left;
 }
 
