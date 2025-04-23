@@ -482,48 +482,67 @@
                 </div>
             </div>
             <!-- /#Welcome content -->
-            <div class="row-fluid col-lg-12 row-centered vertical-center fullscreen popupWindow" id="welcome">
-                <div class="col-sm-12 col-centered" id="welcomeContainer">
-                    <button class="btn btn-default btn-sm pull-right popupWindowClose">
-                        <span class="glyphicon glyphicon-remove"></span>
-                    </button>
-                    <br>
-                    <h1 class="text-center" style="margin-top: 1em;"> Welcome to Design Explorer!</h1>
-                    <h4 class="text-center">
-                        Design Explorer is an open source tool for exploring multi-dimensional parametric studies!
-                    </h4>
-                    <br>
+            <div class="row-fluid col-lg-12 row-centered vertical-center fullscreen popupWindow"
+                id="welcome"
+                style="height: 33vh; overflow-y: auto; position: relative;">
 
-                    <!--h5 class="text-center">Try one of following sample design sets or load your own data.<a href="http://www.mpendesign.com/category/tutorial/" target="_blank"> (Tutorial)</a></h5--> 
-                    <h5 class="text-center"></h5>
-                    <div class="row justify-content-center">
-                        <div class="text-center">
-                            <img src="img/Deerns-logotype_2-colour-positive_RGB.svg" alt="Logo" class="img-fluid d-block mx-auto" style="width: 30%;">
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-4">
-                            <img src="img/RedBox.gif" class="sampleImage image-rounded" id="sample1">
-                        </div>
-                        <div class="col-sm-4">
-                            <img src="img/Daylighting.gif" class="sampleImage image-rounded" id="sample2">
-                        </div>
-                        <div class="col-sm-4">
-                            <img src="img/BoxBuilding.gif" class="sampleImage image-rounded" id="sample3">
-                        </div>
-                        <br>
-                        <br>
-                    </div>
-                    <div class="col-lg-12" style="position: absolute;bottom: 2em;width: calc(100% - 60px);">
-                        <!--h3 class="text-center"> Happy Exploring! </h3>
-                        <h5 class="text-center">v2 (08/15/2019)</h5-->
-                        <br>
-                        <h5 class="text-center">
-                            &copy; Deerns
-                            <a href="https://www.deerns.com/" target="_blank">Contact</a>
-                        </h5>
-                    </div>
+            <div class="col-sm-12 col-centered" id="welcomeContainer" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+
+                <!-- Close Button -->
+                <button class="btn btn-default btn-sm pull-right popupWindowClose">
+                <span class="glyphicon glyphicon-remove"></span>
+                </button>
+
+                <!-- Header -->
+                <div>
+                <h1 class="text-center" style="margin-top: 1em;">Welcome to Design Explorer!</h1>
+                <h4 class="text-center">
+                    Design Explorer is an open source tool for exploring multi-dimensional parametric studies!
+                </h4>
                 </div>
+
+                <!-- Logo -->
+                <div class="row justify-content-center">
+                <div class="col-10 col-sm-6 col-md-4 text-center mx-auto">
+                    <img src="img/Deerns-logotype_2-colour-positive_RGB.svg"
+                        alt="Logo"
+                        class="img-fluid"
+                        style="max-width: 100%; height: auto;">
+                </div>
+                </div>
+
+                <!-- Responsive GIFs -->
+                <div class="row text-center" style="flex: 1; align-items: center;">
+                <div class="col-4 d-flex justify-content-center align-items-center">
+                    <img src="img/RedBox.gif"
+                        class="img-fluid image-rounded sampleImage"
+                        id="sample1"
+                        style="max-height: 90%; height: auto; width: auto;">
+                </div>
+                <div class="col-4 d-flex justify-content-center align-items-center">
+                    <img src="img/Daylighting.gif"
+                        class="img-fluid image-rounded sampleImage"
+                        id="sample2"
+                        style="max-height: 90%; height: auto; width: auto;">
+                </div>
+                <div class="col-4 d-flex justify-content-center align-items-center">
+                    <img src="img/BoxBuilding.gif"
+                        class="img-fluid image-rounded sampleImage"
+                        id="sample3"
+                        style="max-height: 90%; height: auto; width: auto;">
+                </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="col-lg-12 text-center" style="padding-top: 1em;">
+                <h5>
+                    &copy; Deerns
+                    <a href="https://www.deerns.com/" target="_blank">Contact</a>
+                </h5>
+                </div>
+
+            </div>
+            </div>
 
                 <!--load data div-->
                 <div class="col-sm-12 col-centered" id="loadDataContainer" style=" display:none;width: 700px;height: 500px">
