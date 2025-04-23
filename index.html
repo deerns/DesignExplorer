@@ -489,10 +489,16 @@
             <div class="col-sm-12 col-centered" id="welcomeContainer" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
 
                 <!-- Close Button -->
-                <button class="btn btn-default btn-sm pull-right popupWindowClose">
+                <button class="btn btn-default btn-sm popupWindowClose"
+                        style="
+                        position: absolute;
+                        top: 1em;
+                        right: 1em;
+                        z-index: 1001;
+                        ">
                 <span class="glyphicon glyphicon-remove"></span>
                 </button>
-
+                
                 <!-- Header -->
                 <div>
                 <h1 class="text-center" style="margin-top: 1em;">Welcome to Design Explorer!</h1>
