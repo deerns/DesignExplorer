@@ -582,22 +582,22 @@
                         </p>
                         <h5 class="text-center" style="color: #9d9d9d;">Please put valid images and 3D-json files URL. (Example:<a href="design_explorer_data/example/LocalCSV_example.csv" target="_blank">data.csv</a>)</h5>
                     </div>
-                    <script>
-                        document.getElementById("loadData").addEventListener("click", function() {
-                            var folderLink = document.getElementById("folderLink").value;
-                        
-                            if (folderLink.includes("google.com")) {
-                                alert("Google Drive wordt niet ondersteund.");
-                            } else {
-                                // Continue with normal loading
-                                MP_getGoogleIDandLoad();
-                            }
-                        });
-                        </script>
+
                 </div>
 
             </div>
-
+            <script>
+                document.getElementById("loadData").addEventListener("click", function() {
+                    var folderLink = document.getElementById("folderLink").value;
+                
+                    if (folderLink.includes("google.com")) {
+                        alert("Google Drive wordt niet ondersteund.");
+                    } else {
+                        // Continue with normal loading
+                        MP_getGoogleIDandLoad();
+                    }
+                });
+                </script>
             <!--show static link-->
             <!-- Modal -->
             <div class="modal fade" id="showStillLink" role="dialog">
