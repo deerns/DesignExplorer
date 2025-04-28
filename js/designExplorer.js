@@ -309,32 +309,6 @@ function checkInputLink(link, callback){
         "type":""
     };
 
-    //if (link.includes("google.com")) {
-
-    //    var GFolderID = getGFolderID(link); 
-    //    //folderLinkObj.DE_PW = "DE_G"; 
-    //    folderLinkObj.url ="https://www.googleapis.com/drive/v3/files?q=%27" + GFolderID + "%27+in+parents&key=" +Gkey;
-    //    folderLinkObj.type = "GoogleDrive";
-
-    //}else if (link.includes("1drv.ms")){ 
-
-    //    //"https://1drv.ms/f/s!Avr4WH-N5Us-hNEf3V-AWTUuvsVZBQ"; 
-    //    //document.getElementById("folderLinkID").value = serverFolderLink;
-    //    //folderLinkObj.DE_PW = "DE_O";
-    //    folderLinkObj.url = "https://api.onedrive.com/v1.0/shares/u!" + encodeUrl(link) +"/root?expand=children";
-    //    folderLinkObj.type = "OneDrive";
-
-    //}else{ //TODO fix to else and add indent back
-    //    //folderLinkObj.DE_PW = "DE_S";
-    //    if (link.slice(-1) !== "/") {
-    //        link +="/";
-    //    }
-
-    //    folderLinkObj.url = link;
-    //    folderLinkObj.type = "userServerLink";
-    //}
-
-    ///// switch
     {if (link.slice(-1) !== "/") {
         link +="/";
     };
