@@ -552,7 +552,7 @@
                 </div>
 
             </div>
-            </div>
+            
 
                 <!--load data div-->
                 <div class="col-sm-12 col-centered" id="loadDataContainer" style=" display:none;width: 700px;height: 500px">
@@ -567,7 +567,8 @@
                         <input type="text" id="folderLink" class="btn btn-default btn-sm toggled" name="imgfolder" placeholder="Server link"
                         />
                         <input type="text" id="folderLinkID" class="btn btn-default btn-hd" name="imgfolder" placeholder="FolderID" />
-                        <button id="loadData" onclick="MP_getGoogleIDandLoad()" class="file-upload" style="background-color: #033899;color: #ffffff;border-radius:0 20px 20px 0;">Load Data</button>
+                        <!--<button id="loadData" onclick="MP_getGoogleIDandLoad()" class="file-upload" style="background-color: #033899;color: #ffffff;border-radius:0 20px 20px 0;">Load Data</button>-->
+                        <button id="loadData" class="file-upload" style="background-color: #033899; color: #ffffff; border-radius: 0 20px 20px 0;">Load Data</button>
                     </p>
                     <h5 class="text-center" style="color: #9d9d9d;">Please put data.csv, images, and 3D-json files into the same folder.(<a href="design_explorer_data/example/online/example.zip"
                             target="_blank">example.zip</a>)</h5>
@@ -581,11 +582,22 @@
                         </p>
                         <h5 class="text-center" style="color: #9d9d9d;">Please put valid images and 3D-json files URL. (Example:<a href="design_explorer_data/example/LocalCSV_example.csv" target="_blank">data.csv</a>)</h5>
                     </div>
-                    
+
                 </div>
 
             </div>
-
+            <script>
+                document.getElementById("loadData").addEventListener("click", function() {
+                    var folderLink = document.getElementById("folderLink").value;
+                
+                    if (folderLink.includes("google.com")) {
+                        alert("Google Drive is not supported. Please use an appropriate link");
+                    } else {
+                        // Continue with normal loading
+                        MP_getGoogleIDandLoad();
+                    }
+                });
+                </script>
             <!--show static link-->
             <!-- Modal -->
             <div class="modal fade" id="showStillLink" role="dialog">
