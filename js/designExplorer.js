@@ -300,7 +300,7 @@ function changeLabelSize(size) {
             .style("font-size", "75%");
     }
 }
-
+//TODO remove link after test
 function checkInputLink(link, callback){
     var folderLinkObj = {
         "DE_PW":"",
@@ -309,30 +309,38 @@ function checkInputLink(link, callback){
         "type":""
     };
 
-    if (link.includes("google.com")) {
+    //if (link.includes("google.com")) {
 
-        var GFolderID = getGFolderID(link);
-        //folderLinkObj.DE_PW = "DE_G"; 
-        folderLinkObj.url ="https://www.googleapis.com/drive/v3/files?q=%27" + GFolderID + "%27+in+parents&key=" +Gkey;
-        folderLinkObj.type = "GoogleDrive";
+    //    var GFolderID = getGFolderID(link); 
+    //    //folderLinkObj.DE_PW = "DE_G"; 
+    //    folderLinkObj.url ="https://www.googleapis.com/drive/v3/files?q=%27" + GFolderID + "%27+in+parents&key=" +Gkey;
+    //    folderLinkObj.type = "GoogleDrive";
 
-    }else if (link.includes("1drv.ms")){
+    //}else if (link.includes("1drv.ms")){ 
 
-        //"https://1drv.ms/f/s!Avr4WH-N5Us-hNEf3V-AWTUuvsVZBQ"; 
-        //document.getElementById("folderLinkID").value = serverFolderLink;
-        //folderLinkObj.DE_PW = "DE_O";
-        folderLinkObj.url = "https://api.onedrive.com/v1.0/shares/u!" + encodeUrl(link) +"/root?expand=children";
-        folderLinkObj.type = "OneDrive";
+    //    //"https://1drv.ms/f/s!Avr4WH-N5Us-hNEf3V-AWTUuvsVZBQ"; 
+    //    //document.getElementById("folderLinkID").value = serverFolderLink;
+    //    //folderLinkObj.DE_PW = "DE_O";
+    //    folderLinkObj.url = "https://api.onedrive.com/v1.0/shares/u!" + encodeUrl(link) +"/root?expand=children";
+    //    folderLinkObj.type = "OneDrive";
 
-    }else{
-        //folderLinkObj.DE_PW = "DE_S";
-        if (link.slice(-1) !== "/") {
-            link +="/";
-        }
+    //}else{ //TODO fix to else and add indent back
+    //    //folderLinkObj.DE_PW = "DE_S";
+    //    if (link.slice(-1) !== "/") {
+    //        link +="/";
+    //    }
 
-        folderLinkObj.url = link;
-        folderLinkObj.type = "userServerLink";
-    } 
+    //    folderLinkObj.url = link;
+    //    folderLinkObj.type = "userServerLink";
+    //}
+
+    ///// switch
+    {if (link.slice(-1) !== "/") {
+        link +="/";
+    };
+
+    folderLinkObj.url = link;
+    folderLinkObj.type = "userServerLink";} 
 
 
     folderLinkObj.inLink = link;
