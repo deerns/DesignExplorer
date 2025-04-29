@@ -264,7 +264,7 @@
 <body >
 
 <!-- Navbar -->
-<nav class="navbar" style="margin-bottom: 0; background-color: white;">
+<nav class="navbar" style="margin-bottom: 0; background-color: #033899; width: 100%;">
     <div style="display: flex; align-items: center; justify-content: space-between; min-height: 80px; width: 100%; position: relative;">
   
       <!-- Left group: logo + button -->
@@ -274,20 +274,21 @@
           <img src="./img/DesignExplorerLogo3.png" alt="Design Explorer Logo" style="height: 40px;">
         </a>
   
-        <!-- Get Data button, 20px to the right -->
+        <!-- Get Data button: White background, blue text -->
         <button id="showLoadData"
                 style="
-                  background-color: #033899;
-                  color: #ffffff;
+                  background-color: #ffffff;
+                  color: #033899;
                   border: none;
                   border-radius: 25px;
                   padding: 8px 20px;
-                  font-weight: 500;
+                  font-weight: 600;
                   display: flex;
                   align-items: center;
                   justify-content: center;
                   height: 40px;
                   margin-left: 20px;
+                  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
                 ">
           Get Data
         </button>
@@ -302,6 +303,7 @@
   
     </div>
   </nav>
+  
   
   
   
@@ -1361,7 +1363,7 @@
         var pcIsColoredBy;
 
         var color = d3.scale.linear()
-            .range(["#102F86", "#F9A200"]);
+            .range(["#102F86", "#F9A200"]);//FIXME change color
 
 
         var scatterHeight = d3.select("#ScChartWrapper").style("height").replace("px", "");
