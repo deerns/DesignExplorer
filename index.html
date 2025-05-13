@@ -757,7 +757,9 @@
             });
 
     </script>
- <script>
+
+
+<script>
     function loadFolderData() {
       const input = document.getElementById("folderInput");
       const files = Array.from(input.files);
@@ -773,50 +775,54 @@
     
       const reader = new FileReader();
       reader.onload = function (e) {
-  const csvText = e.target.result;
-  const parsedData = d3.csv.parse(csvText);
-
-  parsedData.forEach(row => {
-    const name = row.img || row.image || row.thumbnail;
-    if (name) {
-      const path = `${folderPrefix}/${name}`;
-      const file = fileMap.get(path);
-      if (file) {
-        const url = URL.createObjectURL(file);
-
-        // ✅ Only assign to 'thumbnail'
-        row.thumbnail = url;
-      }
-    }
-  });
-
-  // Cleanup before load
-  if (typeof inputs !== "undefined") inputs.length = 0;
-  if (typeof results !== "undefined") results.length = 0;
-  if (typeof dataSet !== "undefined") dataSet.length = 0;
-  if (typeof sliders !== "undefined") sliders.length = 0;
-
-  d3.selectAll(
-    "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
-  ).html("");
-
-  // ✅ Load into DE
-  loadDataToDesignExplorer(parsedData);
-
-  // ✅ Hide popup
-  $("#loadDataContainer").fadeOut();
-  $(".popupWindow").fadeOut();
-
-  // 🧹 AFTER loading: remove thumbnail key from DE dataset so it doesn't appear as a slider
-  if (typeof dataSet !== "undefined") {
-    dataSet.forEach(d => delete d.thumbnail);
-  }
-};
-
+        const csvText = e.target.result;
+        const parsedData = d3.csv.parse(csvText);
+    
+        // ✅ Assign blob URLs for thumbnails
+        parsedData.forEach(row => {
+          const name = row.img || row.image || row.thumbnail;
+          if (name) {
+            const path = `${folderPrefix}/${name}`;
+            const file = fileMap.get(path);
+            if (file) {
+              const url = URL.createObjectURL(file);
+              row.thumbnail = url; // only assign thumbnail
+            }
+          }
+        });
+    
+        // ✅ FULL RESET (same as default DE behavior)
+        if (typeof unloadPageContent === "function") {
+          unloadPageContent();
+        }
+    
+        // Manual backup clean (in case unloadPageContent is incomplete)
+        if (typeof inputs !== "undefined") inputs.length = 0;
+        if (typeof results !== "undefined") results.length = 0;
+        if (typeof dataSet !== "undefined") dataSet.length = 0;
+        if (typeof sliders !== "undefined") sliders.length = 0;
+    
+        d3.selectAll(
+          "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
+        ).html("");
+    
+        // ✅ Load new data into DE
+        loadDataToDesignExplorer(parsedData);
+    
+        // ✅ Hide popup window
+        $("#loadDataContainer").fadeOut();
+        $(".popupWindow").fadeOut();
+    
+        // ✅ Remove 'thumbnail' field so it doesn't become a slider
+        if (typeof dataSet !== "undefined") {
+          dataSet.forEach(d => delete d.thumbnail);
+        }
+      };
     
       reader.readAsText(csvFile);
     }
     </script>
+    
     
     
     <!-- Local load script -->
