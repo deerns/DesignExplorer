@@ -775,15 +775,32 @@
         files.forEach(file => fileMap.set(file.webkitRelativePath, file));
       
         const reader = new FileReader();
-        reader.onload = function(e) {
-          const csvText = e.target.result;
-          const data = d3.csv.parse(csvText);
-          console.log("✅ Parsed CSV", data);
-      
-          // Hook into DesignExplorer's existing data handling
-          window.LoadDataFromLocalCSV(data, fileMap, folderPrefix);
-        };
-        reader.readAsText(csvFile);
+reader.onload = function (e) {
+  const csvText = e.target.result;
+
+  // Parse CSV (D3 v3 syntax)
+  const parsedData = d3.csv.parse(csvText);
+
+  // Replace img links with blob URLs
+  parsedData.forEach(row => {
+    const name = row.img || row.image || row.thumbnail;
+    if (name) {
+      const path = `${folderPrefix}/${name}`;
+      const file = fileMap.get(path);
+      if (file) {
+        const url = URL.createObjectURL(file);
+        row.img = url;
+        row.image = url;
+        row.thumbnail = url;
+      }
+    }
+  });
+
+  // ✅ Then call the actual data loader
+  readyToLoad(parsedData);
+};
+reader.readAsText(csvFile);
+
       };</script>
     <!-- Local load script -->
     <script>
