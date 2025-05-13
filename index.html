@@ -773,45 +773,39 @@
     
       const reader = new FileReader();
       reader.onload = function (e) {
-        const csvText = e.target.result;
-        const parsedData = d3.csv.parse(csvText);
-    
-        parsedData.forEach(row => {
-          const name = row.img || row.image || row.thumbnail;
-          if (name) {
-            const path = `${folderPrefix}/${name}`;
-            const file = fileMap.get(path);
-            if (file) {
-              const url = URL.createObjectURL(file);
-              row.img = url;
-              row.image = url;
-              row.thumbnail = url;
-            }
-          }
-    
-          // Remove fields that shouldn't appear as sliders
-          delete row["img"];
-          delete row["image"];
-          delete row["thumbnail"];
-        });
-    
-        // Clean up global state and UI
-        if (typeof inputs !== "undefined") inputs.length = 0;
-        if (typeof results !== "undefined") results.length = 0;
-        if (typeof dataSet !== "undefined") dataSet.length = 0;
-    
-        d3.selectAll("#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot").html("");
-    
-        // Load into DesignExplorer
-        loadDataToDesignExplorer(parsedData);
-    
-        // Close the popup
-        $("#loadDataContainer").fadeOut();
-        $(".popupWindow").fadeOut();
-      };
-    
-      reader.readAsText(csvFile);
+  const csvText = e.target.result;
+  const parsedData = d3.csv.parse(csvText);
+
+  parsedData.forEach(row => {
+    const name = row.img || row.image || row.thumbnail;
+    if (name) {
+      const path = `${folderPrefix}/${name}`;
+      const file = fileMap.get(path);
+      if (file) {
+        const url = URL.createObjectURL(file);
+        row.thumbnail = url; // ✅ keep only this field for DE
+      }
     }
+  });
+
+  // 🧹 Thorough cleanup
+  if (typeof inputs !== "undefined") inputs.length = 0;
+  if (typeof results !== "undefined") results.length = 0;
+  if (typeof dataSet !== "undefined") dataSet.length = 0;
+  if (typeof sliders !== "undefined") sliders.length = 0;
+
+  d3.selectAll(
+    "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
+  ).html("");
+
+  // ✅ Load cleaned data
+  loadDataToDesignExplorer(parsedData);
+
+  // ✅ Hide UI
+  $("#loadDataContainer").fadeOut();
+  $(".popupWindow").fadeOut();
+};
+    };
     </script>
     
     <!-- Local load script -->
