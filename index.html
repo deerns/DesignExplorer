@@ -590,6 +590,41 @@
                     (<a href="design_explorer_data/example/LocalCSV_example.csv" target="_blank">example.csv</a>)
                 </h5>
                 </div>
+                <script>
+                    function loadFolderData() {
+                      const input = document.getElementById("folderInput");
+                      const files = Array.from(input.files);
+                    
+                      if (!files.length) {
+                        alert("Please select a folder first.");
+                        return;
+                      }
+                    
+                      const csvFile = files.find(file => file.name.toLowerCase() === "data.csv");
+                    
+                      if (!csvFile) {
+                        alert("No data.csv found in the folder.");
+                        return;
+                      }
+                    
+                      const folderPrefix = csvFile.webkitRelativePath.split("/")[0]; // first folder name
+                      const fileMap = new Map();
+                      files.forEach(file => fileMap.set(file.webkitRelativePath, file));
+                    
+                      const reader = new FileReader();
+                      reader.onload = function (e) {
+                        const csvText = e.target.result;
+                        const data = d3.csvParse(csvText);
+                        console.log("✅ Parsed CSV", data);
+                    
+                        // Pass the loaded data and file map into your app
+                        LoadDataFromLocalCSV(data, fileMap, folderPrefix);
+                      };
+                    
+                      reader.readAsText(csvFile);
+                    }
+                    </script>
+                    
   </div>
   
 
