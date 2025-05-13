@@ -773,44 +773,46 @@
     
       const reader = new FileReader();
       reader.onload = function (e) {
-        const csvText = e.target.result;
-        const parsedData = d3.csv.parse(csvText);
-    
-        parsedData.forEach(row => {
-  const name = row.img || row.image || row.thumbnail;
-  if (name) {
-    const path = `${folderPrefix}/${name}`;
-    const file = fileMap.get(path);
-    if (file) {
-      const url = URL.createObjectURL(file);
+  const csvText = e.target.result;
+  const parsedData = d3.csv.parse(csvText);
 
-      // ✅ assign to all possible image fields DE might use
-      row.img = url;
-      row.image = url;
-      row.thumbnail = url;
+  parsedData.forEach(row => {
+    const name = row.img || row.image || row.thumbnail;
+    if (name) {
+      const path = `${folderPrefix}/${name}`;
+      const file = fileMap.get(path);
+      if (file) {
+        const url = URL.createObjectURL(file);
+
+        // ✅ Only assign to 'thumbnail'
+        row.thumbnail = url;
+      }
     }
-  }
-});
+  });
 
-    
-        // Clean DE state before loading
-        if (typeof inputs !== "undefined") inputs.length = 0;
-        if (typeof results !== "undefined") results.length = 0;
-        if (typeof dataSet !== "undefined") dataSet.length = 0;
-        if (typeof sliders !== "undefined") sliders.length = 0;
-    
-        d3.selectAll(
-          "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
-        ).html("");
-    
-        // ✅ Load using original DE function
-        loadDataToDesignExplorer(parsedData);
-        loadSetting(); // ← also call this if you want settings.json applied
-    
-        // ✅ Hide load popup
-        $("#loadDataContainer").fadeOut();
-        $(".popupWindow").fadeOut();
-      };
+  // Cleanup before load
+  if (typeof inputs !== "undefined") inputs.length = 0;
+  if (typeof results !== "undefined") results.length = 0;
+  if (typeof dataSet !== "undefined") dataSet.length = 0;
+  if (typeof sliders !== "undefined") sliders.length = 0;
+
+  d3.selectAll(
+    "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
+  ).html("");
+
+  // ✅ Load into DE
+  loadDataToDesignExplorer(parsedData);
+
+  // ✅ Hide popup
+  $("#loadDataContainer").fadeOut();
+  $(".popupWindow").fadeOut();
+
+  // 🧹 AFTER loading: remove thumbnail key from DE dataset so it doesn't appear as a slider
+  if (typeof dataSet !== "undefined") {
+    dataSet.forEach(d => delete d.thumbnail);
+  }
+};
+
     
       reader.readAsText(csvFile);
     }
