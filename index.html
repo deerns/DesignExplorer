@@ -787,48 +787,51 @@
       };</script>
     <!-- Local load script -->
     <script>
-        function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
-          data.forEach(row => {
-            const fileName = row.image || row.thumbnail || row.img;
-            if (fileName) {
-              const path = `${folderPrefix}/${fileName}`;
-              const file = fileMap.get(path);
-              if (file) {
-                const url = URL.createObjectURL(file);
-                row.image = url;
-                row.thumbnail = url;
-                row.img = url;
-              }
-            }
-        
-            if (row.model) {
-              const path = `${folderPrefix}/${row.model}`;
-              const file = fileMap.get(path);
-              if (file) {
-                row.modelURL = URL.createObjectURL(file);
-              }
-            }
-          });
-        
-          if (typeof analyzeInputData === "function") {
-  console.log("✅ Clearing previous dataset (safely)");
+function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
+  data.forEach(row => {
+    const fileName = row.image || row.thumbnail || row.img;
+    if (fileName) {
+      const path = `${folderPrefix}/${fileName}`;
+      const file = fileMap.get(path);
+      if (file) {
+        const url = URL.createObjectURL(file);
+        row.image = url;
+        row.thumbnail = url;
+        row.img = url;
+      }
+    }
 
-  // Avoid full unload if it breaks UI — clear just key parts
+    if (row.model) {
+      const path = `${folderPrefix}/${row.model}`;
+      const file = fileMap.get(path);
+      if (file) {
+        row.modelURL = URL.createObjectURL(file);
+      }
+    }
+  });
+
+  // ✅ Clear previous data (the same way Google Drive loader does it)
   if (typeof window.dataSet !== "undefined") {
-    window.dataSet = [];
+    window.dataSet.length = 0;
+  }
+  d3.select("#designTable").html("");    // Clear data table
+  d3.select("#parallelPlot").html("");   // Clear parallel plot
+  d3.select("#scatterMatrix").html("");  // Clear scatter plot
+  d3.select("#thumbnailZone").html("");  // Clear thumbnails
+  d3.select("#summaryTable").html("");   // Clear stats
+  d3.select("#statsView").html("");      // Any stats panel
+  d3.select("#legendPanel").html("");    // Legend
+  d3.select("#selectedCaseZone").html(""); // Clear selection zone
+
+  // ✅ Now load new data
+  if (typeof analyzeInputData === "function") {
+    analyzeInputData(data);
   }
 
-  d3.select("#container").html(""); // or the div used for plots
-
-  console.log("✅ Loading new dataset");
-  analyzeInputData(data);
-
-  // Hide popup
+  // ✅ Hide popup after successful load
   $("#loadDataContainer").fadeOut();
   $(".popupWindow").fadeOut();
 }
-
-        }
         </script>
         
   
