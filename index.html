@@ -786,44 +786,44 @@
         reader.readAsText(csvFile);
       };</script>
     <!-- Local load script -->
-<script>
-    function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
-      data.forEach(row => {
-        const fileName = row.image || row.thumbnail;
-        if (fileName) {
-          const path = `${folderPrefix}/${fileName}`;
-          const file = fileMap.get(path);
-          if (file) {
-            row.image = URL.createObjectURL(file);
-            row.thumbnail = row.image;
+    <script>
+        function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
+          data.forEach(row => {
+            // Convert image path to local object URL if present
+            const fileName = row.image || row.thumbnail || row.img;
+            if (fileName) {
+              const path = `${folderPrefix}/${fileName}`;
+              const file = fileMap.get(path);
+              if (file) {
+                const url = URL.createObjectURL(file);
+                row.image = url;
+                row.thumbnail = url;
+                row.img = url;
+              }
+            }
+        
+            // Convert model file path to blob URL if used
+            if (row.model) {
+              const path = `${folderPrefix}/${row.model}`;
+              const file = fileMap.get(path);
+              if (file) {
+                row.modelURL = URL.createObjectURL(file);
+              }
+            }
+          });
+        
+          // ✅ Load into DesignExplorer using the correct function
+          if (typeof analyzeInputData === "function") {
+            console.log("✅ Loading data with analyzeInputData()");
+            analyzeInputData(data);
+          } else {
+            console.warn("❌ analyzeInputData() not found. Here's the parsed data:");
+            window._LOCAL_PARSED_DATA = data;
+            console.log(data);
           }
         }
-  
-        if (row.model) {
-          const path = `${folderPrefix}/${row.model}`;
-          const file = fileMap.get(path);
-          if (file) {
-            row.modelURL = URL.createObjectURL(file);
-          }
-        }
-      });
-  
-      // Try known DE loading functions
-        if (typeof loadCSV === "function") {
-        console.log("✅ Found: loadCSV()");
-        loadCSV(data);
-        } else if (typeof loadData === "object" && typeof loadData.load === "function") {
-        console.log("✅ Found: loadData.load()");
-        loadData.load(data);
-        } else if (typeof loadDataFromCSV === "function") {
-        console.log("✅ Found: loadDataFromCSV()");
-        loadDataFromCSV(data);
-        } else {
-        console.warn("❌ No known DE loader found.");
-        console.log("📊 Parsed CSV data ready:", data);
-        }
-    }
-  </script>
+        </script>
+        
   
   </body>
   </html>
