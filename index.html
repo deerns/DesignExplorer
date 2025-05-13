@@ -813,17 +813,14 @@
           if (typeof analyzeInputData === "function") {
             console.log("✅ Loading data with analyzeInputData()");
             analyzeInputData(data);
-        
-            // ✅ Close the popup
-            const popup = document.getElementById("loadDataContainer");
-            if (popup) {
-              popup.style.display = "none";
-            }
-          } else {
-            console.warn("❌ analyzeInputData() not found. Here's the parsed data:");
+    
+            // ✅ Hide popup like cloud loading does
+            $("#loadDataContainer").hide();
+            } else {
+            console.warn("❌ analyzeInputData() not found.");
             window._LOCAL_PARSED_DATA = data;
             console.log(data);
-          }
+            }
         }
         </script>
         
