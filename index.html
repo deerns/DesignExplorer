@@ -592,35 +592,37 @@
                 </div>
                 <script>
                     function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
-                      data.forEach(row => {
-                        // Replace image paths with local object URLs
+                    data.forEach(row => {
                         if (row.image || row.thumbnail) {
-                          const fileName = row.image || row.thumbnail;
-                          const path = `${folderPrefix}/${fileName}`;
-                          const file = fileMap.get(path);
-                          if (file) {
+                        const fileName = row.image || row.thumbnail;
+                        const path = `${folderPrefix}/${fileName}`;
+                        const file = fileMap.get(path);
+                        if (file) {
                             row.image = URL.createObjectURL(file);
-                            row.thumbnail = row.image; // fallback for DE compatibility
-                          }
+                            row.thumbnail = row.image;
                         }
-                    
-                        // Replace model paths (if applicable)
+                        }
+
                         if (row.model) {
-                          const path = `${folderPrefix}/${row.model}`;
-                          const file = fileMap.get(path);
-                          if (file) {
+                        const path = `${folderPrefix}/${row.model}`;
+                        const file = fileMap.get(path);
+                        if (file) {
                             row.modelURL = URL.createObjectURL(file);
-                          }
                         }
-                      });
-                    
-                      // Pass data into DesignExplorer
-                      if (typeof app !== "undefined" && typeof app.loadData === "function") {
+                        }
+                    });
+
+                    // Wait until app is available
+                    const tryLoad = () => {
+                        if (window.app && typeof app.loadData === "function") {
                         app.loadData(data);
-                      } else {
-                        console.warn("⚠️ Could not find app.loadData(data). Please check if DesignExplorer initialized.");
-                        console.log("🧪 Parsed data:", data);
-                      }
+                        } else {
+                        console.warn("⌛ Waiting for app.loadData...");
+                        setTimeout(tryLoad, 300);
+                        }
+                    };
+
+                    tryLoad();
                     }
                     </script>
                     
