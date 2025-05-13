@@ -775,13 +775,16 @@
         files.forEach(file => fileMap.set(file.webkitRelativePath, file));
       
         const reader = new FileReader();
-reader.onload = function (e) {
+        reader.onload = function (e) {
   const csvText = e.target.result;
 
-  // Parse CSV (D3 v3 syntax)
+  // ✅ Parse CSV using D3 v3
   const parsedData = d3.csv.parse(csvText);
 
-  // Replace img links with blob URLs
+  // ✅ Get folder path and assign blob URLs to images
+  const folderPrefix = csvFile.webkitRelativePath.split("/")[0];
+  const fileMap = new Map(files.map(f => [f.webkitRelativePath, f]));
+
   parsedData.forEach(row => {
     const name = row.img || row.image || row.thumbnail;
     if (name) {
@@ -796,10 +799,14 @@ reader.onload = function (e) {
     }
   });
 
-  // ✅ Then call the actual data loader
-  loadDataToDesignExplorer(data);
+  // ✅ Load like the cloud method
+  loadDataToDesignExplorer(parsedData);
+
+  // ✅ Hide popup
+  $("#loadDataContainer").fadeOut();
+  $(".popupWindow").fadeOut();
 };
-reader.readAsText(csvFile);
+
 
       };</script>
     <!-- Local load script -->
