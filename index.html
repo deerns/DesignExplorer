@@ -757,58 +757,56 @@
             });
 
     </script>
-    <script>function loadFolderData() {
-        const input = document.getElementById("folderInput");
-        const files = Array.from(input.files);
-      
-        // Try to find the CSV
-        const csvFile = files.find(f => f.name.toLowerCase() === "data.csv");
-      
-        if (!csvFile) {
-          alert("No data.csv found in the selected folder.");
-          return;
-        }
-      
-        const folderPrefix = csvFile.webkitRelativePath.split("/")[0]; // root folder name
-      
-        const fileMap = new Map();
-        files.forEach(file => fileMap.set(file.webkitRelativePath, file));
-      
-        const reader = new FileReader();
-        reader.onload = function (e) {
-  const csvText = e.target.result;
-
-  // ✅ Parse CSV using D3 v3
-  const parsedData = d3.csv.parse(csvText);
-
-  // ✅ Get folder path and assign blob URLs to images
-  const folderPrefix = csvFile.webkitRelativePath.split("/")[0];
-  const fileMap = new Map(files.map(f => [f.webkitRelativePath, f]));
-
-  parsedData.forEach(row => {
-    const name = row.img || row.image || row.thumbnail;
-    if (name) {
-      const path = `${folderPrefix}/${name}`;
-      const file = fileMap.get(path);
-      if (file) {
-        const url = URL.createObjectURL(file);
-        row.img = url;
-        row.image = url;
-        row.thumbnail = url;
+ <script>
+    function loadFolderData() {
+      const input = document.getElementById("folderInput");
+      const files = Array.from(input.files);
+    
+      // Try to find the CSV
+      const csvFile = files.find(f => f.name.toLowerCase() === "data.csv");
+    
+      if (!csvFile) {
+        alert("No data.csv found in the selected folder.");
+        return;
       }
+    
+      const folderPrefix = csvFile.webkitRelativePath.split("/")[0]; // root folder name
+      const fileMap = new Map(files.map(f => [f.webkitRelativePath, f]));
+    
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const csvText = e.target.result;
+    
+        // ✅ Parse CSV using D3 v3
+        const parsedData = d3.csv.parse(csvText);
+    
+        // ✅ Patch image paths with blob URLs
+        parsedData.forEach(row => {
+          const name = row.img || row.image || row.thumbnail;
+          if (name) {
+            const path = `${folderPrefix}/${name}`;
+            const file = fileMap.get(path);
+            if (file) {
+              const url = URL.createObjectURL(file);
+              row.img = url;
+              row.image = url;
+              row.thumbnail = url;
+            }
+          }
+        });
+    
+        // ✅ Load using original DE function
+        loadDataToDesignExplorer(parsedData);
+    
+        // ✅ Hide popup
+        $("#loadDataContainer").fadeOut();
+        $(".popupWindow").fadeOut();
+      };
+    
+      reader.readAsText(csvFile);
     }
-  });
-
-  // ✅ Load like the cloud method
-  loadDataToDesignExplorer(parsedData);
-
-  // ✅ Hide popup
-  $("#loadDataContainer").fadeOut();
-  $(".popupWindow").fadeOut();
-};
-
-
-      };</script>
+    </script>
+    
     <!-- Local load script -->
     <script>
         function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
