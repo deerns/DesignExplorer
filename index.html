@@ -590,41 +590,7 @@
                     (<a href="design_explorer_data/example/LocalCSV_example.csv" target="_blank">example.csv</a>)
                 </h5>
                 </div>
-                <script>
-                    function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
-                    data.forEach(row => {
-                        if (row.image || row.thumbnail) {
-                        const fileName = row.image || row.thumbnail;
-                        const path = `${folderPrefix}/${fileName}`;
-                        const file = fileMap.get(path);
-                        if (file) {
-                            row.image = URL.createObjectURL(file);
-                            row.thumbnail = row.image;
-                        }
-                        }
 
-                        if (row.model) {
-                        const path = `${folderPrefix}/${row.model}`;
-                        const file = fileMap.get(path);
-                        if (file) {
-                            row.modelURL = URL.createObjectURL(file);
-                        }
-                        }
-                    });
-
-                        // Wait until app is available
-                        const tryLoad = () => {
-                            if (window.app && typeof app.loadData === "function") {
-                            app.loadData(data);
-                            } else {
-                            console.warn("⌛ Waiting for app.loadData...");
-                            setTimeout(tryLoad, 300);
-                            }
-                        };
-
-                    tryLoad();
-                    }
-                    </script>
                     
   </div>
   
@@ -791,7 +757,80 @@
             });
 
     </script>
-
+    <script>function loadFolderData() {
+        const input = document.getElementById("folderInput");
+        const files = Array.from(input.files);
+      
+        // Try to find the CSV
+        const csvFile = files.find(f => f.name.toLowerCase() === "data.csv");
+      
+        if (!csvFile) {
+          alert("No data.csv found in the selected folder.");
+          return;
+        }
+      
+        const folderPrefix = csvFile.webkitRelativePath.split("/")[0]; // root folder name
+      
+        const fileMap = new Map();
+        files.forEach(file => fileMap.set(file.webkitRelativePath, file));
+      
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const csvText = e.target.result;
+          const data = d3.csv.parse(csvText);
+          console.log("✅ Parsed CSV", data);
+      
+          // Hook into DesignExplorer's existing data handling
+          window.LoadDataFromLocalCSV(data, fileMap, folderPrefix);
+        };
+        reader.readAsText(csvFile);
+      };</script>
+    <!-- Local load script -->
+<script>
+    function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
+      data.forEach(row => {
+        const fileName = row.image || row.thumbnail;
+        if (fileName) {
+          const path = `${folderPrefix}/${fileName}`;
+          const file = fileMap.get(path);
+          if (file) {
+            row.image = URL.createObjectURL(file);
+            row.thumbnail = row.image;
+          }
+        }
+  
+        if (row.model) {
+          const path = `${folderPrefix}/${row.model}`;
+          const file = fileMap.get(path);
+          if (file) {
+            row.modelURL = URL.createObjectURL(file);
+          }
+        }
+      });
+  
+      // Try known DE loading functions
+      if (typeof loadCSV === "function") {
+        console.log("✅ Found: loadCSV()");
+        loadCSV(data);
+      } else if (typeof loadData === "function") {
+        console.log("✅ Found: loadData()");
+        loadData(data);
+      } else if (typeof loadDataFromCSV === "function") {
+        console.log("✅ Found: loadDataFromCSV()");
+        loadDataFromCSV(data);
+      } else {
+        console.warn("❌ No known DE loader found.");
+        console.log("📊 Parsed CSV data ready:", data);
+        console.log("🔎 Try calling one of these manually:");
+        console.log("typeof loadCSV =", typeof loadCSV);
+        console.log("typeof loadData =", typeof loadData);
+        console.log("typeof loadDataFromCSV =", typeof loadDataFromCSV);
+      }
+    }
+  </script>
+  
+  </body>
+  </html>
     <!-- right side chart -->
     <script type="text/javascript">
         // update radar chart

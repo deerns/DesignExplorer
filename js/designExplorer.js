@@ -478,57 +478,5 @@ function decodeUrlID(rawUrl, callback) {
 
 
 }
-function loadFolderData() {
-    const input = document.getElementById("folderInput");
-    const files = Array.from(input.files);
-  
-    // Try to find the CSV
-    const csvFile = files.find(f => f.name.toLowerCase() === "data.csv");
-  
-    if (!csvFile) {
-      alert("No data.csv found in the selected folder.");
-      return;
-    }
-  
-    const folderPrefix = csvFile.webkitRelativePath.split("/")[0]; // root folder name
-  
-    const fileMap = new Map();
-    files.forEach(file => fileMap.set(file.webkitRelativePath, file));
-  
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const csvText = e.target.result;
-      const data = d3.csv.parse(csvText);
-      console.log("✅ Parsed CSV", data);
-  
-      // Hook into DesignExplorer's existing data handling
-      window.LoadDataFromLocalCSV(data, fileMap, folderPrefix);
-    };
-    reader.readAsText(csvFile);
-  };
-  
-  function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
-  data.forEach(row => {
-      if (row.image || row.thumbnail) {
-      const fileName = row.image || row.thumbnail;
-      const path = `${folderPrefix}/${fileName}`;
-      const file = fileMap.get(path);
-      if (file) {
-          row.image = URL.createObjectURL(file);
-          row.thumbnail = row.image;
-      }
-      }
 
-      if (row.model) {
-      const path = `${folderPrefix}/${row.model}`;
-      const file = fileMap.get(path);
-      if (file) {
-          row.modelURL = URL.createObjectURL(file);
-      }
-      }
-  });
-
-
-  tryLoad();
-  }
   
