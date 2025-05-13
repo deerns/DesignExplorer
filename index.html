@@ -776,27 +776,33 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         const csvText = e.target.result;
-        const parsedData = d3.csv.parse(csvText);
+        const rawData = d3.csv.parse(csvText);
     
-        // ✅ Assign blob URLs for thumbnails
-        parsedData.forEach(row => {
+        // Prepare two versions: one for DE, one with thumbnail
+        const parsedData = rawData.map(row => {
           const name = row.img || row.image || row.thumbnail;
+          let thumbnailURL = "";
+    
           if (name) {
             const path = `${folderPrefix}/${name}`;
             const file = fileMap.get(path);
             if (file) {
-              const url = URL.createObjectURL(file);
-              row.thumbnail = url; // only assign thumbnail
+              thumbnailURL = URL.createObjectURL(file);
             }
           }
+    
+          // Assign thumbnail only temporarily
+          row.thumbnail = thumbnailURL;
+    
+          // Make a cleaned version for DE load
+          const cleaned = { ...row };
+          delete cleaned.thumbnail;
+    
+          return { original: row, cleaned };
         });
     
-        // ✅ FULL RESET (same as default DE behavior)
-        if (typeof unloadPageContent === "function") {
-          unloadPageContent();
-        }
-    
-        // Manual backup clean (in case unloadPageContent is incomplete)
+        // 🧹 Clear previous DesignExplorer state
+        if (typeof unloadPageContent === "function") unloadPageContent();
         if (typeof inputs !== "undefined") inputs.length = 0;
         if (typeof results !== "undefined") results.length = 0;
         if (typeof dataSet !== "undefined") dataSet.length = 0;
@@ -806,22 +812,25 @@
           "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
         ).html("");
     
-        // ✅ Load new data into DE
-        loadDataToDesignExplorer(parsedData);
+        // ✅ Load cleaned data into DE (no 'thumbnail' field yet)
+        loadDataToDesignExplorer(parsedData.map(d => d.cleaned));
     
-        // ✅ Hide popup window
+        // ✅ Reapply thumbnail for image display
+        if (typeof dataSet !== "undefined") {
+          parsedData.forEach((d, i) => {
+            dataSet[i].thumbnail = d.original.thumbnail;
+          });
+        }
+    
+        // ✅ Close popup
         $("#loadDataContainer").fadeOut();
         $(".popupWindow").fadeOut();
-    
-        // ✅ Remove 'thumbnail' field so it doesn't become a slider
-        if (typeof dataSet !== "undefined") {
-          dataSet.forEach(d => delete d.thumbnail);
-        }
       };
     
       reader.readAsText(csvFile);
     }
     </script>
+    
     
     
     
