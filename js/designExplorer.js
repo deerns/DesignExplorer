@@ -506,28 +506,38 @@ function loadFolderData() {
     };
     reader.readAsText(csvFile);
   };
+  
   function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
-    data.forEach(row => {
-      // Rewrite image URL
-      if (row.image) {
-        const path = `${folderPrefix}/${row.image}`;
-        const file = fileMap.get(path);
-        if (file) {
-          row.imageURL = URL.createObjectURL(file);
-        }
+  data.forEach(row => {
+      if (row.image || row.thumbnail) {
+      const fileName = row.image || row.thumbnail;
+      const path = `${folderPrefix}/${fileName}`;
+      const file = fileMap.get(path);
+      if (file) {
+          row.image = URL.createObjectURL(file);
+          row.thumbnail = row.image;
       }
-  
-      // Rewrite 3D model path if needed
+      }
+
       if (row.model) {
-        const path = `${folderPrefix}/${row.model}`;
-        const file = fileMap.get(path);
-        if (file) {
+      const path = `${folderPrefix}/${row.model}`;
+      const file = fileMap.get(path);
+      if (file) {
           row.modelURL = URL.createObjectURL(file);
-        }
       }
-    });
-  
-    // Now send it into the DesignExplorer pipeline
-    window._loadDataIntoApp(data); // or however your version loads it
+      }
+  });
+
+      // Wait until app is available
+      const tryLoad = () => {
+          if (window.app && typeof app.loadData === "function") {
+          app.loadData(data);
+          } else {
+          console.warn("⌛ Waiting for app.loadData...");
+          setTimeout(tryLoad, 300);
+          }
+      };
+
+  tryLoad();
   }
   
