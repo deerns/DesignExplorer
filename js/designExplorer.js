@@ -478,3 +478,59 @@ function decodeUrlID(rawUrl, callback) {
 
 
 }
+function loadFolderData() {
+    const input = document.getElementById("folderInput");
+    const files = Array.from(input.files);
+  
+    // Try to find the CSV
+    const csvFile = files.find(f => f.name.toLowerCase() === "data.csv");
+  
+    if (!csvFile) {
+      alert("No data.csv found in the selected folder.");
+      return;
+    }
+  
+    const folderPrefix = csvFile.webkitRelativePath.split("/")[0]; // root folder name
+  
+    const fileMap = new Map();
+    files.forEach(file => fileMap.set(file.webkitRelativePath, file));
+  
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const csvText = e.target.result;
+      const data = d3.csvParse(csvText);
+      console.log("✅ Parsed CSV", data);
+  
+      // Hook into DesignExplorer's existing data handling
+      window.LoadDataFromLocalCSV(data, fileMap, folderPrefix);
+    };
+    reader.readAsText(csvFile);
+  }
+  window.LoadDataFromLocalCSV = function(data, fileMap, folderPrefix) {
+    // Replace existing remote loading logic with local lookup
+    console.log("🔍 Loading files locally from", folderPrefix);
+  
+    data.forEach(row => {
+      // Replace image path with blob URL
+      if (row.image) {
+        const imgPath = `${folderPrefix}/${row.image}`;
+        const file = fileMap.get(imgPath);
+        if (file) {
+          row.imageURL = URL.createObjectURL(file);
+        }
+      }
+  
+      // Handle 3D files similarly if needed
+      if (row.model) {
+        const modelPath = `${folderPrefix}/${row.model}`;
+        const file = fileMap.get(modelPath);
+        if (file) {
+          row.modelURL = URL.createObjectURL(file);
+        }
+      }
+    });
+  
+    // Trigger the DesignExplorer load function
+    window._loadDataIntoApp(data); // or however DE expects it
+  };
+  
