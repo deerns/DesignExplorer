@@ -809,23 +809,19 @@
       });
   
       // Try known DE loading functions
-      if (typeof loadCSV === "function") {
+        if (typeof loadCSV === "function") {
         console.log("✅ Found: loadCSV()");
         loadCSV(data);
-      } else if (typeof loadData === "function") {
-        console.log("✅ Found: loadData()");
-        loadData(data);
-      } else if (typeof loadDataFromCSV === "function") {
+        } else if (typeof loadData === "object" && typeof loadData.load === "function") {
+        console.log("✅ Found: loadData.load()");
+        loadData.load(data);
+        } else if (typeof loadDataFromCSV === "function") {
         console.log("✅ Found: loadDataFromCSV()");
         loadDataFromCSV(data);
-      } else {
+        } else {
         console.warn("❌ No known DE loader found.");
         console.log("📊 Parsed CSV data ready:", data);
-        console.log("🔎 Try calling one of these manually:");
-        console.log("typeof loadCSV =", typeof loadCSV);
-        console.log("typeof loadData =", typeof loadData);
-        console.log("typeof loadDataFromCSV =", typeof loadDataFromCSV);
-      }
+        }
     }
   </script>
   
