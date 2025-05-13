@@ -789,7 +789,6 @@
     <script>
         function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
           data.forEach(row => {
-            // Convert image path to local object URL if present
             const fileName = row.image || row.thumbnail || row.img;
             if (fileName) {
               const path = `${folderPrefix}/${fileName}`;
@@ -802,7 +801,6 @@
               }
             }
         
-            // Convert model file path to blob URL if used
             if (row.model) {
               const path = `${folderPrefix}/${row.model}`;
               const file = fileMap.get(path);
@@ -812,10 +810,15 @@
             }
           });
         
-          // ✅ Load into DesignExplorer using the correct function
           if (typeof analyzeInputData === "function") {
             console.log("✅ Loading data with analyzeInputData()");
             analyzeInputData(data);
+        
+            // ✅ Close the popup
+            const popup = document.getElementById("loadDataContainer");
+            if (popup) {
+              popup.style.display = "none";
+            }
           } else {
             console.warn("❌ analyzeInputData() not found. Here's the parsed data:");
             window._LOCAL_PARSED_DATA = data;
