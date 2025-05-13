@@ -811,16 +811,14 @@
           });
         
           if (typeof analyzeInputData === "function") {
-            console.log("✅ Loading data with analyzeInputData()");
-            analyzeInputData(data);
-    
-            // ✅ Hide popup like cloud loading does
-            $("#loadDataContainer").hide();
-            } else {
-            console.warn("❌ analyzeInputData() not found.");
-            window._LOCAL_PARSED_DATA = data;
-            console.log(data);
+        console.log("✅ Loading data with analyzeInputData()");
+        analyzeInputData(data);
+
+        // ✅ Match the original cloud loading behavior
+            $("#loadDataContainer").fadeOut();     // fade out main content
+            $(".popupWindow").fadeOut();           // fade out full-screen overlay if it's used
             }
+
         }
         </script>
         
