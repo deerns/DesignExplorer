@@ -778,30 +778,33 @@
         const csvText = e.target.result;
         const rawData = d3.csv.parse(csvText);
     
-        // Prepare two versions: one for DE, one with thumbnail
         const parsedData = rawData.map(row => {
           const name = row.img || row.image || row.thumbnail;
-          let thumbnailURL = "";
+          let blobUrl = "";
     
           if (name) {
             const path = `${folderPrefix}/${name}`;
             const file = fileMap.get(path);
             if (file) {
-              thumbnailURL = URL.createObjectURL(file);
+              blobUrl = URL.createObjectURL(file);
             }
           }
     
-          // Assign thumbnail only temporarily
-          row.thumbnail = thumbnailURL;
+          // Assign for DE compatibility
+          row.thumbnail = blobUrl;
+          row.img = blobUrl;
+          row.image = blobUrl;
     
-          // Make a cleaned version for DE load
+          // Cleaned version: no image fields (prevents sliders)
           const cleaned = { ...row };
           delete cleaned.thumbnail;
+          delete cleaned.img;
+          delete cleaned.image;
     
           return { original: row, cleaned };
         });
     
-        // 🧹 Clear previous DesignExplorer state
+        // 🧹 Clear previous DE state
         if (typeof unloadPageContent === "function") unloadPageContent();
         if (typeof inputs !== "undefined") inputs.length = 0;
         if (typeof results !== "undefined") results.length = 0;
@@ -812,17 +815,19 @@
           "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
         ).html("");
     
-        // ✅ Load cleaned data into DE (no 'thumbnail' field yet)
+        // ✅ Load clean data
         loadDataToDesignExplorer(parsedData.map(d => d.cleaned));
     
-        // ✅ Reapply thumbnail for image display
+        // ✅ Re-assign thumbnails after load so images work
         if (typeof dataSet !== "undefined") {
           parsedData.forEach((d, i) => {
             dataSet[i].thumbnail = d.original.thumbnail;
+            dataSet[i].img = d.original.img;
+            dataSet[i].image = d.original.image;
           });
         }
     
-        // ✅ Close popup
+        // ✅ Close the popup
         $("#loadDataContainer").fadeOut();
         $(".popupWindow").fadeOut();
       };
@@ -830,6 +835,7 @@
       reader.readAsText(csvFile);
     }
     </script>
+    
     
     
     
