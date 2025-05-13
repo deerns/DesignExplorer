@@ -762,25 +762,20 @@
       const input = document.getElementById("folderInput");
       const files = Array.from(input.files);
     
-      // Try to find the CSV
       const csvFile = files.find(f => f.name.toLowerCase() === "data.csv");
-    
       if (!csvFile) {
         alert("No data.csv found in the selected folder.");
         return;
       }
     
-      const folderPrefix = csvFile.webkitRelativePath.split("/")[0]; // root folder name
+      const folderPrefix = csvFile.webkitRelativePath.split("/")[0];
       const fileMap = new Map(files.map(f => [f.webkitRelativePath, f]));
     
       const reader = new FileReader();
       reader.onload = function (e) {
         const csvText = e.target.result;
-    
-        // ✅ Parse CSV using D3 v3
         const parsedData = d3.csv.parse(csvText);
     
-        // ✅ Patch image paths with blob URLs
         parsedData.forEach(row => {
           const name = row.img || row.image || row.thumbnail;
           if (name) {
@@ -793,12 +788,24 @@
               row.thumbnail = url;
             }
           }
+    
+          // Remove fields that shouldn't appear as sliders
+          delete row["img"];
+          delete row["image"];
+          delete row["thumbnail"];
         });
     
-        // ✅ Load using original DE function
+        // Clean up global state and UI
+        if (typeof inputs !== "undefined") inputs.length = 0;
+        if (typeof results !== "undefined") results.length = 0;
+        if (typeof dataSet !== "undefined") dataSet.length = 0;
+    
+        d3.selectAll("#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot").html("");
+    
+        // Load into DesignExplorer
         loadDataToDesignExplorer(parsedData);
     
-        // ✅ Hide popup
+        // Close the popup
         $("#loadDataContainer").fadeOut();
         $(".popupWindow").fadeOut();
       };
