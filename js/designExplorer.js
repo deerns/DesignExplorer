@@ -498,7 +498,7 @@ function loadFolderData() {
     const reader = new FileReader();
     reader.onload = function(e) {
       const csvText = e.target.result;
-      const data = d3.csvParse(csvText);
+      const data = d3.csv.parse(csvText);
       console.log("✅ Parsed CSV", data);
   
       // Hook into DesignExplorer's existing data handling
