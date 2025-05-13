@@ -528,15 +528,6 @@ function loadFolderData() {
       }
   });
 
-      // Wait until app is available
-      const tryLoad = () => {
-          if (window.app && typeof app.loadData === "function") {
-          app.loadData(data);
-          } else {
-          console.warn("⌛ Waiting for app.loadData...");
-          setTimeout(tryLoad, 300);
-          }
-      };
 
   tryLoad();
   }
