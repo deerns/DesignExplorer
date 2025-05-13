@@ -776,35 +776,24 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         const csvText = e.target.result;
-        const rawData = d3.csv.parse(csvText);
+        const parsedData = d3.csv.parse(csvText);
     
-        const parsedData = rawData.map(row => {
+        // Assign blob URLs for image fields
+        parsedData.forEach(row => {
           const name = row.img || row.image || row.thumbnail;
-          let blobUrl = "";
-    
           if (name) {
             const path = `${folderPrefix}/${name}`;
             const file = fileMap.get(path);
             if (file) {
-              blobUrl = URL.createObjectURL(file);
+              const blob = URL.createObjectURL(file);
+              row.img = blob;
+              row.image = blob;
+              row.thumbnail = blob;
             }
           }
-    
-          // Assign for DE compatibility
-          row.thumbnail = blobUrl;
-          row.img = blobUrl;
-          row.image = blobUrl;
-    
-          // Cleaned version: no image fields (prevents sliders)
-          const cleaned = { ...row };
-          delete cleaned.thumbnail;
-          delete cleaned.img;
-          delete cleaned.image;
-    
-          return { original: row, cleaned };
         });
     
-        // 🧹 Clear previous DE state
+        // 🧹 Full reset before loading
         if (typeof unloadPageContent === "function") unloadPageContent();
         if (typeof inputs !== "undefined") inputs.length = 0;
         if (typeof results !== "undefined") results.length = 0;
@@ -815,26 +804,30 @@
           "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
         ).html("");
     
-        // ✅ Load clean data
-        loadDataToDesignExplorer(parsedData.map(d => d.cleaned));
-    
-        // ✅ Re-assign thumbnails after load so images work
-        if (typeof dataSet !== "undefined") {
-          parsedData.forEach((d, i) => {
-            dataSet[i].thumbnail = d.original.thumbnail;
-            dataSet[i].img = d.original.img;
-            dataSet[i].image = d.original.image;
-          });
-        }
+        // ✅ Load full data with image fields intact
+        loadDataToDesignExplorer(parsedData);
     
         // ✅ Close the popup
         $("#loadDataContainer").fadeOut();
         $(".popupWindow").fadeOut();
+    
+        // 🧹 OPTIONAL: Remove image fields from sliders
+        if (typeof inputs !== "undefined") {
+          ["img", "image", "thumbnail"].forEach(key => {
+            const index = inputs.indexOf(key);
+            if (index !== -1) inputs.splice(index, 1);
+          });
+        }
+    
+        if (typeof sliders !== "undefined") {
+          sliders = sliders.filter(s => !["img", "image", "thumbnail"].includes(s.key));
+        }
       };
     
       reader.readAsText(csvFile);
     }
     </script>
+    
     
     
     
