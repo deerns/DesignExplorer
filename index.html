@@ -760,74 +760,74 @@
 
 
 <script>
-    function loadFolderData() {
-      const input = document.getElementById("folderInput");
-      const files = Array.from(input.files);
-    
-      const csvFile = files.find(f => f.name.toLowerCase() === "data.csv");
-      if (!csvFile) {
-        alert("No data.csv found in the selected folder.");
-        return;
+function loadFolderData() {
+  const input = document.getElementById("folderInput");
+  const files = Array.from(input.files);
+
+  const csvFile = files.find(f => f.name.toLowerCase() === "data.csv");
+  if (!csvFile) {
+    alert("No data.csv found in the selected folder.");
+    return;
+  }
+
+  const folderPrefix = csvFile.webkitRelativePath.split("/")[0];
+  const fileMap = new Map(files.map(f => [f.webkitRelativePath, f]));
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const csvText = e.target.result;
+    const parsedData = d3.csv.parse(csvText);
+
+    // Assign blob URLs for image fields
+    parsedData.forEach(row => {
+      const name = row.img || row.image || row.thumbnail;
+      if (name) {
+        const path = `${folderPrefix}/${name}`;
+        const file = fileMap.get(path);
+        if (file) {
+          const blob = URL.createObjectURL(file);
+          row.img = blob;
+          row.image = blob;
+          row.thumbnail = blob;
+        }
       }
-    
-      const folderPrefix = csvFile.webkitRelativePath.split("/")[0];
-      const fileMap = new Map(files.map(f => [f.webkitRelativePath, f]));
-    
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const csvText = e.target.result;
-        const parsedData = d3.csv.parse(csvText);
-    
-        // Assign blob URLs for image fields
-        parsedData.forEach(row => {
-          const name = row.img || row.image || row.thumbnail;
-          if (name) {
-            const path = `${folderPrefix}/${name}`;
-            const file = fileMap.get(path);
-            if (file) {
-              const blob = URL.createObjectURL(file);
-              row.img = blob;
-              row.image = blob;
-              row.thumbnail = blob;
-            }
-          }
-        });
-    
-        // 🧹 Full reset before loading
-        if (typeof unloadPageContent === "function") unloadPageContent();
-        if (typeof inputs !== "undefined") inputs.length = 0;
-        if (typeof results !== "undefined") results.length = 0;
-        if (typeof dataSet !== "undefined") dataSet.length = 0;
-        if (typeof sliders !== "undefined") sliders.length = 0;
-    
-        d3.selectAll(
-          "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
-        ).html("");
-    
-        // ✅ Load full data with image fields intact
-        loadDataToDesignExplorer(parsedData);
-    
-        // ✅ Close the popup
-        $("#loadDataContainer").fadeOut();
-        $(".popupWindow").fadeOut();
-    
-        // 🧹 OPTIONAL: Remove image fields from sliders
-        if (typeof inputs !== "undefined") {
-          ["img", "image", "thumbnail"].forEach(key => {
-            const index = inputs.indexOf(key);
-            if (index !== -1) inputs.splice(index, 1);
-          });
-        }
-    
-        if (typeof sliders !== "undefined") {
-          sliders = sliders.filter(s => !["img", "image", "thumbnail"].includes(s.key));
-        }
-      };
-    
-      reader.readAsText(csvFile);
+    });
+
+    // 🧹 Full reset before loading
+    if (typeof unloadPageContent === "function") unloadPageContent();
+    if (typeof inputs !== "undefined") inputs.length = 0;
+    if (typeof results !== "undefined") results.length = 0;
+    if (typeof dataSet !== "undefined") dataSet.length = 0;
+    if (typeof sliders !== "undefined") sliders.length = 0;
+
+    d3.selectAll(
+      "#inputZone, #thumbnailZone, #summaryTable, #designTable, #scatterMatrix, #parallelPlot, #legendPanel, #selectedCaseZone"
+    ).html("");
+
+    // ✅ Load full data with image fields intact
+    loadDataToDesignExplorer(parsedData);
+
+    // ✅ Close the popup
+    $("#loadDataContainer").fadeOut();
+    $(".popupWindow").fadeOut();
+
+    // 🧹 OPTIONAL: Remove image fields from sliders
+    if (typeof inputs !== "undefined") {
+      ["img", "image", "thumbnail"].forEach(key => {
+        const index = inputs.indexOf(key);
+        if (index !== -1) inputs.splice(index, 1);
+      });
     }
-    </script>
-    
+
+    if (typeof sliders !== "undefined") {
+      sliders = sliders.filter(s => !["img", "image", "thumbnail"].includes(s.key));
+    }
+  };
+
+  reader.readAsText(csvFile);
+}
+</script>
+
     
     
     
