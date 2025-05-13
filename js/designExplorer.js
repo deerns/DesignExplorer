@@ -505,32 +505,29 @@ function loadFolderData() {
       window.LoadDataFromLocalCSV(data, fileMap, folderPrefix);
     };
     reader.readAsText(csvFile);
-  }
-  window.LoadDataFromLocalCSV = function(data, fileMap, folderPrefix) {
-    // Replace existing remote loading logic with local lookup
-    console.log("🔍 Loading files locally from", folderPrefix);
-  
+  };
+  function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
     data.forEach(row => {
-      // Replace image path with blob URL
+      // Rewrite image URL
       if (row.image) {
-        const imgPath = `${folderPrefix}/${row.image}`;
-        const file = fileMap.get(imgPath);
+        const path = `${folderPrefix}/${row.image}`;
+        const file = fileMap.get(path);
         if (file) {
           row.imageURL = URL.createObjectURL(file);
         }
       }
   
-      // Handle 3D files similarly if needed
+      // Rewrite 3D model path if needed
       if (row.model) {
-        const modelPath = `${folderPrefix}/${row.model}`;
-        const file = fileMap.get(modelPath);
+        const path = `${folderPrefix}/${row.model}`;
+        const file = fileMap.get(path);
         if (file) {
           row.modelURL = URL.createObjectURL(file);
         }
       }
     });
   
-    // Trigger the DesignExplorer load function
-    window._loadDataIntoApp(data); // or however DE expects it
-  };
+    // Now send it into the DesignExplorer pipeline
+    window._loadDataIntoApp(data); // or however your version loads it
+  }
   
