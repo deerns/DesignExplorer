@@ -777,16 +777,21 @@
         const parsedData = d3.csv.parse(csvText);
     
         parsedData.forEach(row => {
-          const name = row.img || row.image || row.thumbnail;
-          if (name) {
-            const path = `${folderPrefix}/${name}`;
-            const file = fileMap.get(path);
-            if (file) {
-              const url = URL.createObjectURL(file);
-              row.thumbnail = url; // ✅ only keep thumbnail field
-            }
-          }
-        });
+  const name = row.img || row.image || row.thumbnail;
+  if (name) {
+    const path = `${folderPrefix}/${name}`;
+    const file = fileMap.get(path);
+    if (file) {
+      const url = URL.createObjectURL(file);
+
+      // ✅ assign to all possible image fields DE might use
+      row.img = url;
+      row.image = url;
+      row.thumbnail = url;
+    }
+  }
+});
+
     
         // Clean DE state before loading
         if (typeof inputs !== "undefined") inputs.length = 0;
