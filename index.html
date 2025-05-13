@@ -591,37 +591,36 @@
                 </h5>
                 </div>
                 <script>
-                    function loadFolderData() {
-                      const input = document.getElementById("folderInput");
-                      const files = Array.from(input.files);
+                    function LoadDataFromLocalCSV(data, fileMap, folderPrefix) {
+                      data.forEach(row => {
+                        // Replace image paths with local object URLs
+                        if (row.image || row.thumbnail) {
+                          const fileName = row.image || row.thumbnail;
+                          const path = `${folderPrefix}/${fileName}`;
+                          const file = fileMap.get(path);
+                          if (file) {
+                            row.image = URL.createObjectURL(file);
+                            row.thumbnail = row.image; // fallback for DE compatibility
+                          }
+                        }
                     
-                      if (!files.length) {
-                        alert("Please select a folder first.");
-                        return;
+                        // Replace model paths (if applicable)
+                        if (row.model) {
+                          const path = `${folderPrefix}/${row.model}`;
+                          const file = fileMap.get(path);
+                          if (file) {
+                            row.modelURL = URL.createObjectURL(file);
+                          }
+                        }
+                      });
+                    
+                      // Pass data into DesignExplorer
+                      if (typeof app !== "undefined" && typeof app.loadData === "function") {
+                        app.loadData(data);
+                      } else {
+                        console.warn("⚠️ Could not find app.loadData(data). Please check if DesignExplorer initialized.");
+                        console.log("🧪 Parsed data:", data);
                       }
-                    
-                      const csvFile = files.find(file => file.name.toLowerCase() === "data.csv");
-                    
-                      if (!csvFile) {
-                        alert("No data.csv found in the folder.");
-                        return;
-                      }
-                    
-                      const folderPrefix = csvFile.webkitRelativePath.split("/")[0]; // first folder name
-                      const fileMap = new Map();
-                      files.forEach(file => fileMap.set(file.webkitRelativePath, file));
-                    
-                      const reader = new FileReader();
-                      reader.onload = function (e) {
-                        const csvText = e.target.result;
-                        const data = d3.csvParse(csvText);
-                        console.log("✅ Parsed CSV", data);
-                    
-                        // Pass the loaded data and file map into your app
-                        LoadDataFromLocalCSV(data, fileMap, folderPrefix);
-                      };
-                    
-                      reader.readAsText(csvFile);
                     }
                     </script>
                     
