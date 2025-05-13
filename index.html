@@ -811,16 +811,23 @@
           });
         
           if (typeof analyzeInputData === "function") {
-            console.log("✅ Unloading previous content...");
-            unloadPageContent(); // 🧹 Clear out old UI (just like cloud loading)
+  console.log("✅ Clearing previous dataset (safely)");
 
-            console.log("✅ Loading data with analyzeInputData()");
-            analyzeInputData(data);
+  // Avoid full unload if it breaks UI — clear just key parts
+  if (typeof window.dataSet !== "undefined") {
+    window.dataSet = [];
+  }
 
-            // Fade out the popup just like the cloud loader
-            $("#loadDataContainer").fadeOut();
-            $(".popupWindow").fadeOut();
-            }
+  d3.select("#container").html(""); // or the div used for plots
+
+  console.log("✅ Loading new dataset");
+  analyzeInputData(data);
+
+  // Hide popup
+  $("#loadDataContainer").fadeOut();
+  $(".popupWindow").fadeOut();
+}
+
         }
         </script>
         
