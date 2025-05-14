@@ -2222,9 +2222,9 @@ function loadFolderData() {
             } else {
                 // load default data
                 //parse the csv data from the design_explorer_data folder
-                d3.csv("design_explorer_data/DLF.csv", function (data) {
+                d3.csv("design_explorer_data/default_onload.csv", function (data) {
                     loadDataToDesignExplorer(data);
-                    loadSetting("design_explorer_data/DLF/settings.json");
+                    loadSetting("design_explorer_data/DefaultData/settings.json");
                     });
 
             }
