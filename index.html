@@ -596,7 +596,7 @@
   
 
             </div>
-            <!--#FIXME 
+            
             <script>
                 document.getElementById("loadData").addEventListener("click", function() {
                     var folderLink = document.getElementById("folderLink").value;
@@ -608,7 +608,7 @@
                         MP_getGoogleIDandLoad();
                     }
                 });
-                </script>-->
+                </script>
             <!--show static link-->
             <!-- Modal -->
             <div class="modal fade" id="showStillLink" role="dialog">
@@ -859,18 +859,18 @@ function loadFolderData() {
             }
           });
         
-          // ✅ Load data using original DE behavior (same as Google Drive)
+          //  Load data using original DE behavior (same as Google Drive)
           if (typeof readyToLoad === "function") {
-            console.log("✅ Loading data using readyToLoad()");
+            //console.log("Loading data using readyToLoad()");
             readyToLoad(data);
         
-            // ✅ Hide popup window
+            //  Hide popup window
             $("#loadDataContainer").fadeOut();
             $(".popupWindow").fadeOut();
           } else {
-            console.warn("❌ readyToLoad() not found");
+            //console.warn("readyToLoad() not found");
             window._LOCAL_PARSED_DATA = data;
-            console.log("Parsed data:", data);
+            //console.log("Parsed data:", data);
           }
         }
         </script>
