@@ -164,147 +164,142 @@
   </head>
 
   <script>
-  //load FolderInfo ,Json data_ Mingbo Peng Modified--------------------------------------------------------------------
+    //load FolderInfo ,Json data_ Mingbo Peng Modified--------------------------------------------------------------------
 
-  var _googleReturnObj = {
-    //{"fileName":Google Drive ID}
-    csvFiles: {},
-    imgFiles: {},
-    jsonFiles: {},
-    settingFiles: {},
-  };
-  var _folderInfo = {
-    DE_PW: "",
-    inLink: "",
-    url: "",
-    type: "",
-  };
+    var _googleReturnObj = {
+      //{"fileName":Google Drive ID}
+      csvFiles: {},
+      imgFiles: {},
+      jsonFiles: {},
+      settingFiles: {},
+    };
+    var _folderInfo = {
+      DE_PW: "",
+      inLink: "",
+      url: "",
+      type: "",
+    };
 
-  var _userSetting = {
-    studyInfo: {
-      name: "",
-      date: "",
-    },
-    dimScales: {},
-    dimTicks: {},
-    dimMark: {},
-  };
+    var _userSetting = {
+      studyInfo: {
+        name: "",
+        date: "",
+      },
+      dimScales: {},
+      dimTicks: {},
+      dimMark: {},
+    };
 
-  function readyToLoad(csvFilePathLink) {
-    if (csvFilePathLink.length > 0) {
-      // remove the current selection
-      unloadPageContent();
-      d3.csv(csvFilePathLink, function (data) {
-        loadDataToDesignExplorer(data);
-        loadSetting(); // <--- hier wordt settings geladen
-        updateLayoutOnDeselect();
-      });
-      //window.prompt only if user input data, not from URL
-      if (document.getElementById("folderLink").value) {
-        showStillLink();
-      }
-    } else {
-      alert("You have to put Google Drive Folder information first!");
-    }
-  }
-
-  // 👇 nieuwe loadSetting functie met fallback
-  function loadSetting(settingFilePath) {
-    const primaryPath = settingFilePath || '/design_explorer_data/settings.json';
-    const fallbackPath = '/design_explorer_data/default_settings.json';
-
-    d3.json(primaryPath)
-      .then(d => {
-        _userSetting = d;
-        setSettings(graph, _userSetting);
-      })
-      .catch(err => {
-        console.warn('Settings.json niet gevonden, gebruik fallback:', fallbackPath, err);
-        return d3.json(fallbackPath).then(d => {
-          _userSetting = d;
-          setSettings(graph, _userSetting);
+    function readyToLoad(csvFilePathLink) {
+      if (csvFilePathLink.length > 0) {
+        // remove the current selection
+        unloadPageContent();
+        d3.csv(csvFilePathLink, function (data) {
+          loadDataToDesignExplorer(data);
+          loadSetting();
+          updateLayoutOnDeselect();
         });
-      });
-  }
+        //window.prompt only if user input data, not from URL
+        if (document.getElementById("folderLink").value) {
+          showStillLink();
+        }
 
-  function makeUrl(file, type) {
-    var link;
+        //updateLayoutOnDeselect();
 
-    // no img link
-    if (file === 0 || file === undefined) {
-      return ".img/deerns_leaf.jpg"; 
+        //d3.select("#welcome").style("display", "none");
+      } else {
+        alert("You have to put Google Drive Folder information first!");
+      }
     }
 
-    if (file.startsWith("http")) {
-      // file is a valid full Url path
-      link = file;
-    } else {
-      //loadImgfrom inputs
-      if (_folderInfo.type === "userServerLink") {
-        link = _folderInfo.url + file;
+    function makeUrl(file, type) {
+      var link;
+
+      // no img link
+      if (file === 0 || file === undefined) {
+        return ".img/deerns_leaf.jpg"; //#https://github.com/deerns/DesignExplorer/blob/f9a75ac51b5687f5c9b9715be9c62a4ea2e3ba37/img/Deerns_Leaf.jpg";
+      }
+
+      if (file.startsWith("http")) {
+        // file is a valid full Url path
+        // file: http://abcd.com/img01.png
+        link = file;
       } else {
-        if (type == "img") {
-          link = _googleReturnObj.imgFiles[file];
-        } else if (type == "threeD") {
-          link = _googleReturnObj.jsonFiles[file];
-        } else if (type == "setting") {
-          link = _googleReturnObj.settingFiles[file];
-        } else if (type == "csv") {
-          link = _googleReturnObj.csvFiles[file];
+        //loadImgfrom inputs
+        // file: img01.png
+
+        if (_folderInfo.type === "userServerLink") {
+          //folder is on user's server
+
+          link = _folderInfo.url + file;
+        } else {
+          //folder is one GoogleDrive or OneDrive
+
+          if (type == "img") {
+            link = _googleReturnObj.imgFiles[file];
+          } else if (type == "threeD") {
+            link = _googleReturnObj.jsonFiles[file];
+          } else if (type == "setting") {
+            link = _googleReturnObj.settingFiles[file];
+          } else if (type == "csv") {
+            link = _googleReturnObj.csvFiles[file];
+          }
         }
       }
+
+      return link;
     }
 
-    return link;
-  }
+    function showStillLink() {
+      var studyCaseLink = encodeUrl(_folderInfo.inLink);
+      var studyEncodedUrl = "";
 
-  function showStillLink() {
-    var studyCaseLink = encodeUrl(_folderInfo.inLink);
-    var studyEncodedUrl = "";
-
-    if (studyCaseLink.length === 0) {
-      var warningString =
-        "There is no static link for you if you are not using online shared folder.";
-      d3.select("#myStudyID").html(warningString);
-      $("#showStillLink").modal();
-      return;
-    } else if (_folderInfo.DE_PW.length > 0) {
-      studyEncodedUrl =
-        document.location.origin + "/?ID=" + _folderInfo.DE_PW;
-      d3.select("#showShortUrl").html("https://goo.gl/" + _folderInfo.DE_PW);
-      d3.select("#myStudyID").html(studyEncodedUrl);
-      $("#showStillLink").modal();
-      return;
-    }
-
-    var studyLongUrl = document.location.origin + "?ID=" + studyCaseLink;
-    d3.select("#welcome").style("display", "none");
-
-    makeUrlId(studyLongUrl, function name(UrlId) {
-      _folderInfo.DE_PW = UrlId;
-
-      if (UrlId.length == 6) {
+      if (studyCaseLink.length === 0) {
+        var warningString =
+          "There is no static link for you if you are not using online shared folder.";
+        d3.select("#myStudyID").html(warningString);
+        $("#showStillLink").modal();
+        return;
+      } else if (_folderInfo.DE_PW.length > 0) {
+        // if _folderInfo.DE_PW existed, just return.
         studyEncodedUrl =
-          document.location.origin + "?ID=" + _folderInfo.DE_PW;
-        d3.select("#showShortUrl").html(
-          "https://goo.gl/" + _folderInfo.DE_PW
-        );
-      } else if (UrlId.startsWith("BL_")) {
-        studyEncodedUrl =
-          document.location.origin + "?ID=" + _folderInfo.DE_PW;
-        d3.select("#showShortUrl").html(
-          "https://bit.ly/" + _folderInfo.DE_PW.replace("BL_", "")
-        );
-      } else {
-        studyEncodedUrl = studyLongUrl;
+          document.location.origin + "/?ID=" + _folderInfo.DE_PW;
+        d3.select("#showShortUrl").html("https://goo.gl/" + _folderInfo.DE_PW);
+        d3.select("#myStudyID").html(studyEncodedUrl);
+        $("#showStillLink").modal();
+        return;
       }
 
-      d3.select("#myStudyID").html(studyEncodedUrl);
-      $("#showStillLink").modal();
-    });
-  }
-</script>
+      //valid online folder available
+      var studyLongUrl = document.location.origin + "?ID=" + studyCaseLink;
+      d3.select("#welcome").style("display", "none");
 
+      makeUrlId(studyLongUrl, function name(UrlId) {
+        _folderInfo.DE_PW = UrlId;
+
+        if (UrlId.length == 6) {
+          // google url id
+
+          studyEncodedUrl =
+            document.location.origin + "?ID=" + _folderInfo.DE_PW;
+          d3.select("#showShortUrl").html(
+            "https://goo.gl/" + _folderInfo.DE_PW
+          );
+        } else if (UrlId.startsWith("BL_")) {
+          studyEncodedUrl =
+            document.location.origin + "?ID=" + _folderInfo.DE_PW;
+          d3.select("#showShortUrl").html(
+            "https://bit.ly/" + _folderInfo.DE_PW.replace("BL_", "")
+          );
+        } else {
+          studyEncodedUrl = studyLongUrl;
+        }
+
+        d3.select("#myStudyID").html(studyEncodedUrl);
+        $("#showStillLink").modal();
+      });
+    }
+  </script>
 
   <body>
     <!-- Navbar -->
