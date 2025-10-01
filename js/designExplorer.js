@@ -308,35 +308,19 @@ function checkInputLink(link, callback){
         "url":"",
         "type":""
     };
-    if (link.includes("google.com")) {
 
-        var GFolderID = getGFolderID(link);
-        //folderLinkObj.DE_PW = "DE_G"; 
-        folderLinkObj.url ="https://www.googleapis.com/drive/v3/files?q=%27" + GFolderID + "%27+in+parents&key=" +Gkey;
-        folderLinkObj.type = "GoogleDrive";
+    {if (link.slice(-1) !== "/") {
+        link +="/";
+    };
 
-    }else if (link.includes("1drv.ms")){
-
-        //"https://1drv.ms/f/s!Avr4WH-N5Us-hNEf3V-AWTUuvsVZBQ"; 
-        //document.getElementById("folderLinkID").value = serverFolderLink;
-        //folderLinkObj.DE_PW = "DE_O";
-        folderLinkObj.url = "https://api.onedrive.com/v1.0/shares/u!" + encodeUrl(link) +"/root?expand=children";
-        folderLinkObj.type = "OneDrive";
-
-    }else{
-        //folderLinkObj.DE_PW = "DE_S";
-        if (link.slice(-1) !== "/") {
-            link +="/";
-        }
-
-        folderLinkObj.url = link;
-        folderLinkObj.type = "userServerLink";
-    } 
+    folderLinkObj.url = link;
+    folderLinkObj.type = "userServerLink";} 
 
 
     folderLinkObj.inLink = link;
     // console.log(folderLinkObj);
     callback(folderLinkObj);
+
 }
 
 function encodeUrl(url) {
@@ -494,5 +478,3 @@ function decodeUrlID(rawUrl, callback) {
 
 
 }
-
-  
