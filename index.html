@@ -670,10 +670,15 @@
               >
                 <!-- place holder for the viewer -->
               </div>
-              <div id="viewer2d" style="width: 100%; height: 100%">
-                <!-- place holder for the image -->
-                <img />
-              </div>
+              <div id="viewer2d" class="viewer2d">
+                 <div class="viewer2d-main">
+                   <button id="imgPrev" class="nav-btn" title="Vorige">‹</button>
+                    <img id="viewer2d-mainimg" src="" alt="2D view">
+                    <button id="imgNext" class="nav-btn" title="Volgende">›</button>
+                  </div>
+                  <div id="viewer2d-thumbs" class="thumbs"></div>
+                </div>
+
             </div>
 
             <!--Here starts the thumbnails-btm_container-->
