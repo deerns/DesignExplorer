@@ -170,7 +170,6 @@
       //{"fileName":Google Drive ID}
       csvFiles: {},
       imgFiles: {},
-      img2Files: {},
       jsonFiles: {},
       settingFiles: {},
     };
@@ -238,8 +237,6 @@
 
           if (type == "img") {
             link = _googleReturnObj.imgFiles[file];
-          } else if (type == "img2") {
-            link = _googleReturnObj.img2Files[file];
           } else if (type == "threeD") {
             link = _googleReturnObj.jsonFiles[file];
           } else if (type == "setting") {
@@ -608,7 +605,7 @@
                       value="2D_1"
                       checked
                     />
-                    2D IMG 1</label
+                    2D_1</label
                   >
 
                   <!-- show 2D image on load-->
@@ -620,7 +617,7 @@
                       name="visMode"
                       value="2D_2"
                       />
-                      2D IMG 2</label
+                      2D_2</label
                     >
                   <label id="threeDLabel"
                     ><input
@@ -1519,7 +1516,7 @@
       });
     </script>
 
-    <!-- process input data --> #TODO 
+    <!-- process input data -->
     <script type="text/javascript">
       // this script imports the csv file and does the initial data processing
       // such as separating inputs, outputs, images, etc.
@@ -1551,7 +1548,6 @@
             outputParams = {},
             otherParams = {},
             imgParams = {},
-            img2Params = {},
             threeDParams = {},
             cleanedParams = {};
 
@@ -1564,10 +1560,8 @@
             } else if (cleanKey.toUpperCase().startsWith("OUT:")) {
               cleanKey = cleanKey.slice(4);
               outputParams[cleanKey] = row[key];
-            } else if (cleanKey.toUpperCase()("IMG")) {
+            } else if (cleanKey.toUpperCase().startsWith("IMG")) {
               imgParams[cleanKey] = row[key];
-            } else if (cleanKey.toUpperCase()("IMG2")) {
-              img2Params[cleanKey] = row[key];
             } else if (cleanKey.toUpperCase().startsWith("THREED")) {
               threeDParams[cleanKey] = row[key];
             } else {
@@ -1581,7 +1575,6 @@
             outputParams,
             otherParams,
             imgParams,
-            img2Params,
             threeDParams
           );
 
