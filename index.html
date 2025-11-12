@@ -1523,7 +1523,7 @@
       var hasImgLink = true;
       var has3DLink = false;
 
-      function analyzeInputData(originalData) {
+/*       function analyzeInputData(originalData) {
         var keys = d3.keys(originalData[0]);
         //get keys []
         keys.forEach(function (key) {
@@ -1567,7 +1567,10 @@
             } else {
               otherParams[cleanKey] = row[key];
             }
-          });
+          }); 
+
+
+
 
           Object.assign(
             cleanedParams,
@@ -1588,6 +1591,121 @@
           outputData.push(outputParams);
           cleanedData.push(cleanedParams);
         });
+       
+
+
+ */
+
+
+
+
+
+
+
+      function analyzeInputData(originalData) {
+        // Helper: normaliseer IMG-keys naar IMG_1 / IMG_2 waar mogelijk
+        function canonImgKey(k) {
+          var ck = k.trim().replace(".", " ");
+          var u  = ck.toUpperCase().replace(/\s+/g, "_"); // spaties -> underscore
+
+          if (u === "IMG")   return "IMG_1";
+          if (u === "IMG1")  return "IMG_1";
+          if (u === "IMG_1") return "IMG_1";
+
+          if (u === "IMG2")  return "IMG_2";
+          if (u === "IMG_2") return "IMG_2";
+
+          return u; // overige IMG-varianten ongewijzigd laten
+        }
+
+        // === 1) Keys voorbereiden ===
+        var keys = d3.keys(originalData[0]);
+
+        keys.forEach(function (key) {
+          var k = key.trim().replace(".", " ");
+
+          if (k.toUpperCase().startsWith("IMG")) {
+            var canon = canonImgKey(k); // -> IMG_1 | IMG_2 | anders
+            if (canon === "IMG_1" || canon === "IMG_2") {
+              imageLinkKeys.push(canon);
+            } else {
+              imageLinkKeys.push(k);
+            }
+          } else if (k.toUpperCase().startsWith("THREED")) {
+            // niets doen
+          } else {
+            var cleanKey = k
+              .trim()
+              .replace(".", " ")
+              .replace("in:", "")
+              .replace("out:", "");
+            cleanedKeys4pc[cleanKey] = {};
+          }
+        });
+
+        // === 2) Rijen opsplitsen in params en normaliseren ===
+        originalData.forEach(function (row, rowCount) {
+          var inputParams   = {},
+              outputParams  = {},
+              otherParams   = {},
+              imgParams     = {},
+              threeDParams  = {},
+              cleanedParams = {};
+
+          keys.forEach(function (key) {
+            var cleanKey = key.trim().replace(".", " ");
+
+            if (cleanKey.toUpperCase().startsWith("IN:")) {
+              cleanKey = cleanKey.slice(3);
+              inputParams[cleanKey] = row[key];
+
+            } else if (cleanKey.toUpperCase().startsWith("OUT:")) {
+              cleanKey = cleanKey.slice(4);
+              outputParams[cleanKey] = row[key];
+
+            } else if (cleanKey.toUpperCase().startsWith("IMG")) {
+              // IMG_1 / IMG_2 apart bewaren
+              var canon = canonImgKey(cleanKey); // IMG_1 / IMG_2 / anders
+              if (canon === "IMG_1" || canon === "IMG_2") {
+                imgParams[canon] = row[key];
+              } else {
+                // overige IMG-* kolommen behouden
+                imgParams[cleanKey] = row[key];
+              }
+
+            } else if (cleanKey.toUpperCase().startsWith("THREED")) {
+              threeDParams[cleanKey] = row[key];
+
+            } else {
+              otherParams[cleanKey] = row[key];
+            }
+          });
+
+          // === 3) Alles samenvoegen ===
+          Object.assign(
+            cleanedParams,
+            inputParams,
+            outputParams,
+            otherParams,
+            imgParams,
+            threeDParams
+          );
+
+          // === 4) Aliassen voor viewer-logica: img -> IMG_1, img2 -> IMG_2
+          if (imgParams["IMG_1"] != null && cleanedParams.img == null) {
+            cleanedParams.img = imgParams["IMG_1"];
+          }
+          if (imgParams["IMG_2"] != null && cleanedParams.img2 == null) {
+            cleanedParams.img2 = imgParams["IMG_2"];
+          }
+
+          // Op dit punt kun je cleanedParams (of subsets) aan je eigen collecties toevoegen,
+          // afhankelijk van je bestaande flow (bijv. cleanedData.push(cleanedParams))
+          // Die push zit in jouw bestaande code buiten deze functie.
+        });
+
+ 
+
 
         // add rating of 0 to all the options if not already there
         if (keys.indexOf("Rating") == -1) {
