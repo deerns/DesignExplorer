@@ -152,7 +152,7 @@ function prepareGFolder(folderLink) {
                 }else if(item.mimeType === "application/json"){
                     GLink = "https://www.googleapis.com/drive/v3/files/" + item.id + "?alt=media&key=" + Gkey;
 
-                    if (item.name.startsWith("setting")) {
+                    if (item.name.startsWith("settings")) {
                         //this item is a Design Explore's setting file 
                         settingFiles[item.name] = GLink;
                     } else {
@@ -188,7 +188,7 @@ function prepareGFolder(folderLink) {
 
                 }else if(fileType === "application/json"){
 
-                    if (fileName.startsWith("setting")) {
+                    if (fileName.startsWith("settings")) {
                         //this item is a Design Explore's setting file 
                         settingFiles[fileName] = fileLink;
                     } else {
