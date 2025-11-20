@@ -1565,10 +1565,15 @@
             } else if (cleanKey.toUpperCase().startsWith("OUT:")) {
               cleanKey = cleanKey.slice(4);
               outputParams[cleanKey] = row[key];
-            } else if (cleanKey.toUpperCase().startsWith("IMG_1")) {
-              img1Params[cleanKey] = row[key];
+            } else if (
+              cleanKey.toUpperCase().startsWith("IMG_1") ||
+              cleanKey.toUpperCase() === "IMG"
+            ) {
+              var targetKey =
+                cleanKey.toUpperCase() === "IMG" ? "IMG_1" : cleanKey;
+              img1Params[targetKey] = row[key];
             } else if (cleanKey.toUpperCase().startsWith("IMG_2")) {
-              img2Params[(cleanKey = row[key])];
+              img2Params[cleanKey] = row[key];
             } else if (cleanKey.toUpperCase().startsWith("THREED")) {
               threeDParams[cleanKey] = row[key];
             } else {
