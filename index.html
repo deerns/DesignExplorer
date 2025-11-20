@@ -191,13 +191,13 @@
     var imageLinkKeys = [];
     var imageKeyAliases = {};
 
-    function readyToLoad(csvFilePathLink) {
+    function readyToLoad(csvFilePathLink, settingFilePathLink) {
       if (csvFilePathLink.length > 0) {
         // remove the current selection
         unloadPageContent();
         d3.csv(csvFilePathLink, function (data) {
           loadDataToDesignExplorer(data);
-          loadSetting();
+          loadSetting(settingFilePathLink);
           updateLayoutOnDeselect();
         });
         //window.prompt only if user input data, not from URL
@@ -3557,8 +3557,9 @@
 
       function loadSetting(settingFilePath) {
         var jsonFileLink = "";
+        var isExplicitPath = settingFilePath !== undefined;
 
-        if (settingFilePath !== undefined) {
+        if (isExplicitPath) {
           jsonFileLink = settingFilePath;
         } else {
           var settingFiles = d3.keys(_googleReturnObj.settingFiles);
@@ -3570,7 +3571,19 @@
           }
         }
 
-        d3.json(jsonFileLink, function (d) {
+        if (!jsonFileLink || jsonFileLink.length === 0) {
+          return;
+        }
+
+        d3.json(jsonFileLink, function (error, d) {
+          if (error || !d) {
+            console.warn("Unable to load settings.json from", jsonFileLink, error);
+            if (isExplicitPath) {
+              loadSetting();
+            }
+            return;
+          }
+
           //updata to global _userSetting
           _userSetting = d;
           setSettings(graph, _userSetting);

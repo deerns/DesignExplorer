@@ -280,7 +280,7 @@ function loadFromUrl(rawUrl) {
 
     if (d.type === "userServerLink") {
       //this is a user's server link, and load csv directly
-      readyToLoad(d.url + "data.csv");
+      readyToLoad(d.url + "data.csv", d.url + "settings.json");
     } else {
       //this is from Google or MS
       prepareGFolder(d);
