@@ -2763,7 +2763,7 @@
 
     <!-- 3D Viewer -->
     <script type="text/javascript">
-      var currentView = "2D";
+      var currentView = "2D_1";
       var initit3DViewer = true;
       var fullscreen = false;
       var va3cViewer;
@@ -2791,7 +2791,7 @@
         });
       }
 
-      // toggle between 2d and 3d
+      /* // toggle between 2d and 3d
       d3.selectAll("input.toggleView").on("change", toggleView);
 
       function toggleView() {
@@ -2821,6 +2821,48 @@
         d3.select(".Spectacles_Footer").remove();
 
         // resize the view
+        if (va3cViewer !== undefined) {
+          va3cViewer.viewerDiv.resize();
+        }
+      } */
+      // toggle between 2d and 3d
+      // toggle between 2d and 3d
+      d3.selectAll("input.toggleView").on("change", toggleView);
+
+      function toggleView() {
+        var viewValue = this.value;
+
+        if (viewValue === "2D_1" || viewValue === "2D_2") {
+          var imgKey = viewValue.replace("2D_", "IMG_"); // → "IMG_1" / "IMG_2"
+          var selected = graph.highlight()[0];
+          if (selected && selected[imgKey]) {
+            d3.select("#viewer2d img")
+              .attr("src", makeUrl(selected[imgKey], "img"))
+              .attr("title", getTitle);
+          }
+          currentView = viewValue; // onthoud welke 2D toggle actief is
+        } else {
+          currentView = "3D";
+
+          if (currentView == "3D" && initit3DViewer) {
+            initit3DViewer = false;
+            initiate3DViewer();
+          } else if (currentView == "3D") {
+            loadNew3DModel();
+          }
+        }
+
+        var onOff = {
+          "2D_1": ["zoomed", "viewer3d"],
+          "2D_2": ["zoomed", "viewer3d"],
+          "3D": ["viewer3d", "zoomed"],
+        };
+
+        d3.select("#" + onOff[currentView][0]).attr("class", "zoomed");
+        d3.select("#" + onOff[currentView][1]).attr("class", "zoomed hidden");
+
+        d3.select(".Spectacles_Footer").remove();
+
         if (va3cViewer !== undefined) {
           va3cViewer.viewerDiv.resize();
         }
