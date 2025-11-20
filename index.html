@@ -1529,21 +1529,24 @@
         var keys = d3.keys(originalData[0]);
         //get keys []
         keys.forEach(function (key) {
-          key = key.trim().replace(".", " ");
+          var cleanKey = key.trim().replace(".", " ");
+          var upperKey = cleanKey.toUpperCase();
 
-          if (key.toUpperCase() === "IMG") {
-            imageLinkKeys.push("IMG_1");
-          } else if (key.toUpperCase().startsWith("IMG")) {
-            imageLinkKeys.push(key);
-          } else if (key.toUpperCase().startsWith("THREED")) {
+          if (upperKey === "IMG") {
+            if (imageLinkKeys.indexOf("IMG_1") === -1) {
+              imageLinkKeys.push("IMG_1");
+            }
+          } else if (upperKey.startsWith("IMG")) {
+            if (imageLinkKeys.indexOf(cleanKey) === -1) {
+              imageLinkKeys.push(cleanKey);
+            }
+          } else if (upperKey.startsWith("THREED")) {
             //do nothing
           } else {
-            var cleanKey = key
-              .trim()
-              .replace(".", " ")
+            var sanitizedKey = cleanKey
               .replace("in:", "")
               .replace("out:", "");
-            cleanedKeys4pc[cleanKey] = {};
+            cleanedKeys4pc[sanitizedKey] = {};
           }
         });
 
@@ -1557,23 +1560,22 @@
 
           keys.forEach(function (key, i) {
             var cleanKey = key.trim().replace(".", " ");
+            var upperCleanKey = cleanKey.toUpperCase();
 
-            if (cleanKey.toUpperCase().startsWith("IN:")) {
+            if (upperCleanKey.startsWith("IN:")) {
               cleanKey = cleanKey.slice(3);
               inputParams[cleanKey] = row[key];
-            } else if (cleanKey.toUpperCase().startsWith("OUT:")) {
+            } else if (upperCleanKey.startsWith("OUT:")) {
               cleanKey = cleanKey.slice(4);
               outputParams[cleanKey] = row[key];
-            } else if (
-              cleanKey.toUpperCase().startsWith("IMG_1") ||
-              cleanKey.toUpperCase() === "IMG"
-            ) {
-              var targetKey =
-                cleanKey.toUpperCase() === "IMG" ? "IMG_1" : cleanKey;
-              img1Params[targetKey] = row[key];
-            } else if (cleanKey.toUpperCase().startsWith("IMG_2")) {
+            } else if (upperCleanKey === "IMG") {
+              img1Params.IMG_1 = row[key];
+              img1Params[cleanKey] = row[key];
+            } else if (upperCleanKey.startsWith("IMG_1")) {
+              img1Params[cleanKey] = row[key];
+            } else if (upperCleanKey.startsWith("IMG_2")) {
               img2Params[cleanKey] = row[key];
-            } else if (cleanKey.toUpperCase().startsWith("THREED")) {
+            } else if (upperCleanKey.startsWith("THREED")) {
               threeDParams[cleanKey] = row[key];
             } else {
               otherParams[cleanKey] = row[key];
@@ -2836,13 +2838,43 @@
       // toggle between 2d and 3d
       d3.selectAll("input.toggleView").on("change", toggleView);
 
+      function resolveImageKey(toggleValue) {
+        if (!imageLinkKeys || imageLinkKeys.length === 0) {
+          return null;
+        }
+
+        var suffix = toggleValue.split("_")[1];
+        var candidates = [];
+
+        if (suffix) {
+          candidates.push("IMG_" + suffix);
+          if (suffix === "1") {
+            candidates.push("IMG"); // legacy column header
+          }
+        }
+
+        var upperKeys = imageLinkKeys.map(function (key) {
+          return key.toUpperCase();
+        });
+
+        for (var i = 0; i < candidates.length; i++) {
+          var desired = candidates[i].toUpperCase();
+          var idx = upperKeys.indexOf(desired);
+          if (idx !== -1) {
+            return imageLinkKeys[idx];
+          }
+        }
+
+        return imageLinkKeys[0];
+      }
+
       function toggleView() {
         var viewValue = this.value;
 
-        if (viewValue === "2D_1" || viewValue === "2D_2") {
-          var imgKey = viewValue.replace("2D_", "IMG_"); // → "IMG_1" / "IMG_2"
+        if (viewValue.indexOf("2D_") === 0) {
+          var imgKey = resolveImageKey(viewValue);
           var selected = graph.highlight()[0];
-          if (selected && selected[imgKey]) {
+          if (imgKey && selected && selected[imgKey]) {
             d3.select("#viewer2d img")
               .attr("src", makeUrl(selected[imgKey], "img"))
               .attr("title", getTitle);
@@ -3442,3 +3474,4 @@
     </script>
   </body>
 </html>
+
