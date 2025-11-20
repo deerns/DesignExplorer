@@ -2852,21 +2852,43 @@
       // toggle between 2d and 3d
       // toggle between 2d and 3d
       d3.selectAll("input.toggleView").on("change", toggleView);
+      d3.select("#viewer2d-mainimg").on("click", cycle2DImage);
+
+      function getCanonicalImageKey(toggleValue) {
+        var parts = toggleValue.split("_");
+        return parts.length > 1 ? "IMG_" + parts[1] : null;
+      }
+
+      function hasAliasForToggle(toggleValue) {
+        var canonical = getCanonicalImageKey(toggleValue);
+        if (!canonical) return false;
+        if (imageKeyAliases[canonical] !== undefined) {
+          return true;
+        }
+        return (
+          canonical === "IMG_1" &&
+          (imageKeyAliases.IMG_1 !== undefined || imageKeyAliases.IMG !== undefined)
+        );
+      }
 
       function resolveImageKey(toggleValue) {
         if (!imageLinkKeys || imageLinkKeys.length === 0) {
           return null;
         }
 
-        var suffix = toggleValue.split("_")[1];
-        var canonical = suffix ? "IMG_" + suffix : null;
+        var canonical = getCanonicalImageKey(toggleValue);
 
-        if (canonical && imageKeyAliases[canonical]) {
+        if (canonical && imageKeyAliases[canonical] !== undefined) {
           return imageKeyAliases[canonical];
         }
 
-        if (suffix === "1" && imageKeyAliases.IMG) {
-          return imageKeyAliases.IMG;
+        if (canonical === "IMG_1") {
+          if (imageKeyAliases.IMG !== undefined) {
+            return imageKeyAliases.IMG;
+          }
+          if (imageKeyAliases.IMG_1 !== undefined) {
+            return imageKeyAliases.IMG_1;
+          }
         }
 
         if (canonical) {
@@ -2878,6 +2900,36 @@
         }
 
         return imageLinkKeys[0];
+      }
+
+      function hasImageForToggle(toggleValue, selectedData) {
+        if (!hasAliasForToggle(toggleValue)) {
+          return false;
+        }
+
+        var selected =
+          selectedData ||
+          (graph && graph.highlight && graph.highlight().length
+            ? graph.highlight()[0]
+            : null);
+
+        if (!selected) {
+          return false;
+        }
+
+        var key = resolveImageKey(toggleValue);
+        if (!key) {
+          return false;
+        }
+
+        var file = selected[key];
+        return (
+          file !== undefined &&
+          file !== null &&
+          file !== "" &&
+          file !== 0 &&
+          file !== "0"
+        );
       }
 
       function toggleView() {
@@ -2916,6 +2968,44 @@
 
         if (va3cViewer !== undefined) {
           va3cViewer.viewerDiv.resize();
+        }
+      }
+
+      function cycle2DImage() {
+        if (currentView === "3D") {
+          return;
+        }
+
+        var selected =
+          graph && graph.highlight && graph.highlight().length
+            ? graph.highlight()[0]
+            : null;
+
+        if (!selected) {
+          return;
+        }
+
+        var available = ["2D_1", "2D_2"].filter(function (val) {
+          return hasImageForToggle(val, selected);
+        });
+
+        if (available.length <= 1) {
+          return;
+        }
+
+        var currentIndex = available.indexOf(currentView);
+        if (currentIndex === -1) {
+          currentIndex = 0;
+        }
+
+        var nextValue = available[(currentIndex + 1) % available.length];
+        var nextInput = d3.select("input.toggleView[value='" + nextValue + "']");
+
+        if (!nextInput.empty()) {
+          nextInput.property("checked", true);
+          toggleView.call(nextInput.node());
+        } else {
+          toggleView.call({ value: nextValue });
         }
       }
 
