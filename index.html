@@ -189,6 +189,7 @@
       dimMark: {},
     };
     var imageLinkKeys = [];
+    var imageKeyAliases = {};
 
     function readyToLoad(csvFilePathLink) {
       if (csvFilePathLink.length > 0) {
@@ -1534,12 +1535,17 @@
           var upperKey = cleanKey.toUpperCase();
 
           if (upperKey === "IMG") {
-            if (imageLinkKeys.indexOf("IMG_1") === -1) {
-              imageLinkKeys.push("IMG_1");
-            }
-          } else if (upperKey.startsWith("IMG")) {
             if (imageLinkKeys.indexOf(cleanKey) === -1) {
               imageLinkKeys.push(cleanKey);
+            }
+            imageKeyAliases.IMG = cleanKey;
+            imageKeyAliases.IMG_1 = cleanKey;
+          } else if (upperKey.startsWith("IMG_")) {
+            if (imageLinkKeys.indexOf(cleanKey) === -1) {
+              imageLinkKeys.push(cleanKey);
+            }
+            if (!imageKeyAliases[upperKey]) {
+              imageKeyAliases[upperKey] = cleanKey;
             }
           } else if (upperKey.startsWith("THREED")) {
             //do nothing
@@ -1570,10 +1576,20 @@
             } else if (upperCleanKey === "IMG") {
               img1Params.IMG_1 = row[key];
               img1Params[cleanKey] = row[key];
+              imageKeyAliases.IMG = cleanKey;
+              if (!imageKeyAliases.IMG_1) {
+                imageKeyAliases.IMG_1 = cleanKey;
+              }
             } else if (upperCleanKey.startsWith("IMG_1")) {
               img1Params[cleanKey] = row[key];
+              if (!imageKeyAliases[upperCleanKey]) {
+                imageKeyAliases[upperCleanKey] = cleanKey;
+              }
             } else if (upperCleanKey.startsWith("IMG_2")) {
               img2Params[cleanKey] = row[key];
+              if (!imageKeyAliases.IMG_2) {
+                imageKeyAliases.IMG_2 = cleanKey;
+              }
             } else if (upperCleanKey.startsWith("THREED")) {
               threeDParams[cleanKey] = row[key];
             } else {
@@ -2843,24 +2859,21 @@
         }
 
         var suffix = toggleValue.split("_")[1];
-        var candidates = [];
+        var canonical = suffix ? "IMG_" + suffix : null;
 
-        if (suffix) {
-          candidates.push("IMG_" + suffix);
-          if (suffix === "1") {
-            candidates.push("IMG"); // legacy column header
-          }
+        if (canonical && imageKeyAliases[canonical]) {
+          return imageKeyAliases[canonical];
         }
 
-        var upperKeys = imageLinkKeys.map(function (key) {
-          return key.toUpperCase();
-        });
+        if (suffix === "1" && imageKeyAliases.IMG) {
+          return imageKeyAliases.IMG;
+        }
 
-        for (var i = 0; i < candidates.length; i++) {
-          var desired = candidates[i].toUpperCase();
-          var idx = upperKeys.indexOf(desired);
-          if (idx !== -1) {
-            return imageLinkKeys[idx];
+        if (canonical) {
+          for (var i = 0; i < imageLinkKeys.length; i++) {
+            if (imageLinkKeys[i].toUpperCase() === canonical) {
+              return imageLinkKeys[i];
+            }
           }
         }
 

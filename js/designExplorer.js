@@ -71,6 +71,7 @@ function overwriteInitialGlobalValues() {
   image1LinkKeys = [];
   image2LinkKeys = [];
   imageLinkKeys = [];
+  imageKeyAliases = {};
 
   _userSetting = {
     studyInfo: {
