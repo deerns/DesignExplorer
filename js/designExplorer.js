@@ -59,7 +59,8 @@ function overwriteInitialGlobalValues() {
 
     inputDataKeys =[];
     outputDataKeys =[];
-    imageLinkKeys = [];
+    image1LinkKeys = [];
+    image2LinkKeys =[];
 
 
     _userSetting = {
@@ -113,7 +114,8 @@ function prepareGFolder(folderLink) {
 
     googleReturnObj ={ //{"fileName":Google Drive ID}
         csvFiles:{},
-        imgFiles:{},
+        img1Files:{},
+        img2Files:{},
         jsonFiles:{},
         settingFiles:{}
     };
@@ -130,7 +132,8 @@ function prepareGFolder(folderLink) {
 
     d3.json(folder.url, function (data) {
         var csvFiles = {};
-        var imgFiles ={};
+        var img1Files ={};
+        var img2Files ={};
         var jsonFiles ={};
         var settingFiles ={};
 
