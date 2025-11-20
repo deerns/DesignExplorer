@@ -607,7 +607,7 @@
                       id="IMG_1"
                       checked
                     />
-                    2D img 1</label
+                    2D #1</label
                   >
 
                   <!-- show 2D image on load-->
@@ -620,7 +620,7 @@
                       value="2D_2"
                       id="IMG_2"
                     />
-                    2D img 2</label
+                    2D #2</label
                   >
                   <label id="threeDLabel"
                     ><input
@@ -3583,7 +3583,11 @@
 
         d3.json(jsonFileLink, function (error, d) {
           if (error || !d) {
-            console.warn("Unable to load settings.json from", jsonFileLink, error);
+            console.warn(
+              "Unable to load settings.json from",
+              jsonFileLink,
+              error
+            );
             if (isExplicitPath) {
               loadSetting();
             }
