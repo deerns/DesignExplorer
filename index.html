@@ -1305,7 +1305,6 @@
           .attr("src", makeUrl(selectedImage.datum()[imageLinkKeys[0]], "img"))
           .attr("title", getTitle);
 
-        addImgSwitch(selectedImage);
         updateIterationData(selectedImage.data());
 
         // load 3d geometry if the view is set to 3D
@@ -1351,53 +1350,6 @@
           });
 
         isAnyItemSelected = true;
-      }
-
-      function addImgSwitch(selectedData) {
-        if (imageLinkKeys.length <= 1) {
-          d3.select(".imgSwitch").classed("hidden", true);
-          return;
-        } else {
-          d3.select(".imgSwitch").classed("hidden", false);
-          //remove current first
-          d3.selectAll(".imgSwitch select").remove();
-
-          //add
-          var select = d3
-            .select(".imgSwitch")
-            .append("select")
-            .attr("class", "btn btn-default btn-xs");
-
-          // add img options
-          select
-            .selectAll("option")
-            .data(imageLinkKeys)
-            .enter()
-            .append("option")
-            .attr("value", function (d) {
-              return d;
-            })
-            .text(function (d) {
-              return d;
-            });
-
-          // add change event to show images
-          select.on("change", function (d) {
-            imgKey = d3.select(this).property("value");
-
-            // update the value in other dropdown menu
-            d3.selectAll("select option")
-              .filter(function (d) {
-                return d == imgKey;
-              })
-              .attr("selected", "true");
-
-            d3.select("#viewer2d img").attr(
-              "src",
-              makeUrl(selectedData.datum()[imgKey], "img")
-            );
-          });
-        }
       }
 
       // function viewer2dNextImg(imgKeyList, currentImgKey){
