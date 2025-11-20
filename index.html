@@ -612,7 +612,7 @@
 
                   <!-- show 2D image on load-->
 
-                  <label
+                  <label id="IMG2Label"
                     ><input
                       type="radio"
                       class="toggleView"
@@ -1634,6 +1634,12 @@
           drawTable(cleanedData);
         } else {
           hasImgLink = true;
+        }
+
+        if (imageLinkKeys.length <= 1) {
+          d3.select("#IMG2Label").classed("hidden", true);
+        } else {
+          d3.select("#IMG2Label").classed("hidden", false);
         }
 
         //remove threeD radio
