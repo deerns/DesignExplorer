@@ -2972,6 +2972,16 @@
 
       // active and de-activate full screen mode
       d3.select("button#fullscreentoggle").on("click", toggleFullscreen);
+      d3.select("body").on("keydown", function (event) {
+        event = event || d3.event;
+        var key = event.key || event.keyCode;
+
+        if (key === "Escape" || key === "Esc" || key === 27) {
+          if (fullscreen) {
+            toggleFullscreen();
+          }
+        }
+      });
 
       function toggleFullscreen() {
         fullscreen = !fullscreen;
