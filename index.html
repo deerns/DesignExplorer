@@ -320,7 +320,7 @@
           <!-- Left logo -->
           <a href="http://designexplorer.deerns.com/" title="Design Explorer">
             <img
-              src="./img/Design Explorer.png"
+              src="./img/Design_Explorer_logo.png"
               alt="Design Explorer Logo"
               style="height: 40px"
             />
@@ -2867,7 +2867,8 @@
         }
         return (
           canonical === "IMG_1" &&
-          (imageKeyAliases.IMG_1 !== undefined || imageKeyAliases.IMG !== undefined)
+          (imageKeyAliases.IMG_1 !== undefined ||
+            imageKeyAliases.IMG !== undefined)
         );
       }
 
@@ -2999,7 +3000,9 @@
         }
 
         var nextValue = available[(currentIndex + 1) % available.length];
-        var nextInput = d3.select("input.toggleView[value='" + nextValue + "']");
+        var nextInput = d3.select(
+          "input.toggleView[value='" + nextValue + "']"
+        );
 
         if (!nextInput.empty()) {
           nextInput.property("checked", true);
