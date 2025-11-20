@@ -309,15 +309,23 @@ function checkInputLink(link, callback) {
   };
 
   {
-    if (link.slice(-1) !== "/") {
-      link += "/";
+    var sanitizedLink = (link || "").trim();
+    var lowerLink = sanitizedLink.toLowerCase();
+    var csvSuffix = "data.csv";
+
+    if (lowerLink.endsWith(csvSuffix)) {
+      sanitizedLink = sanitizedLink.slice(0, sanitizedLink.length - csvSuffix.length);
     }
 
-    folderLinkObj.url = link;
+    if (sanitizedLink.slice(-1) !== "/") {
+      sanitizedLink += "/";
+    }
+
+    folderLinkObj.url = sanitizedLink;
     folderLinkObj.type = "userServerLink";
   }
 
-  folderLinkObj.inLink = link;
+  folderLinkObj.inLink = folderLinkObj.url;
   // console.log(folderLinkObj);
   callback(folderLinkObj);
 }
