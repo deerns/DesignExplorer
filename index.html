@@ -188,6 +188,7 @@
       dimTicks: {},
       dimMark: {},
     };
+    var imageLinkKeys = [];
 
     function readyToLoad(csvFilePathLink) {
       if (csvFilePathLink.length > 0) {
@@ -1543,9 +1544,7 @@
           } else if (upperKey.startsWith("THREED")) {
             //do nothing
           } else {
-            var sanitizedKey = cleanKey
-              .replace("in:", "")
-              .replace("out:", "");
+            var sanitizedKey = cleanKey.replace("in:", "").replace("out:", "");
             cleanedKeys4pc[sanitizedKey] = {};
           }
         });
@@ -3474,4 +3473,3 @@
     </script>
   </body>
 </html>
-
