@@ -3643,25 +3643,23 @@
 
       // Apply custom labels to scatter matrix after render
       function updateScatterLabels() {
-        // axes inside scatter matrix
+        // axes inside scatter matrix (x/y labels and cell labels)
         function relabel(selection) {
           selection.text(function () {
-            var current = d3.select(this).text();
-            if (current.indexOf(":") !== -1) {
-              var parts = current.split(":");
-              var prefix = parts.shift();
-              var name = parts.join(":").trim();
+            var current = d3.select(this).text() || "";
+            var match = current.match(/^\s*(\d+)\s*:\s*(.+)$/);
+            if (match) {
+              var prefix = match[1];
+              var name = match[2];
               return prefix + ": " + getDimLabel(name);
             }
-            return getDimLabel(current);
+            return getDimLabel(current.trim());
           });
         }
 
-        relabel(
-          d3.selectAll(
-            ".scatter-matrix-svg .x.axis text, .scatter-matrix-svg .y.axis text, .scatter-matrix-svg g.cell text"
-          )
-        );
+        relabel(d3.selectAll(".scatter-matrix-svg .x.axis text"));
+        relabel(d3.selectAll(".scatter-matrix-svg .y.axis text"));
+        relabel(d3.selectAll(".scatter-matrix-svg g.cell text"));
 
         // variable checklist
         d3.selectAll(".scatter-matrix-variable-control label").text(function (d, i) {
