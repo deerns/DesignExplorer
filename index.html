@@ -183,7 +183,6 @@
       studyInfo: {
         name: "",
         date: "",
-        password: "",
       },
       dimScales: {},
       dimTicks: {},
@@ -193,44 +192,20 @@
     var imageKeyAliases = {};
 
     function readyToLoad(csvFilePathLink, settingFilePathLink) {
-      if (csvFilePathLink.length === 0) {
-        alert("You have to put Google Drive Folder information first!");
-        return;
-      }
-
-      // remove the current selection
-      unloadPageContent();
-
-      var pendingSettings = null;
-
-      function proceedLoading() {
+      if (csvFilePathLink.length > 0) {
+        // remove the current selection
+        unloadPageContent();
         d3.csv(csvFilePathLink, function (data) {
           loadDataToDesignExplorer(data);
-
-          // Apply pre-loaded settings (password-checked) if available, otherwise load defaults
-          if (pendingSettings) {
-            _userSetting = pendingSettings;
-            setSettings(graph, _userSetting);
-          } else {
-            loadSetting(settingFilePathLink);
-          }
-
+          loadSetting(settingFilePathLink);
           updateLayoutOnDeselect();
         });
-
         //window.prompt only if user input data, not from URL
         if (document.getElementById("folderLink").value) {
           showStillLink();
         }
-      }
-
-      if (settingFilePathLink) {
-        fetchSettingWithGuard(settingFilePathLink, function (settingsObj) {
-          pendingSettings = settingsObj;
-          proceedLoading();
-        });
       } else {
-        proceedLoading();
+        alert("You have to put Google Drive Folder information first!");
       }
     }
 
@@ -322,26 +297,6 @@
       });
     }
 
-    function fetchSettingWithGuard(settingFilePathLink, onSuccess) {
-      d3.json(settingFilePathLink, function (error, d) {
-        if (error || !d) {
-          alert("Kon settings.json niet laden: " + settingFilePathLink);
-          return;
-        }
-
-        var expectedPwd =
-          d && d.studyInfo && d.studyInfo.password ? d.studyInfo.password : "";
-
-        if (!expectedPwd) {
-          onSuccess(d);
-          return;
-        }
-
-        requirePassword(expectedPwd, function () {
-          onSuccess(d);
-        });
-      });
-    }
   </script>
 
   <body>
@@ -1044,17 +999,17 @@
                       <li class="list-group-item form-inline">
                         Password:
                         <input
-                          id="studyPasswordInput"
                           class="form-control input-sm"
-                          placeholder="New password"
-                          type="password"
+                          placeholder="WIP"
+                          type="text"
                           style="width: 40%; margin-left: 1.6em"
+                          disabled
                         /><input
-                          id="studyPasswordConfirmInput"
                           class="form-control input-sm"
                           placeholder="Confirm"
-                          type="password"
+                          type="text"
                           style="width: 39%"
+                          disabled
                         />
                       </li>
                     </ul>
@@ -3155,7 +3110,6 @@
           studyInfo: {
             name: _userSetting.studyInfo.name,
             date: _userSetting.studyInfo.date,
-            password: _userSetting.studyInfo.password || "",
           },
           dimScales: {},
           dimTicks: {},
@@ -3203,44 +3157,6 @@
           .on("change", function (d) {
             newUserSetting.studyInfo.date = $(this).val();
           });
-
-        var newPasswordInput = "";
-        var newPasswordConfirmInput = "";
-
-        dimSettingListDiv
-          .select("#studyPasswordInput")
-          .attr("value", "")
-          .on("input", function () {
-            newPasswordInput = $(this).val();
-          });
-
-        dimSettingListDiv
-          .select("#studyPasswordConfirmInput")
-          .attr("value", "")
-          .on("input", function () {
-            newPasswordConfirmInput = $(this).val();
-          });
-
-        function applyPasswordIfValid(actionName) {
-          var hasNewPassword =
-            newPasswordInput.length > 0 || newPasswordConfirmInput.length > 0;
-
-          if (!hasNewPassword) {
-            newUserSetting.studyInfo.password =
-              _userSetting.studyInfo.password || "";
-            return true;
-          }
-
-          if (newPasswordInput !== newPasswordConfirmInput) {
-            alert(
-              "Passwords do not match. Please re-enter before " + actionName + "."
-            );
-            return false;
-          }
-
-          newUserSetting.studyInfo.password = newPasswordInput;
-          return true;
-        }
 
         var selectList = dimSettingListDiv
           .selectAll("#dimSettingList")
@@ -3405,21 +3321,15 @@
               value: "ToBeRemoved",
               prefix: "",
             };
-          });
+        });
 
         //set up button event
         d3.select("#dataSetting #setUserSetting").on("click", function (d) {
-          if (!applyPasswordIfValid("applying settings")) {
-            return;
-          }
           setSettings(chart, newUserSetting);
           d3.select("#showSetting").style("display", "none");
         });
 
         d3.select("#dataSetting  #saveUserSetting").on("click", function (d) {
-          if (!applyPasswordIfValid("exporting settings")) {
-            return;
-          }
           saveSetting(_userSetting, newUserSetting);
         });
       }
@@ -3461,9 +3371,6 @@
         //update the global _userSetting
         _userSetting.studyInfo.name = studyInfoData.name;
         _userSetting.studyInfo.date = studyInfoData.date;
-        if (studyInfoData.password !== undefined) {
-          _userSetting.studyInfo.password = studyInfoData.password;
-        }
       }
 
       function setAllScales(chart, scales) {
@@ -3639,148 +3546,11 @@
             return;
           }
 
-          var expectedPwd =
-            d && d.studyInfo && d.studyInfo.password
-              ? d.studyInfo.password
-              : "";
-
-          if (expectedPwd) {
-            requirePassword(expectedPwd, function () {
-              _userSetting = d;
-              setSettings(graph, _userSetting);
-            });
-            return;
-          }
-
           //updata to global _userSetting
           _userSetting = d;
           setSettings(graph, _userSetting);
         });
       }
-
-      // Simple modal-based password gate so browsers won't block it
-      var passwordRequired = {
-        expected: "",
-        onSuccess: null,
-      };
-
-      function requirePassword(expected, onSuccess) {
-        passwordRequired.expected = expected;
-        passwordRequired.onSuccess = onSuccess;
-        d3.select("#passwordModal").style("display", "flex");
-        d3.select("#passwordPromptInput").property("value", "");
-        d3.select("#passwordPromptInput").node().focus();
-      }
-
-      function verifySettingPassword(settingsData) {
-        var expected =
-          settingsData &&
-          settingsData.studyInfo &&
-          settingsData.studyInfo.password
-            ? settingsData.studyInfo.password
-            : "";
-
-        if (!expected) {
-          return true;
-        }
-
-        var entered = window.prompt(
-          "Deze studie is beveiligd. Voer het wachtwoord in om de instellingen te laden:"
-        );
-
-        if (entered === null) {
-          alert("Instellingen zijn niet geladen (geannuleerd).");
-          return false;
-        }
-
-        if (entered !== expected) {
-          alert("Wachtwoord onjuist. Instellingen zijn niet geladen.");
-          return false;
-        }
-
-        return true;
-      }
-      // Password modal handlers
-      d3.select("#passwordPromptSubmit").on("click", function () {
-        var entered = d3.select("#passwordPromptInput").property("value") || "";
-        if (entered !== passwordRequired.expected) {
-          alert("Wachtwoord onjuist. Instellingen zijn niet geladen.");
-          return;
-        }
-        d3.select("#passwordModal").style("display", "none");
-        if (typeof passwordRequired.onSuccess === "function") {
-          passwordRequired.onSuccess();
-        }
-      });
-
-      d3.select("#passwordPromptCancel").on("click", function () {
-        alert("Instellingen zijn niet geladen (geannuleerd).");
-        d3.select("#passwordModal").style("display", "none");
-      });
-
-      d3.select("#passwordPromptInput").on("keydown", function () {
-        var evt = d3.event || window.event;
-        if (evt.key === "Enter" || evt.keyCode === 13) {
-          d3.select("#passwordPromptSubmit").on("click")();
-        }
-      });
     </script>
-
-    <!-- Password modal -->
-    <div
-      id="passwordModal"
-      style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.45);
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-      "
-    >
-      <div
-        style="
-          background: white;
-          padding: 20px;
-          border-radius: 6px;
-          min-width: 320px;
-          max-width: 90%;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-        "
-      >
-        <h4 style="margin-top: 0">Wachtwoord vereist</h4>
-        <p style="margin-bottom: 10px">
-          Deze studie is beveiligd. Voer het wachtwoord in om de instellingen te
-          laden.
-        </p>
-        <input
-          id="passwordPromptInput"
-          type="password"
-          class="form-control input-sm"
-          placeholder="Password"
-          style="width: 100%; margin-bottom: 12px"
-        />
-        <div style="display: flex; justify-content: flex-end; gap: 8px">
-          <button
-            id="passwordPromptCancel"
-            class="btn btn-default btn-sm popupWindowClose"
-            type="button"
-          >
-            Annuleren
-          </button>
-          <button
-            id="passwordPromptSubmit"
-            class="btn btn-primary btn-sm"
-            type="button"
-          >
-            OK
-          </button>
-        </div>
-      </div>
-    </div>
   </body>
 </html>
