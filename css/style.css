@@ -219,6 +219,23 @@ rect.disabled {
     line-height: 1;
 }
 
+#vis .btn.btn-xs,
+.viewer2d .btn.btn-xs {
+    height: 24px;
+    padding: 1px 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+#vis .btn.btn-xs .glyphicon,
+.viewer2d .btn.btn-xs .glyphicon {
+    line-height: 1;
+    top: 0;
+}
+
 .btn .glyphicon-new-window {
     margin-left: 4px;
 }
