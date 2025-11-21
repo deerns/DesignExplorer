@@ -40,24 +40,6 @@ ScatterMatrix.prototype.onData = function (cb) {
 
 ScatterMatrix.prototype.render = function () {
   var self = this;
-  // helper to resolve custom dimension labels if defined globally
-  var labelName = function (name) {
-    if (typeof getDimLabel === "function") {
-      try {
-        return getDimLabel(name);
-      } catch (e) {
-        return name;
-      }
-    }
-    if (typeof window !== "undefined" && typeof window.getDimLabel === "function") {
-      try {
-        return window.getDimLabel(name);
-      } catch (e) {
-        return name;
-      }
-    }
-    return name;
-  };
 
   var container = d3
     .select(this.__dom_id)
@@ -593,7 +575,7 @@ ScatterMatrix.prototype.__draw = function (
       })
       .text(function (d) {
         var s = self.__numeric_variables.indexOf(d.y) + 1;
-        s = "" + s + ": " + labelName(d.y);
+        s = "" + s + ": " + d.y;
         return shorten(s);
       });
 
@@ -684,7 +666,7 @@ ScatterMatrix.prototype.__draw = function (
           .attr("dy", ".71em")
           .text(function (d) {
             var s = self.__numeric_variables.indexOf(d.x) + 1;
-            s = "" + s + ": " + labelName(d.x);
+            s = "" + s + ": " + d.x;
             return shorten(s);
           });
 
@@ -694,15 +676,15 @@ ScatterMatrix.prototype.__draw = function (
               i += 1;
               cell
                 .append("svg:text")
-                .attr("x", padding)
-                .attr("y", size + axis_height + label_height * i)
-                .attr("dy", ".71em")
-                .text(function (d) {
-                  return shorten(filter[k] + ": " + labelName(k));
-                });
-            }
+              .attr("x", padding)
+              .attr("y", size + axis_height + label_height * i)
+              .attr("dy", ".71em")
+              .text(function (d) {
+                return shorten(filter[k] + ": " + k);
+              });
           }
         }
+      }
 
       // Brush
       cell.call(brush.x(x[p.x]).y(y[p.y]));
