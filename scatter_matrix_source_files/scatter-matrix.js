@@ -44,7 +44,14 @@ ScatterMatrix.prototype.render = function() {
         var self = this;
         // use a global label getter if defined; otherwise fall back to the raw name
         var labelName = function(name) {
-            if (typeof window.getDimLabel === "function") {
+            if (typeof getDimLabel === "function") {
+                try {
+                    return getDimLabel(name);
+                } catch (e) {
+                    return name;
+                }
+            }
+            if (typeof window !== "undefined" && typeof window.getDimLabel === "function") {
                 try {
                     return window.getDimLabel(name);
                 } catch (e) {
