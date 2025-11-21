@@ -3583,6 +3583,21 @@
           return getDimLabel(d);
         });
 
+        // Update scatter variable checklist labels
+        d3.selectAll(".scatter-matrix-variable-control label").text(function (d, i) {
+          return i + 1 + ": " + getDimLabel(d);
+        });
+
+        // Update scatter filter headers
+        d3.selectAll(".scatter-matrix-filter-control p").each(function () {
+          var el = d3.select(this);
+          var txt = el.text();
+          var match = txt.match(/^Filter by (.*):/);
+          if (match && match[1]) {
+            el.text("Filter by " + getDimLabel(match[1].trim()) + ":");
+          }
+        });
+
         // Update parallel coordinates axis labels
         d3.selectAll(".dimension text.label").text(function (d) {
           return getDimLabel(d);
