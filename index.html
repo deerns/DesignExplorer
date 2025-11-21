@@ -201,15 +201,19 @@
 
       if (dimLabels[key]) return dimLabels[key];
 
-      // try cleaned variants (remove IN:/OUT:, replace dots with spaces)
-      var cleaned = key.replace(/\./g, " ").replace(/^in:/i, "").replace(/^out:/i, "");
+      // try cleaned variants (remove IN:/OUT:, replace dots/underscores with spaces)
+      var cleaned = key
+        .replace(/[_\.]/g, " ")
+        .replace(/^in:/i, "")
+        .replace(/^out:/i, "")
+        .trim();
       if (dimLabels[cleaned]) return dimLabels[cleaned];
 
       // case-insensitive / normalized match
       var norm = function (s) {
         return (s || "")
           .trim()
-          .replace(/\./g, " ")
+          .replace(/[_\.]/g, " ")
           .replace(/^in:/i, "")
           .replace(/^out:/i, "")
           .toLowerCase();
