@@ -193,7 +193,9 @@
     var imageKeyAliases = {};
 
     function getDimLabel(dimName) {
-      return (_userSetting.dimLabels && _userSetting.dimLabels[dimName]) || dimName;
+      return (
+        (_userSetting.dimLabels && _userSetting.dimLabels[dimName]) || dimName
+      );
     }
 
     function withDimLabel(key, value) {
@@ -270,8 +272,7 @@
         // if _folderInfo.DE_PW existed, just return.
         var cachedId = _folderInfo.DE_PW;
         var hasShortId =
-          cachedId &&
-          (cachedId.length === 6 || cachedId.indexOf("BL_") === 0);
+          cachedId && (cachedId.length === 6 || cachedId.indexOf("BL_") === 0);
 
         // Use the cached short id if present; otherwise regenerate from current link
         var idToUse = hasShortId ? cachedId : studyCaseLink;
@@ -305,7 +306,6 @@
         $("#showStillLink").modal();
       });
     }
-
   </script>
 
   <body>
@@ -897,15 +897,19 @@
             var folderLink = document.getElementById("folderLink").value || "";
 
             if (folderLink.includes("google.com")) {
-              alert("Google Drive is not supported. Please use an appropriate link");
+              alert(
+                "Google Drive is not supported. Please use an appropriate link"
+              );
             } else {
               MP_getGoogleIDandLoad();
             }
           }
 
-          document.getElementById("loadData").addEventListener("click", function () {
-            triggerLoadData();
-          });
+          document
+            .getElementById("loadData")
+            .addEventListener("click", function () {
+              triggerLoadData();
+            });
 
           var folderLinkInput = document.getElementById("folderLink");
           if (folderLinkInput) {
@@ -1800,7 +1804,7 @@
         updateLabels();
       }
 
-        // update pc chart labels and axis color based on input and outputs parameters
+      // update pc chart labels and axis color based on input and outputs parameters
       function updateLabels() {
         // modify labels
         var inputLabelColor = "black",
@@ -2056,11 +2060,7 @@
             !String(key).startsWith("scid")
           ) {
             var info =
-              "<strong>" +
-              getDimLabel(key) +
-              "</strong>" +
-              " : " +
-              data[key];
+              "<strong>" + getDimLabel(key) + "</strong>" + " : " + data[key];
             title.push(info);
           }
         });
@@ -3373,7 +3373,7 @@
               value: "ToBeRemoved",
               prefix: "",
             };
-        });
+          });
 
         //set up button event
         d3.select("#dataSetting #setUserSetting").on("click", function (d) {
@@ -3427,7 +3427,7 @@
           graph.updateAxes();
 
           //chart.reRender();
-            update_colors(pcIsColoredBy);
+          update_colors(pcIsColoredBy);
         }
 
         //set target mark must be after graph.updateAxes();
@@ -3622,15 +3622,15 @@
         return newScale;
       }
 
-        function saveSetting(globalUserSetting, newUserSetting) {
-          Object.assign(globalUserSetting.dimMark, newUserSetting.dimMark);
-          Object.assign(globalUserSetting.dimScales, newUserSetting.dimScales);
-          Object.assign(globalUserSetting.dimTicks, newUserSetting.dimTicks);
-          Object.assign(globalUserSetting.studyInfo, newUserSetting.studyInfo);
-          globalUserSetting.dimLabels = globalUserSetting.dimLabels || {};
-          Object.assign(globalUserSetting.dimLabels, newUserSetting.dimLabels);
+      function saveSetting(globalUserSetting, newUserSetting) {
+        Object.assign(globalUserSetting.dimMark, newUserSetting.dimMark);
+        Object.assign(globalUserSetting.dimScales, newUserSetting.dimScales);
+        Object.assign(globalUserSetting.dimTicks, newUserSetting.dimTicks);
+        Object.assign(globalUserSetting.studyInfo, newUserSetting.studyInfo);
+        globalUserSetting.dimLabels = globalUserSetting.dimLabels || {};
+        Object.assign(globalUserSetting.dimLabels, newUserSetting.dimLabels);
 
-          var exportJson = globalUserSetting;
+        var exportJson = globalUserSetting;
 
         var JsonContent = "data:attachment/json;charset=utf-8,";
 
