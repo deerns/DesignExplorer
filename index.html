@@ -272,12 +272,14 @@
         var idToUse = hasShortId ? cachedId : studyCaseLink;
 
         studyEncodedUrl = document.location.origin + "/?ID=" + idToUse;
+        var cachedShort =
+          cachedId && cachedId.length === 6
+            ? "https://goo.gl/" + cachedId
+            : cachedId && cachedId.indexOf("BL_") === 0
+            ? "https://bit.ly/" + cachedId.replace("BL_", "")
+            : studyEncodedUrl;
 
-        if (hasShortId) {
-          d3.select("#showShortUrl").html("https://goo.gl/" + cachedId);
-        } else {
-          d3.select("#showShortUrl").text("");
-        }
+        d3.select("#showShortUrl").html(cachedShort || studyEncodedUrl);
 
         d3.select("#myStudyID").html(studyEncodedUrl);
         $("#showStillLink").modal();
@@ -290,25 +292,25 @@
 
       makeUrlId(studyLongUrl, function name(UrlId) {
         _folderInfo.DE_PW = UrlId;
+        var shortDisplay = "";
 
         if (UrlId.length == 6) {
           // google url id
 
           studyEncodedUrl =
             document.location.origin + "?ID=" + _folderInfo.DE_PW;
-          d3.select("#showShortUrl").html(
-            "https://goo.gl/" + _folderInfo.DE_PW
-          );
+          shortDisplay = "https://goo.gl/" + _folderInfo.DE_PW;
         } else if (UrlId.startsWith("BL_")) {
           studyEncodedUrl =
             document.location.origin + "?ID=" + _folderInfo.DE_PW;
-          d3.select("#showShortUrl").html(
-            "https://bit.ly/" + _folderInfo.DE_PW.replace("BL_", "")
-          );
+          shortDisplay =
+            "https://bit.ly/" + _folderInfo.DE_PW.replace("BL_", "");
         } else {
           studyEncodedUrl = studyLongUrl;
+          shortDisplay = studyEncodedUrl;
         }
 
+        d3.select("#showShortUrl").html(shortDisplay);
         d3.select("#myStudyID").html(studyEncodedUrl);
         $("#showStillLink").modal();
       });
