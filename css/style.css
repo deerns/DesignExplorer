@@ -208,6 +208,13 @@ rect.disabled {
     vertical-align: middle;
 }
 
+.sorting select.btn.btn-xs {
+    height: 24px;
+    padding: 1px 6px;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
 .sorting #reverseSortOrder .glyphicon {
     line-height: 1;
 }
