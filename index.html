@@ -3677,6 +3677,7 @@
 
           // update the global _userSetting
           _userSetting = mergedSetting;
+          setDimLabels(mergedSetting.dimLabels);
           setSettings(graph, mergedSetting);
         });
       }
