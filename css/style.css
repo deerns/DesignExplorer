@@ -170,10 +170,10 @@ rect.disabled {
 #pcFullScreen-toggle.btn-xs,
 #scatter-fullscreen-toggle.btn-xs,
 #scatter-menu-toggle.btn-xs {
-    height: 24px;
-    padding: 4px 8px;
+    padding: 1px 5px;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
 }
 
 #menu-toggle .glyphicon,
