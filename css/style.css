@@ -199,6 +199,21 @@ rect.disabled {
     width: auto !important;
 }
 
+#copy-link.btn.btn-xs {
+    height: 24px;
+    padding: 1px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+#copy-link.btn.btn-xs .glyphicon {
+    line-height: 1;
+    top: 0;
+}
+
 .sorting #reverseSortOrder.btn.btn-xs {
     height: 24px;
     padding: 1px 6px;
