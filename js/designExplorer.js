@@ -331,19 +331,28 @@ function checkInputLink(link, callback) {
 }
 
 function encodeUrl(url) {
-  // var link = btoa(url).slice(0, -1).replace('/','_').replace('+','-');
-  var link = btoa(url);
-  return link;
+  // URL-safe wrapper so shared links survive copy/paste
+  return encodeURIComponent(btoa(url));
 }
 
 function decodeUrl(encodedString) {
-  // var url = atob(encodedString.replace('_','/').replace('-','+')+"=");
   var url = "";
+  var decodedComponent = encodedString;
   try {
-    url = atob(encodedString);
+    decodedComponent = decodeURIComponent(encodedString);
   } catch (err) {
-    console.log(err.message + " But fixed:>");
-    url = atob(encodedString.replace("_", "/").replace("-", "+") + "=");
+    decodedComponent = encodedString;
+  }
+
+  try {
+    url = atob(decodedComponent);
+  } catch (err) {
+    // Fallback for older or malformed base64 strings
+    var fixed = decodedComponent.replace(/_/g, "/").replace(/-/g, "+");
+    while (fixed.length % 4 !== 0) {
+      fixed += "=";
+    }
+    url = atob(fixed);
   }
 
   return url;
