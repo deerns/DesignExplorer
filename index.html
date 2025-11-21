@@ -884,20 +884,29 @@
           </div>
         </div>
         <script>
-          document
-            .getElementById("loadData")
-            .addEventListener("click", function () {
-              var folderLink = document.getElementById("folderLink").value;
+          function triggerLoadData() {
+            var folderLink = document.getElementById("folderLink").value || "";
 
-              if (folderLink.includes("google.com")) {
-                alert(
-                  "Google Drive is not supported. Please use an appropriate link"
-                );
-              } else {
-                // Continue with normal loading
-                MP_getGoogleIDandLoad();
+            if (folderLink.includes("google.com")) {
+              alert("Google Drive is not supported. Please use an appropriate link");
+            } else {
+              MP_getGoogleIDandLoad();
+            }
+          }
+
+          document.getElementById("loadData").addEventListener("click", function () {
+            triggerLoadData();
+          });
+
+          var folderLinkInput = document.getElementById("folderLink");
+          if (folderLinkInput) {
+            folderLinkInput.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" || e.keyCode === 13) {
+                e.preventDefault();
+                triggerLoadData();
               }
             });
+          }
         </script>
         <!--show static link-->
         <!-- Modal -->
