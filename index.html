@@ -263,9 +263,22 @@
         return;
       } else if (_folderInfo.DE_PW.length > 0) {
         // if _folderInfo.DE_PW existed, just return.
-        studyEncodedUrl =
-          document.location.origin + "/?ID=" + _folderInfo.DE_PW;
-        d3.select("#showShortUrl").html("https://goo.gl/" + _folderInfo.DE_PW);
+        var cachedId = _folderInfo.DE_PW;
+        var hasShortId =
+          cachedId &&
+          (cachedId.length === 6 || cachedId.indexOf("BL_") === 0);
+
+        // Use the cached short id if present; otherwise regenerate from current link
+        var idToUse = hasShortId ? cachedId : studyCaseLink;
+
+        studyEncodedUrl = document.location.origin + "/?ID=" + idToUse;
+
+        if (hasShortId) {
+          d3.select("#showShortUrl").html("https://goo.gl/" + cachedId);
+        } else {
+          d3.select("#showShortUrl").text("");
+        }
+
         d3.select("#myStudyID").html(studyEncodedUrl);
         $("#showStillLink").modal();
         return;

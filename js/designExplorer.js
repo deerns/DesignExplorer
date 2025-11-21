@@ -403,7 +403,9 @@ function makeUrlId(rawUrl, callback) {
       "Content-Type": "application/json",
     },
     error: function (e) {
-      callback(encodeUrl(longUrl));
+      // Fall back to the actual ID value embedded in the URL so shared links still work without the shortener
+      var fallbackId = getUrlVars(longUrl).ID || encodeUrl(longUrl);
+      callback(fallbackId);
     },
     dataType: "json",
     success: function (response) {
