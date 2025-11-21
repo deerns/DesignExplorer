@@ -1154,10 +1154,10 @@
         sm.cellSize((pcHeight - 60) / 2);
         sm.render();
 
-        // apply custom labels to scatter after render if available
+        // apply custom labels to scatter after render if available (with retry)
         setTimeout(function () {
           if (_userSetting && _userSetting.dimLabels) {
-            updateScatterLabels();
+            refreshScatterLabelsWithRetry(0);
           }
         }, 0);
 
@@ -3675,6 +3675,21 @@
             el.text("Filter by " + getDimLabel(match[1].trim()) + ":");
           }
         });
+      }
+
+      // retry scatter relabeling if elements are not yet rendered
+      function refreshScatterLabelsWithRetry(attempt) {
+        attempt = attempt || 0;
+        updateScatterLabels();
+        var hasAxes =
+          d3.selectAll(".scatter-matrix-svg .x.axis text").size() +
+            d3.selectAll(".scatter-matrix-svg .y.axis text").size() >
+          0;
+        if (!hasAxes && attempt < 5) {
+          setTimeout(function () {
+            refreshScatterLabelsWithRetry(attempt + 1);
+          }, 100);
+        }
       }
 
       function OnScaleChanged(params, oldScale, userScale) {
