@@ -3536,7 +3536,8 @@
         // Update slider labels
         d3.selectAll("#inputSliders .inputSlider .inputSliderLabel").text(
           function (d) {
-            return getDimLabel(d.name);
+            var dimName = d && d.name ? d.name : d;
+            return getDimLabel(dimName);
           }
         );
       }
