@@ -213,7 +213,9 @@
         });
         // If a server link was provided manually, open settings (same as the Setting button)
         if (document.getElementById("folderLink").value) {
-          dataSetting(graph);
+          setTimeout(function () {
+            dataSetting(graph);
+          }, 200);
         }
       } else {
         alert("You have to put Google Drive Folder information first!");
