@@ -3589,7 +3589,10 @@
         });
 
         // Update scatter variable checklist labels
-        d3.selectAll(".scatter-matrix-variable-control label").text(function (d, i) {
+        d3.selectAll(".scatter-matrix-variable-control label").text(function (
+          d,
+          i
+        ) {
           return i + 1 + ": " + getDimLabel(d);
         });
 
