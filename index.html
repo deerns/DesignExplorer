@@ -187,9 +187,14 @@
       dimScales: {},
       dimTicks: {},
       dimMark: {},
+      dimLabels: {},
     };
     var imageLinkKeys = [];
     var imageKeyAliases = {};
+
+    function getDimLabel(dimName) {
+      return (_userSetting.dimLabels && _userSetting.dimLabels[dimName]) || dimName;
+    }
 
     function readyToLoad(csvFilePathLink, settingFilePathLink) {
       if (csvFilePathLink.length > 0) {
@@ -2508,7 +2513,7 @@
           .append("div")
           .attr("class", "inputSlider") // full width
           .text(function (d) {
-            return d.name;
+            return getDimLabel(d.name);
           })
           .append("input")
           .attr("id", function (d) {
@@ -3123,6 +3128,7 @@
           dimScales: {},
           dimTicks: {},
           dimMark: {},
+          dimLabels: Object.assign({}, _userSetting.dimLabels),
         };
 
         // var userStudyInfo = {
@@ -3203,6 +3209,29 @@
           .attr("class", "panel-body")
           .append("ul")
           .attr("class", "list-group");
+
+        // Slider label setting
+        panelBodyContent
+          .append("li")
+          .attr("class", "list-group-item form-inline")
+          .text("Slider Label: ")
+          .append("input")
+          .attr("class", "form-control input-sm")
+          .attr("placeholder", function (d) {
+            return getDimLabel(d);
+          })
+          .attr("type", "text")
+          .attr("value", function (d) {
+            return newUserSetting.dimLabels[d] || "";
+          })
+          .on("change", function (d) {
+            var value = ($(this).val() || "").trim();
+            if (value.length === 0) {
+              delete newUserSetting.dimLabels[d];
+            } else {
+              newUserSetting.dimLabels[d] = value;
+            }
+          });
 
         //TickNumber setting----------------------------------------------------------------------------------------------------------
         var itemTickNumberSetting = panelBodyContent
@@ -3347,6 +3376,7 @@
         var isThereNewStudyInfo = Object.keys(userSetting.studyInfo).length > 0;
         var isThereNewDimScales = Object.keys(userSetting.dimScales).length > 0;
         var isThereNewDimTicks = Object.keys(userSetting.dimTicks).length > 0;
+        var isThereNewDimLabels = Object.keys(userSetting.dimLabels).length > 0;
 
         if (isThereNewStudyInfo) {
           setStudyInfo(userSetting.studyInfo);
@@ -3365,11 +3395,15 @@
           graph.updateAxes();
 
           //chart.reRender();
-          update_colors(pcIsColoredBy);
+            update_colors(pcIsColoredBy);
         }
 
         //set target mark must be after graph.updateAxes();
         setAllTargetMarks(chart, userSetting.dimMark);
+
+        if (isThereNewDimLabels) {
+          setDimLabels(userSetting.dimLabels);
+        }
       }
 
       function setStudyInfo(studyInfoData) {
@@ -3481,6 +3515,17 @@
         return newDimTickValues;
       }
 
+      function setDimLabels(dimLabels) {
+        d3.keys(dimLabels).forEach(function (d) {
+          _userSetting.dimLabels[d] = dimLabels[d];
+        });
+
+        // Update slider labels
+        d3.selectAll("#inputSliders .inputSlider").text(function (d) {
+          return getDimLabel(d.name);
+        });
+      }
+
       function OnScaleChanged(params, oldScale, userScale) {
         var newScale = [0, 0];
         var preScale = [0, 0];
@@ -3505,6 +3550,7 @@
         Object.assign(globalUserSetting.dimScales, newUserSetting.dimScales);
         Object.assign(globalUserSetting.dimTicks, newUserSetting.dimTicks);
         Object.assign(globalUserSetting.studyInfo, newUserSetting.studyInfo);
+        Object.assign(globalUserSetting.dimLabels, newUserSetting.dimLabels);
 
         var exportJson = globalUserSetting;
 
