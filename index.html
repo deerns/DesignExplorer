@@ -211,9 +211,9 @@
           loadSetting(settingFilePathLink);
           updateLayoutOnDeselect();
         });
-        // If a server link was provided manually, open settings instead of the share link popup
+        // If a server link was provided manually, open settings (same as the Setting button)
         if (document.getElementById("folderLink").value) {
-          d3.select("#showSetting").style("display", "flex");
+          dataSetting(graph);
         }
       } else {
         alert("You have to put Google Drive Folder information first!");
