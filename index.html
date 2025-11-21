@@ -1154,6 +1154,11 @@
         sm.cellSize((pcHeight - 60) / 2);
         sm.render();
 
+        // apply custom labels to scatter after render if available
+        if (_userSetting && _userSetting.dimLabels) {
+          setDimLabels(_userSetting.dimLabels);
+        }
+
         // adjust the chart style
         //var chartWidth = d3.select(".scatter-matrix-svg svg").style("width").replace("px", "");
         d3.select(".scatter-matrix-svg").style("width", pcHeight - 10 + "px");
