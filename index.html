@@ -1830,18 +1830,6 @@
           return colorset[i];
         });
 
-        // keep legend text in sync with custom labels
-        d3.selectAll("#legend text").text(function (d) {
-          return d && d.name ? getDimLabel(d.name) : d;
-        });
-
-        // keep scatter axis labels in sync
-        d3.selectAll(
-          ".scatter-matrix-svg .x.axis text, .scatter-matrix-svg .y.axis text"
-        ).text(function (d) {
-          return getDimLabel(d);
-        });
-
         setupPcLabelEvent();
       }
 
