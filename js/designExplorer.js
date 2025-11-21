@@ -390,6 +390,10 @@ function CopyToClipboard(element) {
 
 function makeUrlId(rawUrl, callback) {
   var longUrl = rawUrl;
+  var authHeader =
+    BitlyKey && BitlyKey.toLowerCase().indexOf("bearer ") === 0
+      ? BitlyKey
+      : "Bearer " + BitlyKey;
 
   $.ajax({
     type: "POST",
@@ -399,7 +403,7 @@ function makeUrlId(rawUrl, callback) {
       long_url: longUrl,
     }),
     headers: {
-      Authorization: BitlyKey,
+      Authorization: authHeader,
       "Content-Type": "application/json",
     },
     error: function (e) {
@@ -409,11 +413,13 @@ function makeUrlId(rawUrl, callback) {
     },
     dataType: "json",
     success: function (response) {
-      var UrlID = "";
-      if (response.id != null) {
-        //response.id:  https://goo.gl/bMOO
-        UrlID = response.id.split("/");
-        UrlID = UrlID[UrlID.length - 1]; //UrlID: bMOO
+      // Bitly v4 returns `link` (https://bit.ly/XXXX) and `id` (bit.ly/XXXX)
+      var bitlyLink = response.link || response.id || "";
+      var UrlID = bitlyLink ? bitlyLink.split("/").pop() : "";
+      if (!UrlID) {
+        var fallbackId = getUrlVars(longUrl).ID || encodeUrl(longUrl);
+        callback(fallbackId);
+        return;
       }
       callback("BL_" + UrlID);
     },
@@ -421,6 +427,11 @@ function makeUrlId(rawUrl, callback) {
 }
 
 function getUrlID(urlID, callback) {
+  var authHeader =
+    BitlyKey && BitlyKey.toLowerCase().indexOf("bearer ") === 0
+      ? BitlyKey
+      : "Bearer " + BitlyKey;
+
   $.ajax({
     url: "https://api-ssl.bitly.com/v4/expand",
     type: "POST",
@@ -429,7 +440,7 @@ function getUrlID(urlID, callback) {
       bitlink_id: "bit.ly/" + urlID,
     }),
     headers: {
-      Authorization: BitlyKey,
+      Authorization: authHeader,
     },
     contentType: "application/json",
     success: function (result) {
