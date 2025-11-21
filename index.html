@@ -3598,10 +3598,43 @@
             return;
           }
 
+          if (isExplicitPath && !verifySettingPassword(d)) {
+            return;
+          }
+
           //updata to global _userSetting
           _userSetting = d;
           setSettings(graph, _userSetting);
         });
+      }
+
+      function verifySettingPassword(settingsData) {
+        var expected =
+          settingsData &&
+          settingsData.studyInfo &&
+          settingsData.studyInfo.password
+            ? settingsData.studyInfo.password
+            : "";
+
+        if (!expected) {
+          return true;
+        }
+
+        var entered = window.prompt(
+          "Deze studie is beveiligd. Voer het wachtwoord in om de instellingen te laden:"
+        );
+
+        if (entered === null) {
+          alert("Instellingen zijn niet geladen (geannuleerd).");
+          return false;
+        }
+
+        if (entered !== expected) {
+          alert("Wachtwoord onjuist. Instellingen zijn niet geladen.");
+          return false;
+        }
+
+        return true;
       }
     </script>
   </body>
