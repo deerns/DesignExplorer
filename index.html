@@ -1155,9 +1155,11 @@
         sm.render();
 
         // apply custom labels to scatter after render if available
-        if (_userSetting && _userSetting.dimLabels) {
-          setDimLabels(_userSetting.dimLabels);
-        }
+        setTimeout(function () {
+          if (_userSetting && _userSetting.dimLabels) {
+            updateScatterLabels();
+          }
+        }, 0);
 
         // adjust the chart style
         //var chartWidth = d3.select(".scatter-matrix-svg svg").style("width").replace("px", "");
@@ -3633,6 +3635,46 @@
             info.label = _userSetting.dimLabels[info.name];
           } else {
             delete info.label;
+          }
+        });
+
+        updateScatterLabels();
+      }
+
+      // Apply custom labels to scatter matrix after render
+      function updateScatterLabels() {
+        // axes inside scatter matrix
+        function relabel(selection) {
+          selection.text(function () {
+            var current = d3.select(this).text();
+            if (current.indexOf(":") !== -1) {
+              var parts = current.split(":");
+              var prefix = parts.shift();
+              var name = parts.join(":").trim();
+              return prefix + ": " + getDimLabel(name);
+            }
+            return getDimLabel(current);
+          });
+        }
+
+        relabel(
+          d3.selectAll(
+            ".scatter-matrix-svg .x.axis text, .scatter-matrix-svg .y.axis text, .scatter-matrix-svg g.cell text"
+          )
+        );
+
+        // variable checklist
+        d3.selectAll(".scatter-matrix-variable-control label").text(function (d, i) {
+          return i + 1 + ": " + getDimLabel(d);
+        });
+
+        // filter headers
+        d3.selectAll(".scatter-matrix-filter-control p").each(function () {
+          var el = d3.select(this);
+          var txt = el.text();
+          var match = txt.match(/^Filter by (.*):/);
+          if (match && match[1]) {
+            el.text("Filter by " + getDimLabel(match[1].trim()) + ":");
           }
         });
       }
