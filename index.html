@@ -3130,7 +3130,7 @@
           dimScales: {},
           dimTicks: {},
           dimMark: {},
-          dimLabels: Object.assign({}, _userSetting.dimLabels),
+          dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
         };
 
         // var userStudyInfo = {
@@ -3396,8 +3396,10 @@
       function setSettings(chart, userSetting) {
         var isThereNewStudyInfo = Object.keys(userSetting.studyInfo).length > 0;
         var isThereNewDimScales = Object.keys(userSetting.dimScales).length > 0;
-        var isThereNewDimTicks = Object.keys(userSetting.dimTicks).length > 0;
-        var isThereNewDimLabels = Object.keys(userSetting.dimLabels).length > 0;
+        var userDimTicks = userSetting.dimTicks || {};
+        var userDimLabels = userSetting.dimLabels || {};
+        var isThereNewDimTicks = Object.keys(userDimTicks).length > 0;
+        var isThereNewDimLabels = Object.keys(userDimLabels).length > 0;
 
         if (isThereNewStudyInfo) {
           setStudyInfo(userSetting.studyInfo);
@@ -3408,7 +3410,7 @@
         }
 
         if (isThereNewDimTicks) {
-          setAllTicks(chart, userSetting.dimTicks);
+          setAllTicks(chart, userDimTicks);
         }
 
         if (isThereNewDimScales || isThereNewDimTicks) {
@@ -3422,8 +3424,8 @@
         //set target mark must be after graph.updateAxes();
         setAllTargetMarks(chart, userSetting.dimMark);
 
-        if (isThereNewDimLabels) {
-          setDimLabels(userSetting.dimLabels);
+        if (isThereNewDimLabels || userDimLabels) {
+          setDimLabels(userDimLabels);
         }
       }
 
@@ -3537,11 +3539,13 @@
       }
 
       function setDimLabels(dimLabels) {
+        dimLabels = dimLabels || {};
+
         d3.keys(dimLabels).forEach(function (d) {
           _userSetting.dimLabels[d] = dimLabels[d];
         });
 
-        // Update slider labels
+        // Update slider labels if they exist
         d3.selectAll("#inputSliders .inputSlider .inputSliderLabel").text(
           function (d) {
             var dimName = d && d.name ? d.name : d;
@@ -3569,14 +3573,15 @@
         return newScale;
       }
 
-      function saveSetting(globalUserSetting, newUserSetting) {
-        Object.assign(globalUserSetting.dimMark, newUserSetting.dimMark);
-        Object.assign(globalUserSetting.dimScales, newUserSetting.dimScales);
-        Object.assign(globalUserSetting.dimTicks, newUserSetting.dimTicks);
-        Object.assign(globalUserSetting.studyInfo, newUserSetting.studyInfo);
-        Object.assign(globalUserSetting.dimLabels, newUserSetting.dimLabels);
+        function saveSetting(globalUserSetting, newUserSetting) {
+          Object.assign(globalUserSetting.dimMark, newUserSetting.dimMark);
+          Object.assign(globalUserSetting.dimScales, newUserSetting.dimScales);
+          Object.assign(globalUserSetting.dimTicks, newUserSetting.dimTicks);
+          Object.assign(globalUserSetting.studyInfo, newUserSetting.studyInfo);
+          globalUserSetting.dimLabels = globalUserSetting.dimLabels || {};
+          Object.assign(globalUserSetting.dimLabels, newUserSetting.dimLabels);
 
-        var exportJson = globalUserSetting;
+          var exportJson = globalUserSetting;
 
         var JsonContent = "data:attachment/json;charset=utf-8,";
 

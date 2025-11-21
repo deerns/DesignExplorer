@@ -81,6 +81,7 @@ function overwriteInitialGlobalValues() {
     dimScales: {},
     dimTicks: {},
     dimMark: {},
+    dimLabels: {},
   };
 
   rcheight = height = d3.select("#graph").style("height").replace("px", "");
