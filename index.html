@@ -193,9 +193,18 @@
     var imageKeyAliases = {};
 
     function getDimLabel(dimName) {
-      return (
-        (_userSetting.dimLabels && _userSetting.dimLabels[dimName]) || dimName
-      );
+      var dimLabels = _userSetting.dimLabels || {};
+      var key = (dimName || "").trim();
+
+      if (dimLabels[key]) return dimLabels[key];
+
+      var lower = key.toLowerCase();
+      var found = Object.keys(dimLabels).find(function (k) {
+        return k.toLowerCase() === lower;
+      });
+      if (found) return dimLabels[found];
+
+      return dimName;
     }
 
     function withDimLabel(key, value) {
