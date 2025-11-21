@@ -3561,6 +3561,15 @@
         d3.selectAll("#legend text").text(function (d) {
           return d && d.name ? getDimLabel(d.name) : d;
         });
+
+        // Update slidersInfo names to keep future renders consistent
+        slidersInfo.forEach(function (info) {
+          if (_userSetting.dimLabels[info.name]) {
+            info.label = _userSetting.dimLabels[info.name];
+          } else {
+            delete info.label;
+          }
+        });
       }
 
       function OnScaleChanged(params, oldScale, userScale) {
@@ -3639,11 +3648,32 @@
             return;
           }
 
-          // ensure optional fields exist and merge dimLabels if missing
-          d.dimLabels = d.dimLabels || _userSetting.dimLabels || {};
-          //updata to global _userSetting
-          _userSetting = d;
-          setSettings(graph, _userSetting);
+          // Merge with current settings to keep optional fields
+          var mergedSetting = Object.assign({}, _userSetting, d);
+          mergedSetting.dimLabels = Object.assign(
+            {},
+            _userSetting.dimLabels || {},
+            d.dimLabels || {}
+          );
+          mergedSetting.dimScales = Object.assign(
+            {},
+            _userSetting.dimScales || {},
+            d.dimScales || {}
+          );
+          mergedSetting.dimTicks = Object.assign(
+            {},
+            _userSetting.dimTicks || {},
+            d.dimTicks || {}
+          );
+          mergedSetting.dimMark = Object.assign(
+            {},
+            _userSetting.dimMark || {},
+            d.dimMark || {}
+          );
+
+          // update the global _userSetting
+          _userSetting = mergedSetting;
+          setSettings(graph, mergedSetting);
         });
       }
     </script>
