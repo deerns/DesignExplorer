@@ -193,24 +193,44 @@
     var imageKeyAliases = {};
 
     function readyToLoad(csvFilePathLink, settingFilePathLink) {
-      if (csvFilePathLink.length > 0) {
-        // remove the current selection
-        unloadPageContent();
+      if (csvFilePathLink.length === 0) {
+        alert("You have to put Google Drive Folder information first!");
+        return;
+      }
+
+      // remove the current selection
+      unloadPageContent();
+
+      var pendingSettings = null;
+
+      function proceedLoading() {
         d3.csv(csvFilePathLink, function (data) {
           loadDataToDesignExplorer(data);
-          loadSetting(settingFilePathLink);
+
+          // Apply pre-loaded settings (password-checked) if available, otherwise load defaults
+          if (pendingSettings) {
+            _userSetting = pendingSettings;
+            setSettings(graph, _userSetting);
+          } else {
+            loadSetting(settingFilePathLink);
+          }
+
           updateLayoutOnDeselect();
         });
+
         //window.prompt only if user input data, not from URL
         if (document.getElementById("folderLink").value) {
           showStillLink();
         }
+      }
 
-        //updateLayoutOnDeselect();
-
-        //d3.select("#welcome").style("display", "none");
+      if (settingFilePathLink) {
+        fetchSettingWithGuard(settingFilePathLink, function (settingsObj) {
+          pendingSettings = settingsObj;
+          proceedLoading();
+        });
       } else {
-        alert("You have to put Google Drive Folder information first!");
+        proceedLoading();
       }
     }
 
@@ -299,6 +319,22 @@
 
         d3.select("#myStudyID").html(studyEncodedUrl);
         $("#showStillLink").modal();
+      });
+    }
+
+    function fetchSettingWithGuard(settingFilePathLink, onSuccess) {
+      d3.json(settingFilePathLink, function (error, d) {
+        if (error || !d) {
+          alert("Kon settings.json niet laden: " + settingFilePathLink);
+          return;
+        }
+
+        // Only prompt if settings file is explicitly provided via URL link
+        if (!verifySettingPassword(d)) {
+          return;
+        }
+
+        onSuccess(d);
       });
     }
   </script>
