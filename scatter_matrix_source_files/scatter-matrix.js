@@ -42,6 +42,12 @@ ScatterMatrix.prototype.onData = function(cb) {
 
 ScatterMatrix.prototype.render = function() {
         var self = this;
+        var labelName = function(name) {
+            if (typeof getDimLabel === "function") {
+                return getDimLabel(name);
+            }
+            return name;
+        };
 
         var container = d3.select(this.__dom_id).append('div')
             .attr('class', 'scatter-matrix-container');
@@ -117,7 +123,7 @@ ScatterMatrix.prototype.render = function() {
 
                 var filter_li =
                     filter_control
-                    .append('p').text('Filter by ' + variable + ': ')
+                    .append('p').text('Filter by ' + labelName(variable) + ': ')
                     .append('ul')
                     .selectAll('li')
                     .data(values)
@@ -234,7 +240,7 @@ ScatterMatrix.prototype.render = function() {
         variable_li.append('label')
             .html(function(d) {
                 var i = self.__numeric_variables.indexOf(d) + 1;
-                return '' + i + ': ' + d;
+                return '' + i + ': ' + labelName(d);
             });
 
         
@@ -489,7 +495,7 @@ ScatterMatrix.prototype.__draw = function(cell_size, container_el, color_variabl
             })
             .text(function(d) {
                 var s = self.__numeric_variables.indexOf(d.y) + 1;
-                s = '' + s + ': ' + d.y;
+                s = '' + s + ': ' + labelName(d.y);
                 return shorten(s);
             });
 
@@ -581,7 +587,7 @@ ScatterMatrix.prototype.__draw = function(cell_size, container_el, color_variabl
                     .attr("dy", ".71em")
                     .text(function(d) {
                         var s = self.__numeric_variables.indexOf(d.x) + 1;
-                        s = '' + s + ': ' + d.x;
+                        s = '' + s + ': ' + labelName(d.x);
                         return shorten(s);
                     });
 
@@ -594,7 +600,7 @@ ScatterMatrix.prototype.__draw = function(cell_size, container_el, color_variabl
                             .attr("y", size + axis_height + label_height * i)
                             .attr("dy", ".71em")
                             .text(function(d) {
-                                return shorten(filter[k] + ': ' + k);
+                                return shorten(filter[k] + ': ' + labelName(k));
                             });
                     }
                 }
