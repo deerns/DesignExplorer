@@ -2512,15 +2512,17 @@
           .enter()
           .append("div")
           .attr("class", "inputSlider") // full width
-          .text(function (d) {
-            return getDimLabel(d.name);
-          })
-          .append("input")
-          .attr("id", function (d) {
-            return d.namewithnospace;
-          })
-          .attr("name", function (d) {
-            return d.name;
+          .each(function (d) {
+            var wrapper = d3.select(this);
+            wrapper
+              .append("span")
+              .attr("class", "inputSliderLabel")
+              .text(getDimLabel(d.name));
+
+            wrapper
+              .append("input")
+              .attr("id", d.namewithnospace)
+              .attr("name", d.name);
           });
 
         // if number of ticks is less than 7 then show the numbers under slider
@@ -3521,9 +3523,11 @@
         });
 
         // Update slider labels
-        d3.selectAll("#inputSliders .inputSlider").text(function (d) {
-          return getDimLabel(d.name);
-        });
+        d3.selectAll("#inputSliders .inputSlider .inputSliderLabel").text(
+          function (d) {
+            return getDimLabel(d.name);
+          }
+        );
       }
 
       function OnScaleChanged(params, oldScale, userScale) {

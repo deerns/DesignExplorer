@@ -208,6 +208,11 @@ rect.disabled {
     vertical-align: middle;
 }
 
+.inputSliderLabel {
+    display: block;
+    margin-bottom: 4px;
+}
+
 #copy-link.btn.btn-xs {
     height: 24px;
     padding: 1px 8px;
