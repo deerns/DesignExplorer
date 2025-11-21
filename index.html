@@ -183,6 +183,7 @@
       studyInfo: {
         name: "",
         date: "",
+        password: "",
       },
       dimScales: {},
       dimTicks: {},
@@ -1002,17 +1003,17 @@
                       <li class="list-group-item form-inline">
                         Password:
                         <input
+                          id="studyPasswordInput"
                           class="form-control input-sm"
-                          placeholder="WIP"
-                          type="text"
+                          placeholder="New password"
+                          type="password"
                           style="width: 40%; margin-left: 1.6em"
-                          disabled
                         /><input
+                          id="studyPasswordConfirmInput"
                           class="form-control input-sm"
                           placeholder="Confirm"
-                          type="text"
+                          type="password"
                           style="width: 39%"
-                          disabled
                         />
                       </li>
                     </ul>
@@ -3113,6 +3114,7 @@
           studyInfo: {
             name: _userSetting.studyInfo.name,
             date: _userSetting.studyInfo.date,
+            password: _userSetting.studyInfo.password || "",
           },
           dimScales: {},
           dimTicks: {},
@@ -3160,6 +3162,44 @@
           .on("change", function (d) {
             newUserSetting.studyInfo.date = $(this).val();
           });
+
+        var newPasswordInput = "";
+        var newPasswordConfirmInput = "";
+
+        dimSettingListDiv
+          .select("#studyPasswordInput")
+          .attr("value", "")
+          .on("input", function () {
+            newPasswordInput = $(this).val();
+          });
+
+        dimSettingListDiv
+          .select("#studyPasswordConfirmInput")
+          .attr("value", "")
+          .on("input", function () {
+            newPasswordConfirmInput = $(this).val();
+          });
+
+        function applyPasswordIfValid(actionName) {
+          var hasNewPassword =
+            newPasswordInput.length > 0 || newPasswordConfirmInput.length > 0;
+
+          if (!hasNewPassword) {
+            newUserSetting.studyInfo.password =
+              _userSetting.studyInfo.password || "";
+            return true;
+          }
+
+          if (newPasswordInput !== newPasswordConfirmInput) {
+            alert(
+              "Passwords do not match. Please re-enter before " + actionName + "."
+            );
+            return false;
+          }
+
+          newUserSetting.studyInfo.password = newPasswordInput;
+          return true;
+        }
 
         var selectList = dimSettingListDiv
           .selectAll("#dimSettingList")
@@ -3328,11 +3368,17 @@
 
         //set up button event
         d3.select("#dataSetting #setUserSetting").on("click", function (d) {
+          if (!applyPasswordIfValid("applying settings")) {
+            return;
+          }
           setSettings(chart, newUserSetting);
           d3.select("#showSetting").style("display", "none");
         });
 
         d3.select("#dataSetting  #saveUserSetting").on("click", function (d) {
+          if (!applyPasswordIfValid("exporting settings")) {
+            return;
+          }
           saveSetting(_userSetting, newUserSetting);
         });
       }
@@ -3374,6 +3420,9 @@
         //update the global _userSetting
         _userSetting.studyInfo.name = studyInfoData.name;
         _userSetting.studyInfo.date = studyInfoData.date;
+        if (studyInfoData.password !== undefined) {
+          _userSetting.studyInfo.password = studyInfoData.password;
+        }
       }
 
       function setAllScales(chart, scales) {
