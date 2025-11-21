@@ -40,14 +40,6 @@ ScatterMatrix.prototype.onData = function (cb) {
 
 ScatterMatrix.prototype.render = function () {
   var self = this;
-  // Helper to resolve custom labels if getDimLabel is available
-  var labelName = function (name) {
-    try {
-      return typeof getDimLabel === "function" ? getDimLabel(name) : name;
-    } catch (e) {
-      return name;
-    }
-  };
 
   var container = d3
     .select(this.__dom_id)
@@ -583,7 +575,7 @@ ScatterMatrix.prototype.__draw = function (
       })
       .text(function (d) {
         var s = self.__numeric_variables.indexOf(d.y) + 1;
-        s = "" + s + ": " + labelName(d.y);
+        s = "" + s + ": " + d.y;
         return shorten(s);
       });
 
@@ -674,7 +666,7 @@ ScatterMatrix.prototype.__draw = function (
           .attr("dy", ".71em")
           .text(function (d) {
             var s = self.__numeric_variables.indexOf(d.x) + 1;
-            s = "" + s + ": " + labelName(d.x);
+            s = "" + s + ": " + d.x;
             return shorten(s);
           });
 
@@ -688,7 +680,7 @@ ScatterMatrix.prototype.__draw = function (
               .attr("y", size + axis_height + label_height * i)
               .attr("dy", ".71em")
               .text(function (d) {
-                return shorten(filter[k] + ": " + labelName(k));
+                return shorten(filter[k] + ": " + k);
               });
           }
         }
