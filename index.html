@@ -3701,10 +3701,10 @@
           d3.selectAll(".scatter-matrix-svg .x.axis text").size() +
             d3.selectAll(".scatter-matrix-svg .y.axis text").size() >
           0;
-        if (!hasAxes && attempt < 5) {
+        if (!hasAxes && attempt < 10) {
           setTimeout(function () {
             refreshScatterLabelsWithRetry(attempt + 1);
-          }, 100);
+          }, 200);
         }
       }
 
@@ -3815,6 +3815,9 @@
           setTimeout(function () {
             setDimLabels(_userSetting.dimLabels);
             if (graph) updateLabels();
+            if (_userSetting.dimLabels) {
+              refreshScatterLabelsWithRetry(0);
+            }
           }, 0);
         });
       }
