@@ -2333,7 +2333,6 @@
               );
             }
           }
-          loadSetting();
         });
       }
     </script>
@@ -3640,6 +3639,8 @@
             return;
           }
 
+          // ensure optional fields exist and merge dimLabels if missing
+          d.dimLabels = d.dimLabels || _userSetting.dimLabels || {};
           //updata to global _userSetting
           _userSetting = d;
           setSettings(graph, _userSetting);
