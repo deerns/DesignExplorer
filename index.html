@@ -196,6 +196,10 @@
       return (_userSetting.dimLabels && _userSetting.dimLabels[dimName]) || dimName;
     }
 
+    function withDimLabel(key, value) {
+      return getDimLabel(key) + ": " + value;
+    }
+
     function readyToLoad(csvFilePathLink, settingFilePathLink) {
       if (csvFilePathLink.length > 0) {
         // remove the current selection
@@ -1981,7 +1985,7 @@
             return d;
           })
           .text(function (d) {
-            return d;
+            return getDimLabel(d);
           });
 
         // add change event to resort images
@@ -2034,7 +2038,7 @@
         var title = [];
 
         d3.keys(graph.dimensions()).forEach(function (key) {
-          var info = String(key) + ":" + data[key];
+          var info = getDimLabel(String(key)) + ":" + data[key];
           title.push(info);
         });
 
@@ -2051,7 +2055,12 @@
             !String(key).startsWith("threeD") &&
             !String(key).startsWith("scid")
           ) {
-            var info = "<strong>" + key + "</strong>" + " : " + data[key];
+            var info =
+              "<strong>" +
+              getDimLabel(key) +
+              "</strong>" +
+              " : " +
+              data[key];
             title.push(info);
           }
         });
@@ -3555,6 +3564,11 @@
             return getDimLabel(dimName);
           }
         );
+
+        // Update sorting dropdown labels
+        d3.selectAll(".sorting select option").text(function (d) {
+          return getDimLabel(d);
+        });
 
         // Update parallel coordinates axis labels
         d3.selectAll(".dimension text.label").text(function (d) {
