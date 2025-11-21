@@ -42,10 +42,11 @@ ScatterMatrix.prototype.onData = function(cb) {
 
 ScatterMatrix.prototype.render = function() {
         var self = this;
+        // use a global label getter if defined; otherwise fall back to the raw name
         var labelName = function(name) {
-            if (typeof getDimLabel === "function") {
+            if (typeof window.getDimLabel === "function") {
                 try {
-                    return getDimLabel(name);
+                    return window.getDimLabel(name);
                 } catch (e) {
                     return name;
                 }
