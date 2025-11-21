@@ -198,9 +198,22 @@
 
       if (dimLabels[key]) return dimLabels[key];
 
-      var lower = key.toLowerCase();
+      // try cleaned variants (remove IN:/OUT:, replace dots with spaces)
+      var cleaned = key.replace(/\./g, " ").replace(/^in:/i, "").replace(/^out:/i, "");
+      if (dimLabels[cleaned]) return dimLabels[cleaned];
+
+      // case-insensitive / normalized match
+      var norm = function (s) {
+        return (s || "")
+          .trim()
+          .replace(/\./g, " ")
+          .replace(/^in:/i, "")
+          .replace(/^out:/i, "")
+          .toLowerCase();
+      };
+      var target = norm(key);
       var found = Object.keys(dimLabels).find(function (k) {
-        return k.toLowerCase() === lower;
+        return norm(k) === target;
       });
       if (found) return dimLabels[found];
 
