@@ -171,9 +171,9 @@ rect.disabled {
 #scatter-fullscreen-toggle.btn-xs,
 #scatter-menu-toggle.btn-xs {
     padding: 1px 5px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    line-height: 1.5;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 #menu-toggle .glyphicon,
@@ -182,6 +182,7 @@ rect.disabled {
 #scatter-fullscreen-toggle .glyphicon,
 #scatter-menu-toggle .glyphicon {
     line-height: 1;
+    vertical-align: middle;
 }
 
 .Spectacles_Footer {
