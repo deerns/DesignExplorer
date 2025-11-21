@@ -3654,6 +3654,7 @@
         });
 
         updateScatterLabels();
+        refreshGraphLabelsWithRetry(0);
       }
 
       // Apply custom labels to scatter matrix after render
@@ -3704,6 +3705,18 @@
         if (!hasAxes && attempt < 10) {
           setTimeout(function () {
             refreshScatterLabelsWithRetry(attempt + 1);
+          }, 200);
+        }
+      }
+
+      // Retry relabeling for parallel coordinates axes if not yet rendered
+      function refreshGraphLabelsWithRetry(attempt) {
+        attempt = attempt || 0;
+        updateLabels();
+        var hasPcLabels = d3.selectAll(".dimension text.label").size() > 0;
+        if (!hasPcLabels && attempt < 10) {
+          setTimeout(function () {
+            refreshGraphLabelsWithRetry(attempt + 1);
           }, 200);
         }
       }
