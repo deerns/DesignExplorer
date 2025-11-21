@@ -42,6 +42,16 @@ ScatterMatrix.prototype.onData = function(cb) {
 
 ScatterMatrix.prototype.render = function() {
         var self = this;
+        var labelName = function(name) {
+            if (typeof getDimLabel === "function") {
+                try {
+                    return getDimLabel(name);
+                } catch (e) {
+                    return name;
+                }
+            }
+            return name;
+        };
 
         var container = d3.select(this.__dom_id).append('div')
             .attr('class', 'scatter-matrix-container');
@@ -489,7 +499,7 @@ ScatterMatrix.prototype.__draw = function(cell_size, container_el, color_variabl
             })
             .text(function(d) {
                 var s = self.__numeric_variables.indexOf(d.y) + 1;
-                s = '' + s + ': ' + d.y;
+                s = '' + s + ': ' + labelName(d.y);
                 return shorten(s);
             });
 
@@ -581,7 +591,7 @@ ScatterMatrix.prototype.__draw = function(cell_size, container_el, color_variabl
                     .attr("dy", ".71em")
                     .text(function(d) {
                         var s = self.__numeric_variables.indexOf(d.x) + 1;
-                        s = '' + s + ': ' + d.x;
+                        s = '' + s + ': ' + labelName(d.x);
                         return shorten(s);
                     });
 
