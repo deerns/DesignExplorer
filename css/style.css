@@ -165,6 +165,17 @@ rect.disabled {
     /* overwrite default navbar size */
 }
 
+.btn.btn-xs {
+    height: 24px;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn.btn-xs .glyphicon {
+    line-height: 1;
+}
+
 .Spectacles_Footer {
     visibility: hidden;
 }
