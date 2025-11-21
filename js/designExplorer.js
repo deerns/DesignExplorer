@@ -315,7 +315,10 @@ function checkInputLink(link, callback) {
     var csvSuffix = "data.csv";
 
     if (lowerLink.endsWith(csvSuffix)) {
-      sanitizedLink = sanitizedLink.slice(0, sanitizedLink.length - csvSuffix.length);
+      sanitizedLink = sanitizedLink.slice(
+        0,
+        sanitizedLink.length - csvSuffix.length
+      );
     }
 
     if (sanitizedLink.slice(-1) !== "/") {
