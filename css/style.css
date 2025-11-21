@@ -199,6 +199,10 @@ rect.disabled {
     width: auto !important;
 }
 
+.btn .glyphicon-new-window {
+    margin-left: 4px;
+}
+
 .Spectacles_Footer {
     visibility: hidden;
 }
