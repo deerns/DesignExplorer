@@ -3426,6 +3426,9 @@
 
         if (isThereNewDimLabels || userDimLabels) {
           setDimLabels(userDimLabels);
+          if (graph) {
+            updateLabels();
+          }
         }
       }
 
