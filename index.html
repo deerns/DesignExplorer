@@ -3218,13 +3218,16 @@
           .attr("class", "list-group-item form-inline")
           .text("Slider Label: ")
           .append("input")
-          .attr("class", "form-control input-sm")
+          .attr("class", "form-control input-sm slider-label-input")
           .attr("placeholder", function (d) {
             return getDimLabel(d);
           })
           .attr("type", "text")
           .attr("value", function (d) {
             return newUserSetting.dimLabels[d] || "";
+          })
+          .attr("data-dim", function (d) {
+            return d;
           })
           .on("change", function (d) {
             var value = ($(this).val() || "").trim();
@@ -3365,6 +3368,14 @@
 
         //set up button event
         d3.select("#dataSetting #setUserSetting").on("click", function (d) {
+          d3.selectAll(".slider-label-input").each(function (dimName) {
+            var value = (d3.select(this).property("value") || "").trim();
+            if (value.length === 0) {
+              delete newUserSetting.dimLabels[dimName];
+            } else {
+              newUserSetting.dimLabels[dimName] = value;
+            }
+          });
           setSettings(chart, newUserSetting);
           d3.select("#showSetting").style("display", "none");
         });
