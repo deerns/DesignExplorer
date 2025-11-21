@@ -179,16 +179,19 @@
       type: "",
     };
 
-    var _userSetting = {
-      studyInfo: {
-        name: "",
-        date: "",
-      },
-      dimScales: {},
-      dimTicks: {},
-      dimMark: {},
-      dimLabels: {},
-    };
+    _userSetting =
+      typeof _userSetting !== "undefined"
+        ? _userSetting
+        : {
+            studyInfo: {
+              name: "",
+              date: "",
+            },
+            dimScales: {},
+            dimTicks: {},
+            dimMark: {},
+            dimLabels: {},
+          };
     var imageLinkKeys = [];
     var imageKeyAliases = {};
 
