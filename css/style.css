@@ -199,6 +199,19 @@ rect.disabled {
     width: auto !important;
 }
 
+.sorting #reverseSortOrder.btn.btn-xs {
+    height: 24px;
+    padding: 1px 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.sorting #reverseSortOrder .glyphicon {
+    line-height: 1;
+}
+
 .btn .glyphicon-new-window {
     margin-left: 4px;
 }
