@@ -165,24 +165,21 @@ rect.disabled {
     /* overwrite default navbar size */
 }
 
-#menu-toggle.btn-xs,
-#pcgraph.btn-xs,
-#pcFullScreen-toggle.btn-xs,
-#scatter-fullscreen-toggle.btn-xs,
-#scatter-menu-toggle.btn-xs {
+#PcChartWrapper .btn-group .btn.btn-xs,
+#rightTopButtonGroup .btn.btn-xs {
+    height: 22px;
     padding: 1px 5px;
     line-height: 1.5;
-    display: inline-block;
-    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-#menu-toggle .glyphicon,
-#pcgraph .glyphicon,
-#pcFullScreen-toggle .glyphicon,
-#scatter-fullscreen-toggle .glyphicon,
-#scatter-menu-toggle .glyphicon {
+#PcChartWrapper .btn-group .btn.btn-xs .glyphicon,
+#rightTopButtonGroup .btn.btn-xs .glyphicon {
     line-height: 1;
     vertical-align: middle;
+    top: 0;
 }
 
 .Spectacles_Footer {
