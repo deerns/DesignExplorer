@@ -329,12 +329,17 @@
           return;
         }
 
-        // Only prompt if settings file is explicitly provided via URL link
-        if (!verifySettingPassword(d)) {
+        var expectedPwd =
+          d && d.studyInfo && d.studyInfo.password ? d.studyInfo.password : "";
+
+        if (!expectedPwd) {
+          onSuccess(d);
           return;
         }
 
-        onSuccess(d);
+        requirePassword(expectedPwd, function () {
+          onSuccess(d);
+        });
       });
     }
   </script>
@@ -3634,7 +3639,16 @@
             return;
           }
 
-          if (!verifySettingPassword(d)) {
+          var expectedPwd =
+            d && d.studyInfo && d.studyInfo.password
+              ? d.studyInfo.password
+              : "";
+
+          if (expectedPwd) {
+            requirePassword(expectedPwd, function () {
+              _userSetting = d;
+              setSettings(graph, _userSetting);
+            });
             return;
           }
 
@@ -3642,6 +3656,20 @@
           _userSetting = d;
           setSettings(graph, _userSetting);
         });
+      }
+
+      // Simple modal-based password gate so browsers won't block it
+      var passwordRequired = {
+        expected: "",
+        onSuccess: null,
+      };
+
+      function requirePassword(expected, onSuccess) {
+        passwordRequired.expected = expected;
+        passwordRequired.onSuccess = onSuccess;
+        d3.select("#passwordModal").style("display", "flex");
+        d3.select("#passwordPromptInput").property("value", "");
+        d3.select("#passwordPromptInput").node().focus();
       }
 
       function verifySettingPassword(settingsData) {
@@ -3672,6 +3700,87 @@
 
         return true;
       }
+      // Password modal handlers
+      d3.select("#passwordPromptSubmit").on("click", function () {
+        var entered = d3.select("#passwordPromptInput").property("value") || "";
+        if (entered !== passwordRequired.expected) {
+          alert("Wachtwoord onjuist. Instellingen zijn niet geladen.");
+          return;
+        }
+        d3.select("#passwordModal").style("display", "none");
+        if (typeof passwordRequired.onSuccess === "function") {
+          passwordRequired.onSuccess();
+        }
+      });
+
+      d3.select("#passwordPromptCancel").on("click", function () {
+        alert("Instellingen zijn niet geladen (geannuleerd).");
+        d3.select("#passwordModal").style("display", "none");
+      });
+
+      d3.select("#passwordPromptInput").on("keydown", function () {
+        var evt = d3.event || window.event;
+        if (evt.key === "Enter" || evt.keyCode === 13) {
+          d3.select("#passwordPromptSubmit").on("click")();
+        }
+      });
     </script>
+
+    <!-- Password modal -->
+    <div
+      id="passwordModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.45);
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      "
+    >
+      <div
+        style="
+          background: white;
+          padding: 20px;
+          border-radius: 6px;
+          min-width: 320px;
+          max-width: 90%;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        "
+      >
+        <h4 style="margin-top: 0">Wachtwoord vereist</h4>
+        <p style="margin-bottom: 10px">
+          Deze studie is beveiligd. Voer het wachtwoord in om de instellingen te
+          laden.
+        </p>
+        <input
+          id="passwordPromptInput"
+          type="password"
+          class="form-control input-sm"
+          placeholder="Password"
+          style="width: 100%; margin-bottom: 12px"
+        />
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <button
+            id="passwordPromptCancel"
+            class="btn btn-default btn-sm popupWindowClose"
+            type="button"
+          >
+            Annuleren
+          </button>
+          <button
+            id="passwordPromptSubmit"
+            class="btn btn-primary btn-sm"
+            type="button"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
