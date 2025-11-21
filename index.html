@@ -3570,6 +3570,19 @@
           return getDimLabel(d);
         });
 
+        // Update scatter plot dropdowns and axes if present
+        d3.selectAll(
+          "#scatterChart select option, #scatter-menu select option, .scatter-menu option, .scatter-dim-select option"
+        ).text(function (d) {
+          return getDimLabel(d);
+        });
+
+        d3.selectAll(
+          ".scatter-matrix-svg .x.axis text, .scatter-matrix-svg .y.axis text"
+        ).text(function (d) {
+          return getDimLabel(d);
+        });
+
         // Update parallel coordinates axis labels
         d3.selectAll(".dimension text.label").text(function (d) {
           return getDimLabel(d);
