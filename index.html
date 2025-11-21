@@ -3679,6 +3679,11 @@
           _userSetting = mergedSetting;
           setDimLabels(mergedSetting.dimLabels);
           setSettings(graph, mergedSetting);
+          // safety: re-apply labels after settings in case elements render asynchronously
+          setTimeout(function () {
+            setDimLabels(_userSetting.dimLabels);
+            if (graph) updateLabels();
+          }, 0);
         });
       }
     </script>
