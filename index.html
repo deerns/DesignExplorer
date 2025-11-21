@@ -3606,6 +3606,17 @@
           }
         });
 
+        // Update scatter cell axis titles (x/y labels inside cells)
+        d3.selectAll(".scatter-matrix-svg g.cell text").text(function (d) {
+          var current = d3.select(this).text();
+          var prefix = current.indexOf(":") >= 0 ? current.split(":")[0] + ": " : "";
+          var key = d && d.y ? d.y : d && d.x ? d.x : null;
+          if (!key) {
+            return current;
+          }
+          return prefix + getDimLabel(key);
+        });
+
         // Update parallel coordinates axis labels
         d3.selectAll(".dimension text.label").text(function (d) {
           return getDimLabel(d);
