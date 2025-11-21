@@ -3643,23 +3643,24 @@
 
       // Apply custom labels to scatter matrix after render
       function updateScatterLabels() {
-        // axes inside scatter matrix (x/y labels and cell labels)
-        function relabel(selection) {
-          selection.text(function () {
-            var current = d3.select(this).text() || "";
-            var match = current.match(/^\s*(\d+)\s*:\s*(.+)$/);
-            if (match) {
-              var prefix = match[1];
-              var name = match[2];
-              return prefix + ": " + getDimLabel(name);
-            }
-            return getDimLabel(current.trim());
-          });
-        }
+        // relabel only the scatter cell titles; leave tick labels untouched
+        d3.selectAll(".scatter-matrix-svg g.cell text").text(function () {
+          var current = d3.select(this).text() || "";
+          var cellData = d3.select(this.parentNode).datum() || {};
+          var field = cellData.y || cellData.x || null;
 
-        relabel(d3.selectAll(".scatter-matrix-svg .x.axis text"));
-        relabel(d3.selectAll(".scatter-matrix-svg .y.axis text"));
-        relabel(d3.selectAll(".scatter-matrix-svg g.cell text"));
+          // preserve numeric prefix if present
+          var matchPrefix = current.match(/^\s*(\d+)\s*:\s*/);
+          var prefix = matchPrefix ? matchPrefix[1] + ": " : "";
+
+          var name = field
+            ? field
+            : matchPrefix
+            ? current.replace(/^\s*\d+\s*:\s*/, "")
+            : current.trim();
+
+          return prefix + getDimLabel(name);
+        });
 
         // variable checklist
         d3.selectAll(".scatter-matrix-variable-control label").text(function (d, i) {
