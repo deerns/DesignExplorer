@@ -199,6 +199,15 @@ rect.disabled {
     width: auto !important;
 }
 
+#myStudyID {
+    display: inline-block;
+    max-width: calc(100% - 80px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
 #copy-link.btn.btn-xs {
     height: 24px;
     padding: 1px 8px;
