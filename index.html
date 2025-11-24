@@ -3665,6 +3665,30 @@
             newUserSetting.imageLabels || _userSetting.imageLabels || {}
           );
           d3.select("#showSetting").style("display", "none");
+          // final hard refresh to avoid any async overwrite
+          setTimeout(function () {
+            var hasSecondImg =
+              Math.max(
+                imageLinkKeys.length || 0,
+                Object.keys(_userSetting.imageLabels || {}).length
+              ) > 1;
+            var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
+            var defaultLabel2 = "2D #2";
+            $("#IMG1LabelText").text(
+              resolveImageLabelFromMap(
+                _userSetting.imageLabels || {},
+                "IMG_1",
+                defaultLabel1
+              )
+            );
+            $("#IMG2LabelText").text(
+              resolveImageLabelFromMap(
+                _userSetting.imageLabels || {},
+                "IMG_2",
+                defaultLabel2
+              )
+            );
+          }, 0);
         });
 
         d3.select("#dataSetting  #saveUserSetting").on("click", function (d) {
