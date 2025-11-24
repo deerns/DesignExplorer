@@ -1612,6 +1612,14 @@
         }
       }
 
+      function refreshImageRadioTexts() {
+        var hasSecondImg = !d3.select("#IMG2Label").classed("hidden");
+        var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
+        var defaultLabel2 = "2D #2";
+        $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
+        $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
+      }
+
       function analyzeInputData(originalData) {
         var keys = d3.keys(originalData[0]);
         //get keys []
@@ -3635,6 +3643,7 @@
               Object.keys(newUserSetting.imageLabels || {}).length
             )
           );
+          refreshImageRadioTexts();
           saveSetting(_userSetting, newUserSetting);
         });
       }
@@ -3689,6 +3698,7 @@
               Object.keys(_userSetting.imageLabels || {}).length
             )
           );
+          refreshImageRadioTexts();
         }, 0);
       }
 
@@ -4094,6 +4104,7 @@
           setTimeout(function () {
             setDimLabels(_userSetting.dimLabels);
             setImageLabels(_userSetting.imageLabels);
+            refreshImageRadioTexts();
             if (graph) updateLabels();
             if (_userSetting.dimLabels) {
               refreshScatterLabelsWithRetry(0);
@@ -4107,6 +4118,7 @@
                   Object.keys(_userSetting.imageLabels || {}).length
                 )
               );
+              refreshImageRadioTexts();
             }, 0);
           }, 0);
         });
