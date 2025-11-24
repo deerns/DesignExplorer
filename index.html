@@ -3694,9 +3694,7 @@
         d3.select("#dataSetting #setUserSetting").on("click", function (d) {
           d3.selectAll(".slider-label-input").each(function (dimName) {
             var value = (d3.select(this).property("value") || "").trim();
-            if (value.length === 0) {
-              delete newUserSetting.dimLabels[dimName];
-            } else {
+            if (value.length > 0) {
               newUserSetting.dimLabels[dimName] = value;
             }
           });
@@ -3756,9 +3754,7 @@
         d3.select("#dataSetting  #saveUserSetting").on("click", function (d) {
           d3.selectAll(".slider-label-input").each(function (dimName) {
             var value = (d3.select(this).property("value") || "").trim();
-            if (value.length === 0) {
-              delete newUserSetting.dimLabels[dimName];
-            } else {
+            if (value.length > 0) {
               newUserSetting.dimLabels[dimName] = value;
             }
           });
