@@ -4290,6 +4290,17 @@
               refreshGraphLabelsWithRetry(0);
               if (graph) graph.render();
             }, 0);
+            // extra delayed pass in case parcoords re-renders after settings
+            setTimeout(function () {
+              setDimLabels(_userSetting.dimLabels);
+              setImageLabels(_userSetting.imageLabels);
+              refreshImageRadioTexts();
+              if (graph) {
+                updateLabels();
+                refreshGraphLabelsWithRetry(0);
+                graph.render();
+              }
+            }, 200);
           }, 0);
         });
       }
