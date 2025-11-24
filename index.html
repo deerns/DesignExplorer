@@ -3838,7 +3838,8 @@
         // Update scatter cell axis titles (x/y labels inside cells)
         d3.selectAll(".scatter-matrix-svg g.cell text").text(function (d) {
           var current = d3.select(this).text();
-          var prefix = current.indexOf(":") >= 0 ? current.split(":")[0] + ": " : "";
+          var prefix =
+            current.indexOf(":") >= 0 ? current.split(":")[0] + ": " : "";
           var key = d && d.y ? d.y : d && d.x ? d.x : null;
           if (!key) {
             return current;
@@ -3891,7 +3892,10 @@
         });
 
         // variable checklist
-        d3.selectAll(".scatter-matrix-variable-control label").text(function (d, i) {
+        d3.selectAll(".scatter-matrix-variable-control label").text(function (
+          d,
+          i
+        ) {
           return i + 1 + ": " + getDimLabel(d);
         });
 
@@ -3960,7 +3964,10 @@
         globalUserSetting.dimLabels = globalUserSetting.dimLabels || {};
         Object.assign(globalUserSetting.dimLabels, newUserSetting.dimLabels);
         globalUserSetting.imageLabels = globalUserSetting.imageLabels || {};
-        Object.assign(globalUserSetting.imageLabels, newUserSetting.imageLabels);
+        Object.assign(
+          globalUserSetting.imageLabels,
+          newUserSetting.imageLabels
+        );
 
         var exportJson = globalUserSetting;
 
@@ -4045,19 +4052,19 @@
           setSettings(graph, mergedSetting);
           // safety: re-apply labels after settings in case elements render asynchronously
           setTimeout(function () {
-          setDimLabels(_userSetting.dimLabels);
-          setImageLabels(_userSetting.imageLabels);
-          if (graph) updateLabels();
-          if (_userSetting.dimLabels) {
-            refreshScatterLabelsWithRetry(0);
-          }
-          // in case radios render after labels, refresh once more
-          setTimeout(function () {
+            setDimLabels(_userSetting.dimLabels);
             setImageLabels(_userSetting.imageLabels);
+            if (graph) updateLabels();
+            if (_userSetting.dimLabels) {
+              refreshScatterLabelsWithRetry(0);
+            }
+            // in case radios render after labels, refresh once more
+            setTimeout(function () {
+              setImageLabels(_userSetting.imageLabels);
+            }, 0);
           }, 0);
-        }, 0);
-      });
-    }
-  </script>
+        });
+      }
+    </script>
   </body>
 </html>
