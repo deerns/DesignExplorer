@@ -3627,14 +3627,12 @@
             labels
           );
 
-          // sync internal state then force UI refresh
-          setImageLabels(labels);
-          var count = Math.max(
-            imageLinkKeys.length || 0,
-            Object.keys(labels || {}).length
-          );
-          updateImageRadioLabels(count);
-          var hasSecondImg = count > 1;
+          // hard set the DOM text from the latest inputs (fallback to defaults)
+          var hasSecondImg =
+            Math.max(
+              imageLinkKeys.length || 0,
+              Object.keys(labels || {}).length
+            ) > 1;
           var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
           var defaultLabel2 = "2D #2";
           var finalLabel1 = liveImg1.length
@@ -3643,8 +3641,22 @@
           var finalLabel2 = liveImg2.length
             ? liveImg2
             : resolveImageLabelFromMap(labels, "IMG_2", defaultLabel2);
+
           $("#IMG1LabelText").text(finalLabel1);
-          $("#IMG2LabelText").text(finalLabel2);
+          if (hasSecondImg) {
+            $("#IMG2LabelText").text(finalLabel2);
+            d3.select("#IMG2Label").classed("hidden", false);
+          } else {
+            d3.select("#IMG2Label").classed("hidden", true);
+          }
+
+          // sync internal state then force UI refresh
+          setImageLabels(labels);
+          var count = Math.max(
+            imageLinkKeys.length || 0,
+            Object.keys(labels || {}).length
+          );
+          updateImageRadioLabels(count);
         }
 
         //set up button event
