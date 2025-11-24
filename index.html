@@ -3640,53 +3640,50 @@
           return fallback;
         }
 
-        function applyImageLabelsImmediate(labels) {
-          labels = labels || {};
+      function applyImageLabelsImmediate(labels) {
+        labels = labels || {};
 
-          // include current input values to avoid stale label maps
-          var liveImg1 = ($("#img1LabelInput").val() || "").trim();
-          var liveImg2 = ($("#img2LabelInput").val() || "").trim();
-          if (liveImg1.length > 0) labels.IMG_1 = liveImg1;
-          if (liveImg2.length > 0) labels.IMG_2 = liveImg2;
+        // include current input values to avoid stale label maps
+        var liveImg1 = ($("#img1LabelInput").val() || "").trim();
+        var liveImg2 = ($("#img2LabelInput").val() || "").trim();
+        if (liveImg1.length > 0) labels.IMG_1 = liveImg1;
+        if (liveImg2.length > 0) labels.IMG_2 = liveImg2;
 
-          // persist into global settings immediately
-          _userSetting.imageLabels = Object.assign(
-            {},
-            _userSetting.imageLabels || {},
-            labels
-          );
+        // persist into global settings immediately
+        _userSetting.imageLabels = Object.assign(
+          {},
+          _userSetting.imageLabels || {},
+          labels
+        );
 
-          // hard set the DOM text from the latest inputs (fallback to defaults)
-          var hasSecondImg =
-            Math.max(
-              imageLinkKeys.length || 0,
-              Object.keys(labels || {}).length
-            ) > 1;
-          var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
-          var defaultLabel2 = "2D #2";
-          var finalLabel1 = liveImg1.length
-            ? liveImg1
-            : resolveImageLabelFromMap(labels, "IMG_1", defaultLabel1);
-          var finalLabel2 = liveImg2.length
-            ? liveImg2
-            : resolveImageLabelFromMap(labels, "IMG_2", defaultLabel2);
+        // sync internal state then force UI refresh
+        setImageLabels(labels);
+        var effectiveLabels = _userSetting.imageLabels || {};
+        var count = Math.max(
+          imageLinkKeys.length || 0,
+          Object.keys(effectiveLabels).length
+        );
+        updateImageRadioLabels(count);
 
-          $("#IMG1LabelText").text(finalLabel1);
-          if (hasSecondImg) {
-            $("#IMG2LabelText").text(finalLabel2);
-            d3.select("#IMG2Label").classed("hidden", false);
-          } else {
-            d3.select("#IMG2Label").classed("hidden", true);
-          }
+        // hard set the DOM text from the latest inputs (fallback to defaults and effective labels)
+        var hasSecondImg = count > 1;
+        var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
+        var defaultLabel2 = "2D #2";
+        var finalLabel1 = liveImg1.length
+          ? liveImg1
+          : resolveImageLabelFromMap(effectiveLabels, "IMG_1", defaultLabel1);
+        var finalLabel2 = liveImg2.length
+          ? liveImg2
+          : resolveImageLabelFromMap(effectiveLabels, "IMG_2", defaultLabel2);
 
-          // sync internal state then force UI refresh
-          setImageLabels(labels);
-          var count = Math.max(
-            imageLinkKeys.length || 0,
-            Object.keys(labels || {}).length
-          );
-          updateImageRadioLabels(count);
+        $("#IMG1LabelText").text(finalLabel1);
+        if (hasSecondImg) {
+          $("#IMG2LabelText").text(finalLabel2);
+          d3.select("#IMG2Label").classed("hidden", false);
+        } else {
+          d3.select("#IMG2Label").classed("hidden", true);
         }
+      }
 
         //set up button event
         d3.select("#dataSetting #setUserSetting").on("click", function (d) {
