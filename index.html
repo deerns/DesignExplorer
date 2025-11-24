@@ -3562,6 +3562,10 @@
           });
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
+          // ensure radio labels update immediately after applying settings
+          setImageLabels(
+            newUserSetting.imageLabels || _userSetting.imageLabels || {}
+          );
           d3.select("#showSetting").style("display", "none");
         });
 
@@ -4013,6 +4017,7 @@
           // safety: re-apply labels after settings in case elements render asynchronously
           setTimeout(function () {
             setDimLabels(_userSetting.dimLabels);
+            setImageLabels(_userSetting.imageLabels);
             if (graph) updateLabels();
             if (_userSetting.dimLabels) {
               refreshScatterLabelsWithRetry(0);
