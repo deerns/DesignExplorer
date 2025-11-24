@@ -623,10 +623,35 @@
                 "
               >
                 <div class="panel panel-default">
-                  <div class="panel-heading">
-                    <h4 class="panel-title">
-                      <a data-toggle="collapse" href="#collapse1">Attributes</a>
+                  <div
+                    class="panel-heading"
+                    style="
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-between;
+                    "
+                  >
+                    <h4 class="panel-title" style="margin: 0">
+                      <a
+                        data-toggle="collapse"
+                        href="#collapse1"
+                        aria-expanded="true"
+                        aria-controls="collapse1"
+                        >Attributes</a
+                      >
                     </h4>
+                    <button
+                      type="button"
+                      class="btn btn-default btn-xs"
+                      id="attr-collapse-toggle"
+                      aria-label="Toggle attributes"
+                      title="Verberg attributen"
+                    >
+                      <span
+                        class="glyphicon glyphicon-chevron-up"
+                        aria-hidden="true"
+                      ></span>
+                    </button>
                   </div>
                   <div id="collapse1" class="panel-collapse collapse in">
                     <div class="panel-body"><p>data</p></div>
@@ -2108,6 +2133,36 @@
           .select("p")
           .html(title.join("<br>"));
       }
+
+      $(function () {
+        var $attrCollapse = $("#collapse1");
+        var $attrToggle = $("#attr-collapse-toggle");
+
+        function syncAttrToggle(isOpen) {
+          $attrToggle
+            .find(".glyphicon")
+            .toggleClass("glyphicon-chevron-up", isOpen)
+            .toggleClass("glyphicon-chevron-down", !isOpen);
+          $attrToggle.attr(
+            "title",
+            isOpen ? "Verberg attributen" : "Toon attributen"
+          );
+        }
+
+        $attrToggle.on("click", function () {
+          $attrCollapse.collapse("toggle");
+        });
+
+        $attrCollapse.on("shown.bs.collapse", function () {
+          syncAttrToggle(true);
+        });
+
+        $attrCollapse.on("hidden.bs.collapse", function () {
+          syncAttrToggle(false);
+        });
+
+        syncAttrToggle($attrCollapse.hasClass("in"));
+      });
 
       function updateImageGrid(data, resizeImageDiv) {
         // this is based on bootstraps 12 column grid
