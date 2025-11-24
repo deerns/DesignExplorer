@@ -1620,6 +1620,33 @@
         $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
       }
 
+      function syncRadioLabelsFromCurrentInputs() {
+        var liveImg1 = ($("#img1LabelInput").val() || "").trim();
+        var liveImg2 = ($("#img2LabelInput").val() || "").trim();
+        var hasSecondImg = imageLinkKeys.length > 1;
+
+        var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
+        var defaultLabel2 = "2D #2";
+
+        var label1 =
+          liveImg1.length > 0
+            ? liveImg1
+            : getImageLabel("IMG_1", defaultLabel1);
+        var label2 =
+          liveImg2.length > 0
+            ? liveImg2
+            : getImageLabel("IMG_2", defaultLabel2);
+
+        $("#IMG1LabelText").text(label1);
+
+        if (hasSecondImg) {
+          d3.select("#IMG2Label").classed("hidden", false);
+          $("#IMG2LabelText").text(label2);
+        } else {
+          d3.select("#IMG2Label").classed("hidden", true);
+        }
+      }
+
       function analyzeInputData(originalData) {
         var keys = d3.keys(originalData[0]);
         //get keys []
@@ -3362,6 +3389,7 @@
               newUserSetting.imageLabels["IMG_1"] = value;
             }
             applyImageLabelsImmediate(newUserSetting.imageLabels);
+            syncRadioLabelsFromCurrentInputs();
           });
         dimSettingListDiv
           .select("#img2LabelInput")
@@ -3374,6 +3402,7 @@
               newUserSetting.imageLabels["IMG_2"] = value;
             }
             applyImageLabelsImmediate(newUserSetting.imageLabels);
+            syncRadioLabelsFromCurrentInputs();
           });
 
         var selectList = dimSettingListDiv
@@ -3676,6 +3705,7 @@
           setImageLabels(
             newUserSetting.imageLabels || _userSetting.imageLabels || {}
           );
+          syncRadioLabelsFromCurrentInputs();
           d3.select("#showSetting").style("display", "none");
           // final hard refresh to avoid any async overwrite
           setTimeout(function () {
@@ -3782,6 +3812,7 @@
             )
           );
           refreshImageRadioTexts();
+          syncRadioLabelsFromCurrentInputs();
         }, 0);
       }
 
