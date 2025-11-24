@@ -1568,11 +1568,34 @@
 
       function getImageLabel(key, fallback) {
         var labels = _userSetting.imageLabels || {};
-        var value = labels[key];
-        if (value !== undefined && value !== null) {
-          var trimmed = String(value).trim();
-          if (trimmed.length > 0) return trimmed;
+        var candidates = [];
+
+        // direct key
+        candidates.push(key);
+
+        // alias from canonical -> actual
+        if (imageKeyAliases && imageKeyAliases[key]) {
+          candidates.push(imageKeyAliases[key]);
         }
+
+        // reverse lookup: actual -> canonical
+        var upperKey = (key || "").toUpperCase();
+        Object.keys(imageKeyAliases || {}).forEach(function (aliasKey) {
+          var aliasVal = (imageKeyAliases[aliasKey] || "").toUpperCase();
+          if (aliasVal === upperKey) {
+            candidates.push(aliasKey);
+          }
+        });
+
+        for (var i = 0; i < candidates.length; i++) {
+          var candidate = candidates[i];
+          var value = labels[candidate];
+          if (value !== undefined && value !== null) {
+            var trimmed = String(value).trim();
+            if (trimmed.length > 0) return trimmed;
+          }
+        }
+
         return fallback;
       }
 
@@ -1698,7 +1721,8 @@
           hasImgLink = true;
         }
 
-        updateImageRadioLabels(imageLinkKeys.length);
+        // ensure radio labels use any configured names and current aliases
+        setImageLabels(_userSetting.imageLabels);
 
         //remove threeD radio
         if (keys.indexOf("threeD") == -1) {
