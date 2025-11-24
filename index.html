@@ -191,6 +191,7 @@
             dimTicks: {},
             dimMark: {},
             dimLabels: {},
+            imageLabels: {},
           };
     var imageLinkKeys = [];
     var imageKeyAliases = {};
@@ -1075,6 +1076,24 @@
                         />
                       </li>
                       <li class="list-group-item form-inline">
+                        2D #1 Label:
+                        <input
+                          id="img1LabelInput"
+                          class="form-control input-sm"
+                          type="text"
+                          style="width: 80%; margin-left: 0.6em"
+                        />
+                      </li>
+                      <li class="list-group-item form-inline">
+                        2D #2 Label:
+                        <input
+                          id="img2LabelInput"
+                          class="form-control input-sm"
+                          type="text"
+                          style="width: 80%; margin-left: 0.6em"
+                        />
+                      </li>
+                      <li class="list-group-item form-inline">
                         Password:
                         <input
                           class="form-control input-sm"
@@ -1547,13 +1566,26 @@
       var hasImgLink = true;
       var has3DLink = false;
 
+      function getImageLabel(key, fallback) {
+        var labels = _userSetting.imageLabels || {};
+        var value = labels[key];
+        if (value !== undefined && value !== null) {
+          var trimmed = String(value).trim();
+          if (trimmed.length > 0) return trimmed;
+        }
+        return fallback;
+      }
+
       function updateImageRadioLabels(imgCount) {
         var hasSecondImg = imgCount > 1;
-        $("#IMG1LabelText").text(hasSecondImg ? "2D #1" : "2D");
+        var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
+        var defaultLabel2 = "2D #2";
+
+        $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
 
         d3.select("#IMG2Label").classed("hidden", !hasSecondImg);
         if (hasSecondImg) {
-          $("#IMG2LabelText").text("2D #2");
+          $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
         }
       }
 
@@ -3243,6 +3275,7 @@
           dimTicks: {},
           dimMark: {},
           dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
+          imageLabels: Object.assign({}, _userSetting.imageLabels || {}),
         };
 
         // var userStudyInfo = {
@@ -3285,6 +3318,28 @@
           .attr("value", newUserSetting.studyInfo.date)
           .on("change", function (d) {
             newUserSetting.studyInfo.date = $(this).val();
+          });
+        dimSettingListDiv
+          .select("#img1LabelInput")
+          .attr("value", newUserSetting.imageLabels["IMG_1"] || "")
+          .on("change", function () {
+            var value = ($(this).val() || "").trim();
+            if (value.length === 0) {
+              delete newUserSetting.imageLabels["IMG_1"];
+            } else {
+              newUserSetting.imageLabels["IMG_1"] = value;
+            }
+          });
+        dimSettingListDiv
+          .select("#img2LabelInput")
+          .attr("value", newUserSetting.imageLabels["IMG_2"] || "")
+          .on("change", function () {
+            var value = ($(this).val() || "").trim();
+            if (value.length === 0) {
+              delete newUserSetting.imageLabels["IMG_2"];
+            } else {
+              newUserSetting.imageLabels["IMG_2"] = value;
+            }
           });
 
         var selectList = dimSettingListDiv
@@ -3510,8 +3565,10 @@
         var isThereNewDimScales = Object.keys(userSetting.dimScales).length > 0;
         var userDimTicks = userSetting.dimTicks || {};
         var userDimLabels = userSetting.dimLabels || {};
+        var userImageLabels = userSetting.imageLabels || {};
         var isThereNewDimTicks = Object.keys(userDimTicks).length > 0;
         var isThereNewDimLabels = Object.keys(userDimLabels).length > 0;
+        var isThereNewImageLabels = Object.keys(userImageLabels).length > 0;
 
         if (isThereNewStudyInfo) {
           setStudyInfo(userSetting.studyInfo);
@@ -3541,6 +3598,10 @@
           if (graph) {
             updateLabels();
           }
+        }
+
+        if (isThereNewImageLabels || userImageLabels) {
+          setImageLabels(userImageLabels);
         }
       }
 
@@ -3651,6 +3712,25 @@
         newDimTickValues.push(scale[1]); // add the last
 
         return newDimTickValues;
+      }
+
+      function setImageLabels(imageLabels) {
+        imageLabels = imageLabels || {};
+        _userSetting.imageLabels = _userSetting.imageLabels || {};
+
+        d3.keys(imageLabels).forEach(function (key) {
+          var value = imageLabels[key];
+          var trimmed =
+            value === undefined || value === null ? "" : String(value).trim();
+
+          if (trimmed.length === 0) {
+            delete _userSetting.imageLabels[key];
+          } else {
+            _userSetting.imageLabels[key] = trimmed;
+          }
+        });
+
+        updateImageRadioLabels(imageLinkKeys.length || 0);
       }
 
       function setDimLabels(dimLabels) {
@@ -3828,6 +3908,8 @@
         Object.assign(globalUserSetting.studyInfo, newUserSetting.studyInfo);
         globalUserSetting.dimLabels = globalUserSetting.dimLabels || {};
         Object.assign(globalUserSetting.dimLabels, newUserSetting.dimLabels);
+        globalUserSetting.imageLabels = globalUserSetting.imageLabels || {};
+        Object.assign(globalUserSetting.imageLabels, newUserSetting.imageLabels);
 
         var exportJson = globalUserSetting;
 
@@ -3899,6 +3981,11 @@
             {},
             _userSetting.dimMark || {},
             d.dimMark || {}
+          );
+          mergedSetting.imageLabels = Object.assign(
+            {},
+            _userSetting.imageLabels || {},
+            d.imageLabels || {}
           );
 
           // update the global _userSetting
