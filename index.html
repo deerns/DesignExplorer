@@ -3600,9 +3600,8 @@
           }
         }
 
-        if (isThereNewImageLabels || userImageLabels) {
-          setImageLabels(userImageLabels);
-        }
+        // always sync image labels so UI picks up values from settings.json
+        setImageLabels(userImageLabels);
       }
 
       function setStudyInfo(studyInfoData) {
