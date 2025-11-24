@@ -3354,24 +3354,26 @@
         dimSettingListDiv
           .select("#img1LabelInput")
           .attr("value", newUserSetting.imageLabels["IMG_1"] || "")
-          .on("change", function () {
+          .on("input change", function () {
             var value = ($(this).val() || "").trim();
             if (value.length === 0) {
               delete newUserSetting.imageLabels["IMG_1"];
             } else {
               newUserSetting.imageLabels["IMG_1"] = value;
             }
+            applyImageLabelsImmediate(newUserSetting.imageLabels);
           });
         dimSettingListDiv
           .select("#img2LabelInput")
           .attr("value", newUserSetting.imageLabels["IMG_2"] || "")
-          .on("change", function () {
+          .on("input change", function () {
             var value = ($(this).val() || "").trim();
             if (value.length === 0) {
               delete newUserSetting.imageLabels["IMG_2"];
             } else {
               newUserSetting.imageLabels["IMG_2"] = value;
             }
+            applyImageLabelsImmediate(newUserSetting.imageLabels);
           });
 
         var selectList = dimSettingListDiv
