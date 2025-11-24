@@ -3823,6 +3823,15 @@
           applyImageLabelsImmediate(_userSetting.imageLabels || {});
           syncRadioLabelsFromCurrentInputs();
         }, 0);
+
+        // extra pass to ensure axis/slider labels reflect latest dimLabels after Set
+        setTimeout(function () {
+          setDimLabels(_userSetting.dimLabels || {});
+          if (graph) {
+            updateLabels();
+            refreshGraphLabelsWithRetry(0);
+          }
+        }, 0);
       }
 
       function setStudyInfo(studyInfoData) {
