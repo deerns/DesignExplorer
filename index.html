@@ -3533,6 +3533,23 @@
             };
           });
 
+        function updateImageLabelsFromInputs() {
+          var img1Val = ($("#img1LabelInput").val() || "").trim();
+          var img2Val = ($("#img2LabelInput").val() || "").trim();
+
+          if (img1Val.length === 0) {
+            delete newUserSetting.imageLabels["IMG_1"];
+          } else {
+            newUserSetting.imageLabels["IMG_1"] = img1Val;
+          }
+
+          if (img2Val.length === 0) {
+            delete newUserSetting.imageLabels["IMG_2"];
+          } else {
+            newUserSetting.imageLabels["IMG_2"] = img2Val;
+          }
+        }
+
         //set up button event
         d3.select("#dataSetting #setUserSetting").on("click", function (d) {
           d3.selectAll(".slider-label-input").each(function (dimName) {
@@ -3543,6 +3560,7 @@
               newUserSetting.dimLabels[dimName] = value;
             }
           });
+          updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
           d3.select("#showSetting").style("display", "none");
         });
@@ -3556,6 +3574,7 @@
               newUserSetting.dimLabels[dimName] = value;
             }
           });
+          updateImageLabelsFromInputs();
           saveSetting(_userSetting, newUserSetting);
         });
       }
