@@ -4257,6 +4257,10 @@
           setImageLabels(_userSetting.imageLabels);
           setDimLabels(mergedSetting.dimLabels);
           setSettings(graph, mergedSetting);
+          if (graph) {
+            updateLabels();
+            refreshGraphLabelsWithRetry(0);
+          }
           // safety: re-apply labels after settings in case elements render asynchronously
           setTimeout(function () {
             setDimLabels(_userSetting.dimLabels);
