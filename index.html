@@ -198,19 +198,8 @@
 
     function getDimLabel(dimName) {
       var dimLabels = _userSetting.dimLabels || {};
+      var dimLabelsNorm = _userSetting.dimLabelsNormalized || {};
       var key = (dimName || "").trim();
-
-      if (dimLabels[key]) return dimLabels[key];
-
-      // try cleaned variants (remove IN:/OUT:, replace dots/underscores with spaces)
-      var cleaned = key
-        .replace(/[_\.]/g, " ")
-        .replace(/^in:/i, "")
-        .replace(/^out:/i, "")
-        .trim();
-      if (dimLabels[cleaned]) return dimLabels[cleaned];
-
-      // case-insensitive / normalized match
       var norm = function (s) {
         return (s || "")
           .trim()
@@ -219,6 +208,21 @@
           .replace(/^out:/i, "")
           .toLowerCase();
       };
+
+      // direct and normalized map lookups
+      if (dimLabels[key]) return dimLabels[key];
+      if (dimLabelsNorm[norm(key)]) return dimLabelsNorm[norm(key)];
+
+      // try cleaned variants (remove IN:/OUT:, replace dots/underscores with spaces)
+      var cleaned = key
+        .replace(/[_\.]/g, " ")
+        .replace(/^in:/i, "")
+        .replace(/^out:/i, "")
+        .trim();
+      if (dimLabels[cleaned]) return dimLabels[cleaned];
+      if (dimLabelsNorm[norm(cleaned)]) return dimLabelsNorm[norm(cleaned)];
+
+      // case-insensitive / normalized match
       var target = norm(key);
       var found = Object.keys(dimLabels).find(function (k) {
         return norm(k) === target;
@@ -3959,6 +3963,8 @@
       function setDimLabels(dimLabels) {
         dimLabels = dimLabels || {};
 
+        var normalizedMap = {};
+
         d3.keys(dimLabels).forEach(function (d) {
           var val = dimLabels[d];
           var cleaned = (d || "").trim();
@@ -3970,7 +3976,11 @@
 
           _userSetting.dimLabels[cleaned] = val;
           _userSetting.dimLabels[canonical] = val;
+          normalizedMap[canonical.toLowerCase()] = val;
+          normalizedMap[cleaned.toLowerCase()] = val;
         });
+
+        _userSetting.dimLabelsNormalized = normalizedMap;
 
         // Update slider labels if they exist
         d3.selectAll("#inputSliders .inputSlider .inputSliderLabel").text(
