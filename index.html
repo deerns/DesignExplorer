@@ -1965,6 +1965,12 @@
           .interactive()
           .reorderable();
 
+        // keep labels in sync whenever parcoords renders (initial draw, resize, reorder)
+        graph.on("render", function () {
+          updateLabels();
+          refreshGraphLabelsWithRetry(0);
+        });
+
         updateLabels();
       }
 
