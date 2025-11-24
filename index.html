@@ -3752,7 +3752,9 @@
           }
         });
 
-        updateImageRadioLabels(imageLinkKeys.length || 0);
+        var labelCount = Object.keys(_userSetting.imageLabels || {}).length;
+        var imgCount = imageLinkKeys.length || 0;
+        updateImageRadioLabels(Math.max(imgCount, labelCount));
       }
 
       function setDimLabels(dimLabels) {
