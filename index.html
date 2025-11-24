@@ -3586,6 +3586,14 @@
           });
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
+          // immediately refresh radio labels with current inputs
+          setImageLabels(newUserSetting.imageLabels || {});
+          updateImageRadioLabels(
+            Math.max(
+              imageLinkKeys.length || 0,
+              Object.keys(newUserSetting.imageLabels || {}).length
+            )
+          );
           // ensure radio labels update immediately after applying settings
           setImageLabels(
             newUserSetting.imageLabels || _userSetting.imageLabels || {}
@@ -3603,6 +3611,14 @@
             }
           });
           updateImageLabelsFromInputs();
+          // refresh radio labels immediately even before saving
+          setImageLabels(newUserSetting.imageLabels || {});
+          updateImageRadioLabels(
+            Math.max(
+              imageLinkKeys.length || 0,
+              Object.keys(newUserSetting.imageLabels || {}).length
+            )
+          );
           saveSetting(_userSetting, newUserSetting);
         });
       }
