@@ -4316,6 +4316,18 @@
                 graph.render();
               }
             }, 200);
+            // final delayed pass to catch any late renderers
+            setTimeout(function () {
+              setDimLabels(_userSetting.dimLabels);
+              if (graph) {
+                updateLabels();
+                refreshGraphLabelsWithRetry(0);
+                d3.selectAll(".dimension text.label").text(function (d) {
+                  return getDimLabel(d);
+                });
+                graph.render();
+              }
+            }, 500);
           }, 0);
         });
       }
