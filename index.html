@@ -3618,6 +3618,13 @@
           if (liveImg1.length > 0) labels.IMG_1 = liveImg1;
           if (liveImg2.length > 0) labels.IMG_2 = liveImg2;
 
+          // persist into global settings immediately
+          _userSetting.imageLabels = Object.assign(
+            {},
+            _userSetting.imageLabels || {},
+            labels
+          );
+
           // sync internal state then force UI refresh
           setImageLabels(labels);
           var count = Math.max(
