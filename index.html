@@ -3960,7 +3960,16 @@
         dimLabels = dimLabels || {};
 
         d3.keys(dimLabels).forEach(function (d) {
-          _userSetting.dimLabels[d] = dimLabels[d];
+          var val = dimLabels[d];
+          var cleaned = (d || "").trim();
+          var canonical = cleaned
+            .replace(/[_\.]/g, " ")
+            .replace(/^in:/i, "")
+            .replace(/^out:/i, "")
+            .trim();
+
+          _userSetting.dimLabels[cleaned] = val;
+          _userSetting.dimLabels[canonical] = val;
         });
 
         // Update slider labels if they exist
