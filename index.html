@@ -3353,7 +3353,7 @@
           });
         dimSettingListDiv
           .select("#img1LabelInput")
-          .attr("value", newUserSetting.imageLabels["IMG_1"] || "")
+          .property("value", newUserSetting.imageLabels["IMG_1"] || "")
           .on("input change", function () {
             var value = ($(this).val() || "").trim();
             if (value.length === 0) {
@@ -3365,7 +3365,7 @@
           });
         dimSettingListDiv
           .select("#img2LabelInput")
-          .attr("value", newUserSetting.imageLabels["IMG_2"] || "")
+          .property("value", newUserSetting.imageLabels["IMG_2"] || "")
           .on("input change", function () {
             var value = ($(this).val() || "").trim();
             if (value.length === 0) {
@@ -3900,14 +3900,17 @@
 
       function setImageLabels(imageLabels) {
         imageLabels = imageLabels || {};
-        var normalized = {};
+        var normalized = Object.assign({}, _userSetting.imageLabels || {});
 
         d3.keys(imageLabels).forEach(function (key) {
           var value = imageLabels[key];
           var trimmed =
             value === undefined || value === null ? "" : String(value).trim();
-          if (trimmed.length === 0) return;
           var canon = normalizeImageLabelKey(key);
+          if (trimmed.length === 0) {
+            delete normalized[canon];
+            return;
+          }
           normalized[canon] = trimmed;
         });
 
