@@ -1972,6 +1972,13 @@
         });
 
         updateLabels();
+
+        // If dimLabels were loaded before the graph existed, re-apply them now
+        if (_userSetting && _userSetting.dimLabels) {
+          setDimLabels(_userSetting.dimLabels);
+          updateLabels();
+          refreshGraphLabelsWithRetry(0);
+        }
       }
 
       // update pc chart labels and axis color based on input and outputs parameters
