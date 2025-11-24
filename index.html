@@ -3699,7 +3699,10 @@
           setSettings(chart, newUserSetting);
           // force slider/axis labels to refresh immediately
           setDimLabels(newUserSetting.dimLabels || {});
-          if (graph) updateLabels();
+          if (graph) {
+            updateLabels();
+            refreshGraphLabelsWithRetry(0);
+          }
           applyImageLabelsImmediate(newUserSetting.imageLabels || {});
           // ensure radio labels update immediately after applying settings
           setImageLabels(
