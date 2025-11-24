@@ -1566,38 +1566,38 @@
       var hasImgLink = true;
       var has3DLink = false;
 
-    function getImageLabel(key, fallback) {
-      var labels = _userSetting.imageLabels || {};
-      var candidates = [];
+      function getImageLabel(key, fallback) {
+        var labels = _userSetting.imageLabels || {};
+        var candidates = [];
 
-      // direct key
-      candidates.push(key);
+        // direct key
+        candidates.push(key);
 
-      // alias from canonical -> actual
-      if (imageKeyAliases && imageKeyAliases[key]) {
-        candidates.push(imageKeyAliases[key]);
-      }
-
-      // reverse lookup: actual -> canonical
-      var upperKey = normalizeImageLabelKey(key);
-      Object.keys(imageKeyAliases || {}).forEach(function (aliasKey) {
-        var aliasVal = normalizeImageLabelKey(imageKeyAliases[aliasKey]);
-        if (aliasVal === upperKey) {
-          candidates.push(aliasKey);
+        // alias from canonical -> actual
+        if (imageKeyAliases && imageKeyAliases[key]) {
+          candidates.push(imageKeyAliases[key]);
         }
-      });
 
-      for (var i = 0; i < candidates.length; i++) {
-        var candidate = normalizeImageLabelKey(candidates[i]);
-        var value = labels[candidate];
-        if (value !== undefined && value !== null) {
-          var trimmed = String(value).trim();
-          if (trimmed.length > 0) return trimmed;
+        // reverse lookup: actual -> canonical
+        var upperKey = normalizeImageLabelKey(key);
+        Object.keys(imageKeyAliases || {}).forEach(function (aliasKey) {
+          var aliasVal = normalizeImageLabelKey(imageKeyAliases[aliasKey]);
+          if (aliasVal === upperKey) {
+            candidates.push(aliasKey);
+          }
+        });
+
+        for (var i = 0; i < candidates.length; i++) {
+          var candidate = normalizeImageLabelKey(candidates[i]);
+          var value = labels[candidate];
+          if (value !== undefined && value !== null) {
+            var trimmed = String(value).trim();
+            if (trimmed.length > 0) return trimmed;
+          }
         }
-      }
 
-      return fallback;
-    }
+        return fallback;
+      }
 
       function updateImageRadioLabels(imgCount) {
         var hasSecondImg = imgCount > 1;
