@@ -3651,6 +3651,12 @@
         setImageLabels(userImageLabels);
         setTimeout(function () {
           setImageLabels(_userSetting.imageLabels || {});
+          updateImageRadioLabels(
+            Math.max(
+              imageLinkKeys.length || 0,
+              Object.keys(_userSetting.imageLabels || {}).length
+            )
+          );
         }, 0);
       }
 
@@ -4048,6 +4054,8 @@
 
           // update the global _userSetting
           _userSetting = mergedSetting;
+          // ensure image labels are available before applying settings
+          setImageLabels(_userSetting.imageLabels);
           setDimLabels(mergedSetting.dimLabels);
           setSettings(graph, mergedSetting);
           // safety: re-apply labels after settings in case elements render asynchronously
@@ -4061,6 +4069,12 @@
             // in case radios render after labels, refresh once more
             setTimeout(function () {
               setImageLabels(_userSetting.imageLabels);
+              updateImageRadioLabels(
+                Math.max(
+                  imageLinkKeys.length || 0,
+                  Object.keys(_userSetting.imageLabels || {}).length
+                )
+              );
             }, 0);
           }, 0);
         });
