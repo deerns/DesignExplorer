@@ -4040,6 +4040,11 @@
 
         updateScatterLabels();
         refreshGraphLabelsWithRetry(0);
+
+        // force axis labels to current mapping in case a render overwrote them
+        d3.selectAll(".dimension text.label").text(function (d) {
+          return getDimLabel(d);
+        });
       }
 
       // Apply custom labels to scatter matrix after render
