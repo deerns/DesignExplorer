@@ -4274,6 +4274,10 @@
             updateLabels();
             refreshGraphLabelsWithRetry(0);
             graph.render();
+            // force relabel axes immediately
+            d3.selectAll(".dimension text.label").text(function (d) {
+              return getDimLabel(d);
+            });
           }
           // safety: re-apply labels after settings in case elements render asynchronously
           setTimeout(function () {
@@ -4305,6 +4309,10 @@
               if (graph) {
                 updateLabels();
                 refreshGraphLabelsWithRetry(0);
+                // relabel axes explicitly to avoid stale text
+                d3.selectAll(".dimension text.label").text(function (d) {
+                  return getDimLabel(d);
+                });
                 graph.render();
               }
             }, 200);
