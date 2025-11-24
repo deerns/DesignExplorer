@@ -4266,6 +4266,7 @@
           if (graph) {
             updateLabels();
             refreshGraphLabelsWithRetry(0);
+            graph.render();
           }
           // safety: re-apply labels after settings in case elements render asynchronously
           setTimeout(function () {
@@ -4287,6 +4288,7 @@
               );
               refreshImageRadioTexts();
               refreshGraphLabelsWithRetry(0);
+              if (graph) graph.render();
             }, 0);
           }, 0);
         });
