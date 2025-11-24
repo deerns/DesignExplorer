@@ -3594,6 +3594,22 @@
               Object.keys(newUserSetting.imageLabels || {}).length
             )
           );
+          // force immediate text update on the spans
+          (function () {
+            var hasSecondImg =
+              Math.max(
+                imageLinkKeys.length || 0,
+                Object.keys(newUserSetting.imageLabels || {}).length
+              ) > 1;
+            var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
+            var defaultLabel2 = "2D #2";
+            $("#IMG1LabelText").text(
+              getImageLabel("IMG_1", defaultLabel1) || defaultLabel1
+            );
+            $("#IMG2LabelText").text(
+              getImageLabel("IMG_2", defaultLabel2) || defaultLabel2
+            );
+          })();
           // ensure radio labels update immediately after applying settings
           setImageLabels(
             newUserSetting.imageLabels || _userSetting.imageLabels || {}
