@@ -3977,17 +3977,20 @@
 
         d3.keys(dimLabels).forEach(function (d) {
           var val = dimLabels[d];
-          var cleaned = (d || "").trim();
-          var canonical = cleaned
+          var original = (d || "").trim();
+          var canonical = original
             .replace(/[_\.]/g, " ")
             .replace(/^in:/i, "")
             .replace(/^out:/i, "")
             .trim();
+          var underscore = canonical.replace(/\s+/g, "_");
 
-          _userSetting.dimLabels[cleaned] = val;
-          _userSetting.dimLabels[canonical] = val;
-          normalizedMap[canonical.toLowerCase()] = val;
-          normalizedMap[cleaned.toLowerCase()] = val;
+          // store several aliases -> same label
+          [original, canonical, underscore].forEach(function (k) {
+            if (!k) return;
+            _userSetting.dimLabels[k] = val;
+            normalizedMap[k.toLowerCase()] = val;
+          });
         });
 
         _userSetting.dimLabelsNormalized = normalizedMap;
