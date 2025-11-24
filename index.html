@@ -3582,6 +3582,33 @@
           }
         }
 
+        function resolveImageLabelFromMap(labelMap, key, fallback) {
+          labelMap = labelMap || {};
+          var candidates = [key];
+
+          if (imageKeyAliases && imageKeyAliases[key]) {
+            candidates.push(imageKeyAliases[key]);
+          }
+
+          var upperKey = (key || "").toUpperCase();
+          Object.keys(imageKeyAliases || {}).forEach(function (aliasKey) {
+            var aliasVal = (imageKeyAliases[aliasKey] || "").toUpperCase();
+            if (aliasVal === upperKey) {
+              candidates.push(aliasKey);
+            }
+          });
+
+          for (var i = 0; i < candidates.length; i++) {
+            var candidate = candidates[i];
+            var value = labelMap[candidate];
+            if (value !== undefined && value !== null) {
+              var trimmed = String(value).trim();
+              if (trimmed.length > 0) return trimmed;
+            }
+          }
+          return fallback;
+        }
+
         function applyImageLabelsImmediate(labels) {
           labels = labels || {};
           // sync internal state then force UI refresh
@@ -3591,7 +3618,15 @@
             Object.keys(labels || {}).length
           );
           updateImageRadioLabels(count);
-          refreshImageRadioTexts();
+          var hasSecondImg = count > 1;
+          var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
+          var defaultLabel2 = "2D #2";
+          $("#IMG1LabelText").text(
+            resolveImageLabelFromMap(labels, "IMG_1", defaultLabel1)
+          );
+          $("#IMG2LabelText").text(
+            resolveImageLabelFromMap(labels, "IMG_2", defaultLabel2)
+          );
         }
 
         //set up button event
