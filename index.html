@@ -1979,11 +1979,12 @@
 
         d3.selectAll("text.label").style("fill", function (d) {
           // change colors for inputs vs outputs
-          d3.select(this).text(getDimLabel(d));
-          if (inputLabels.indexOf(d) != -1) {
+          var dimName = (d || "").trim();
+          d3.select(this).text(getDimLabel(dimName));
+          if (inputLabels.indexOf(dimName) != -1) {
             colorset.push(inputLabelColor);
             return inputLabelColor; // it is an input
-          } else if (outputLabels.indexOf(d) != -1) {
+          } else if (outputLabels.indexOf(dimName) != -1) {
             colorset.push(outputLabelColor);
             return outputLabelColor; //it's an output
           } else {
