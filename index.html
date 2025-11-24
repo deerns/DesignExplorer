@@ -660,7 +660,7 @@
               </div>
               <div class="pull-right" id="vis">
                 <form>
-                  <label
+                  <label id="IMG1Label"
                     ><input
                       type="radio"
                       class="toggleView"
@@ -669,7 +669,7 @@
                       id="IMG_1"
                       checked
                     />
-                    2D #1</label
+                    <span id="IMG1LabelText">2D #1</span></label
                   >
 
                   <!-- show 2D image on load-->
@@ -682,7 +682,7 @@
                       value="2D_2"
                       id="IMG_2"
                     />
-                    2D #2</label
+                    <span id="IMG2LabelText">2D #2</span></label
                   >
                   <label id="threeDLabel"
                     ><input
@@ -1547,6 +1547,16 @@
       var hasImgLink = true;
       var has3DLink = false;
 
+      function updateImageRadioLabels(imgCount) {
+        var hasSecondImg = imgCount > 1;
+        $("#IMG1LabelText").text(hasSecondImg ? "2D #1" : "2D");
+
+        d3.select("#IMG2Label").classed("hidden", !hasSecondImg);
+        if (hasSecondImg) {
+          $("#IMG2LabelText").text("2D #2");
+        }
+      }
+
       function analyzeInputData(originalData) {
         var keys = d3.keys(originalData[0]);
         //get keys []
@@ -1656,11 +1666,7 @@
           hasImgLink = true;
         }
 
-        if (imageLinkKeys.length <= 1) {
-          d3.select("#IMG2Label").classed("hidden", true);
-        } else {
-          d3.select("#IMG2Label").classed("hidden", false);
-        }
+        updateImageRadioLabels(imageLinkKeys.length);
 
         //remove threeD radio
         if (keys.indexOf("threeD") == -1) {
