@@ -282,6 +282,37 @@
       }, {});
     }
 
+    // ensure all numeric dimensions have valid yscales/domains to avoid NaN in transforms
+    function sanitizeDimensions(chart, data) {
+      if (!chart || typeof chart.dimensions !== "function") return;
+      var dims = chart.dimensions() || {};
+      var rows = data || chart.data() || [];
+      Object.keys(dims).forEach(function (k) {
+        var dim = dims[k] || {};
+        var y = dim.yscale || d3.scale.linear();
+        var vals = rows
+          .map(function (r) {
+            return r && r[k];
+          })
+          .map(function (v) {
+            var n = +v;
+            return isNaN(n) ? null : n;
+          })
+          .filter(function (v) {
+            return v !== null;
+          });
+        if (vals.length === 0) return;
+        var min = d3.min(vals);
+        var max = d3.max(vals);
+        if (isNaN(min) || isNaN(max)) return;
+        y.domain([min, max]);
+        dim.yscale = y;
+        dims[k] = dim;
+      });
+      chart.dimensions(dims);
+      return dims;
+    }
+
     function withDimLabel(key, value) {
       return getDimLabel(key) + ": " + value;
     }
@@ -2155,13 +2186,16 @@
           .mode("queue")
           .rate(40)
           .dimensions(iniDimensions)
-          .render()
           .brushMode("1D-axes") // enable brushing
           .interactive()
           .reorderable();
 
+        sanitizeDimensions(graph, cleanedData);
+        graph.render();
+
         // keep labels in sync whenever parcoords renders (initial draw, resize, reorder)
         graph.on("render", function () {
+          sanitizeDimensions(graph);
           updateLabels();
           refreshGraphLabelsWithRetry(0);
         });
@@ -2641,6 +2675,7 @@
           graph
             .data(newData)
             .dimensions(toDimensionObject(dimKeys, currentDims))
+            .dimensions(sanitizeDimensions(graph, newData) || currentDims)
             .brushReset()
             .render()
             .interactive()
