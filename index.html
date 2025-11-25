@@ -3915,9 +3915,9 @@
 
       function applyDimScalesWithRetry(scales, retries, chartRef) {
         var attempts = retries === undefined ? 2 : retries;
-        var targetChart = chartRef || graph;
         if (!scales || Object.keys(scales).length === 0) return;
 
+        var targetChart = chartRef || graph;
         if (targetChart) {
           setAllScales(targetChart, scales);
           if (targetChart.updateAxes) {
@@ -3927,7 +3927,7 @@
 
         if (attempts > 0) {
           setTimeout(function () {
-            applyDimScalesWithRetry(scales, attempts - 1, targetChart);
+            applyDimScalesWithRetry(scales, attempts - 1, chartRef);
           }, 120);
         }
       }
