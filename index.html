@@ -274,9 +274,10 @@
     }
 
     // build parcoords dimension object from an array of keys
-    function toDimensionObject(keys) {
+    function toDimensionObject(keys, source) {
+      var src = source || {};
       return (keys || []).reduce(function (acc, k) {
-        acc[k] = {};
+        acc[k] = src[k] || {};
         return acc;
       }, {});
     }
@@ -2633,11 +2634,11 @@
         });
 
         function updateGraph(newData) {
-          var currentDims = graph.dimensions();
-          var dimKeys = Object.keys(currentDims || {});
+          var currentDims = graph.dimensions() || {};
+          var dimKeys = Object.keys(currentDims);
           graph
             .data(newData)
-            .dimensions(toDimensionObject(dimKeys))
+            .dimensions(toDimensionObject(dimKeys, currentDims))
             .brushReset()
             .render()
             .interactive()
@@ -2678,8 +2679,11 @@
               return d.name;
             });
 
-          //console.log(activeDimensions);
-          graph.dimensions(toDimensionObject(activeDimensions));
+          var currentDims = graph.dimensions() || {};
+          if (activeDimensions.length === 0) {
+            activeDimensions = Object.keys(currentDims);
+          }
+          graph.dimensions(toDimensionObject(activeDimensions, currentDims));
 
           //if removed the pcIsColoredBy's dim, then update color by the first
           if (activeDimensions.lastIndexOf(pcIsColoredBy) == -1) {
