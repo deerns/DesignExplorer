@@ -1665,6 +1665,82 @@
         $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
       }
 
+      function resolveImageLabelFromMap(labelMap, key, fallback) {
+        labelMap = labelMap || {};
+        var candidates = [key];
+
+        if (imageKeyAliases && imageKeyAliases[key]) {
+          candidates.push(imageKeyAliases[key]);
+        }
+
+        var upperKey = normalizeImageLabelKey(key);
+        Object.keys(imageKeyAliases || {}).forEach(function (aliasKey) {
+          var aliasVal = normalizeImageLabelKey(imageKeyAliases[aliasKey]);
+          if (aliasVal === upperKey) {
+            candidates.push(aliasKey);
+          }
+        });
+
+        for (var i = 0; i < candidates.length; i++) {
+          var candidate = normalizeImageLabelKey(candidates[i]);
+          var value = labelMap[candidate];
+          if (value !== undefined && value !== null) {
+            var trimmed = String(value).trim();
+            if (trimmed.length > 0) return trimmed;
+          }
+        }
+        return fallback;
+      }
+
+      // Apply image labels immediately and update UI; safe for global calls
+      function applyImageLabelsImmediate(labels) {
+        labels = labels || {};
+
+        var img1Input = document.getElementById("img1LabelInput");
+        var img2Input = document.getElementById("img2LabelInput");
+        var liveImg1 =
+          (img1Input && img1Input.value ? img1Input.value : "").trim();
+        var liveImg2 =
+          (img2Input && img2Input.value ? img2Input.value : "").trim();
+        if (liveImg1.length > 0) labels.IMG_1 = liveImg1;
+        if (liveImg2.length > 0) labels.IMG_2 = liveImg2;
+
+        // persist into global settings immediately
+        _userSetting.imageLabels = Object.assign(
+          {},
+          _userSetting.imageLabels || {},
+          labels
+        );
+
+        // sync internal state then force UI refresh
+        setImageLabels(labels);
+        var effectiveLabels = _userSetting.imageLabels || {};
+        var count = Math.max(
+          imageLinkKeys.length || 0,
+          Object.keys(effectiveLabels).length
+        );
+        updateImageRadioLabels(count);
+
+        // hard set the DOM text from the latest inputs (fallback to defaults and effective labels)
+        var hasSecondImg = count > 1;
+        var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
+        var defaultLabel2 = "2D #2";
+        var finalLabel1 = liveImg1.length
+          ? liveImg1
+          : resolveImageLabelFromMap(effectiveLabels, "IMG_1", defaultLabel1);
+        var finalLabel2 = liveImg2.length
+          ? liveImg2
+          : resolveImageLabelFromMap(effectiveLabels, "IMG_2", defaultLabel2);
+
+        $("#IMG1LabelText").text(finalLabel1);
+        if (hasSecondImg) {
+          $("#IMG2LabelText").text(finalLabel2);
+          d3.select("#IMG2Label").classed("hidden", false);
+        } else {
+          d3.select("#IMG2Label").classed("hidden", true);
+        }
+      }
+
       function syncRadioLabelsFromCurrentInputs() {
         var liveImg1 = ($("#img1LabelInput").val() || "").trim();
         var liveImg2 = ($("#img2LabelInput").val() || "").trim();
