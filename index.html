@@ -1815,7 +1815,11 @@
       }
 
       function drawTable(data) {
-        var grid = d3.divgrid();
+        var grid = d3
+          .divgrid()
+          .headerFormatter(function (d) {
+            return getDimLabel(d);
+          });
         d3.select("#tbContainer")
           .datum(data.slice(0, 20))
           .call(grid)
