@@ -1978,6 +1978,8 @@
         graph.on("render", function () {
           updateLabels();
           refreshGraphLabelsWithRetry(0);
+          // Re-apply any saved axis scales after parcoords redraws
+          applyDimScalesWithRetry(_userSetting.dimScales, 1, graph);
         });
 
         updateLabels();
