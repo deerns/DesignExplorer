@@ -273,6 +273,14 @@
       return match || dimName;
     }
 
+    // build parcoords dimension object from an array of keys
+    function toDimensionObject(keys) {
+      return (keys || []).reduce(function (acc, k) {
+        acc[k] = {};
+        return acc;
+      }, {});
+    }
+
     function withDimLabel(key, value) {
       return getDimLabel(key) + ": " + value;
     }
@@ -2625,7 +2633,15 @@
         });
 
         function updateGraph(newData) {
-          graph.data(newData).brushReset().render().interactive().reorderable();
+          var currentDims = graph.dimensions();
+          var dimKeys = Object.keys(currentDims || {});
+          graph
+            .data(newData)
+            .dimensions(toDimensionObject(dimKeys))
+            .brushReset()
+            .render()
+            .interactive()
+            .reorderable();
           graph.updateAxes();
           //updateRadarChart();                   //-----TODO:here needs a switch for different charts-------
           updateScatterChart();
@@ -2663,7 +2679,7 @@
             });
 
           //console.log(activeDimensions);
-          graph.dimensions(activeDimensions);
+          graph.dimensions(toDimensionObject(activeDimensions));
 
           //if removed the pcIsColoredBy's dim, then update color by the first
           if (activeDimensions.lastIndexOf(pcIsColoredBy) == -1) {
