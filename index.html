@@ -1989,6 +1989,15 @@
           refreshGraphLabelsWithRetry(0);
           applyDimLabelsToGraph(3);
         }
+
+        // If dimScales were loaded before the graph existed, re-apply them now
+        if (
+          _userSetting &&
+          Object.keys(_userSetting.dimScales || {}).length > 0
+        ) {
+          setAllScales(graph, _userSetting.dimScales);
+          graph.updateAxes();
+        }
       }
 
       // update pc chart labels and axis color based on input and outputs parameters
@@ -4322,6 +4331,13 @@
           setImageLabels(_userSetting.imageLabels);
           setDimLabels(mergedSetting.dimLabels);
           setSettings(graph, mergedSetting);
+          if (
+            graph &&
+            Object.keys(_userSetting.dimScales || {}).length > 0
+          ) {
+            setAllScales(graph, _userSetting.dimScales);
+            graph.updateAxes();
+          }
           if (graph) {
             updateLabels();
             refreshGraphLabelsWithRetry(0);
