@@ -282,14 +282,19 @@
       }, {});
     }
 
-    // ensure all numeric dimensions have valid yscales/domains to avoid NaN in transforms
+    // ensure dimensions have valid yscales/domains to avoid NaN in transforms
     function sanitizeDimensions(chart, data) {
       if (!chart || typeof chart.dimensions !== "function") return;
       var dims = chart.dimensions() || {};
       var rows = data || chart.data() || [];
       Object.keys(dims).forEach(function (k) {
         var dim = dims[k] || {};
-        var y = dim.yscale || d3.scale.linear();
+        // Ensure there is a yscale object with a copy() fn
+        if (!dim.yscale || typeof dim.yscale.copy !== "function") {
+          dim.yscale = d3.scale.linear().domain([0, 1]).range([1, 0]);
+        }
+
+        // Try to set numeric domain if possible
         var vals = rows
           .map(function (r) {
             return r && r[k];
@@ -301,12 +306,14 @@
           .filter(function (v) {
             return v !== null;
           });
-        if (vals.length === 0) return;
-        var min = d3.min(vals);
-        var max = d3.max(vals);
-        if (isNaN(min) || isNaN(max)) return;
-        y.domain([min, max]);
-        dim.yscale = y;
+        if (vals.length > 0) {
+          var min = d3.min(vals);
+          var max = d3.max(vals);
+          if (!isNaN(min) && !isNaN(max)) {
+            dim.yscale.domain([min, max]);
+          }
+        }
+
         dims[k] = dim;
       });
       chart.dimensions(dims);
