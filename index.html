@@ -241,6 +241,18 @@
         .toLowerCase();
     }
 
+    // Find the actual dimension key on the chart using the original name first, then a normalized match.
+    function resolveDimKey(dimName, chart) {
+      if (!chart || typeof chart.dimensions !== "function") return dimName;
+      var keys = Object.keys(chart.dimensions());
+      if (keys.indexOf(dimName) >= 0) return dimName;
+      var norm = normalizeDimKey(dimName);
+      var match = keys.find(function (k) {
+        return normalizeDimKey(k) === norm;
+      });
+      return match || dimName;
+    }
+
     function withDimLabel(key, value) {
       return getDimLabel(key) + ": " + value;
     }
@@ -3879,15 +3891,7 @@
         if (!chart || typeof chart.dimensions !== "function") return;
 
         d3.keys(scales).forEach(function (d) {
-          var targetKey = d;
-          var norm = normalizeDimKey(d);
-          var dimKeys = Object.keys(chart.dimensions());
-          var matched = dimKeys.find(function (k) {
-            return normalizeDimKey(k) === norm;
-          });
-          if (matched) {
-            targetKey = matched;
-          }
+          var targetKey = resolveDimKey(d, chart);
 
           if (!chart.dimensions()[targetKey]) return;
 
@@ -3911,16 +3915,20 @@
 
       function setAllTicks(chart, tickNumbers) {
         d3.keys(tickNumbers).forEach(function (d) {
-          var scale = chart.dimensions()[d].yscale.domain();
+          var targetKey = resolveDimKey(d, chart);
+          if (!chart.dimensions()[targetKey]) return;
+
+          var scale = chart.dimensions()[targetKey].yscale.domain();
           //update ticks
-          chart.dimensions()[d].tickFormat = d3.format("");
-          chart.dimensions()[d].tickValues = calTickValues(
+          chart.dimensions()[targetKey].tickFormat = d3.format("");
+          chart.dimensions()[targetKey].tickValues = calTickValues(
             scale,
             tickNumbers[d]
           );
 
           //update the global _userSetting
           _userSetting.dimTicks[d] = tickNumbers[d];
+          _userSetting.dimTicks[targetKey] = tickNumbers[d];
         });
       }
 
