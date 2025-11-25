@@ -1995,8 +1995,7 @@
           _userSetting &&
           Object.keys(_userSetting.dimScales || {}).length > 0
         ) {
-          setAllScales(graph, _userSetting.dimScales);
-          graph.updateAxes();
+          applyDimScalesWithRetry(_userSetting.dimScales, 2);
         }
       }
 
@@ -3812,7 +3811,7 @@
         }
 
         if (isThereNewDimScales) {
-          setAllScales(chart, userSetting.dimScales);
+          applyDimScalesWithRetry(userSetting.dimScales, 2, chart);
         }
 
         if (isThereNewDimTicks) {
@@ -3873,6 +3872,18 @@
       }
 
       function setAllScales(chart, scales) {
+        if (!chart || typeof chart.dimensions !== "function") {
+          return;
+        }
+
+        var yscaleDomains = null;
+        if (typeof chart.yscaleDomains === "function") {
+          yscaleDomains = chart.yscaleDomains() || {};
+        } else {
+          yscaleDomains = chart.yscaleDomains || {};
+          if (!chart.yscaleDomains) chart.yscaleDomains = yscaleDomains;
+        }
+
         d3.keys(scales).forEach(function (d) {
           var targetKey = d;
           var norm = normalizeDimKey(d);
@@ -3888,12 +3899,37 @@
 
           //update scales
           chart.dimensions()[targetKey].yscale.domain(scales[d]);
-          chart.yscaleDomains()[targetKey] = scales[d];
+          if (yscaleDomains) {
+            yscaleDomains[targetKey] = scales[d];
+          }
 
           //update the global _userSetting using both original and matched keys
           _userSetting.dimScales[d] = scales[d];
           _userSetting.dimScales[targetKey] = scales[d];
         });
+
+        if (typeof chart.yscaleDomains === "function") {
+          chart.yscaleDomains(yscaleDomains);
+        }
+      }
+
+      function applyDimScalesWithRetry(scales, retries, chartRef) {
+        var attempts = retries === undefined ? 2 : retries;
+        var targetChart = chartRef || graph;
+        if (!scales || Object.keys(scales).length === 0) return;
+
+        if (targetChart) {
+          setAllScales(targetChart, scales);
+          if (targetChart.updateAxes) {
+            targetChart.updateAxes();
+          }
+        }
+
+        if (attempts > 0) {
+          setTimeout(function () {
+            applyDimScalesWithRetry(scales, attempts - 1, targetChart);
+          }, 120);
+        }
       }
 
       function setAllTicks(chart, tickNumbers) {
@@ -4331,13 +4367,7 @@
           setImageLabels(_userSetting.imageLabels);
           setDimLabels(mergedSetting.dimLabels);
           setSettings(graph, mergedSetting);
-          if (
-            graph &&
-            Object.keys(_userSetting.dimScales || {}).length > 0
-          ) {
-            setAllScales(graph, _userSetting.dimScales);
-            graph.updateAxes();
-          }
+          applyDimScalesWithRetry(_userSetting.dimScales, 3);
           if (graph) {
             updateLabels();
             refreshGraphLabelsWithRetry(0);
