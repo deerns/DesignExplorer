@@ -1820,7 +1820,8 @@
           .headerFormatter(function (d) {
             return getDimLabel(d);
           });
-        d3.select("#tbContainer")
+        var tableSel = d3
+          .select("#tbContainer")
           .datum(data.slice(0, 20))
           .call(grid)
           .selectAll(".row")
@@ -1831,6 +1832,13 @@
             mouseout: function (d) {
               graph.unhighlight();
             },
+          });
+
+        // Ensure headers reflect latest custom labels
+        d3.select("#tbContainer .header")
+          .selectAll(".cell")
+          .text(function (d) {
+            return getDimLabel(d);
           });
       }
 
