@@ -3330,9 +3330,10 @@
           if (selected) {
             var url = pickImageForView(selected, viewKey);
             if (url) {
-            d3.select("#viewer2d img")
-              .attr("src", url)
-              .attr("title", getTitle);
+              d3.select("#viewer2d img")
+                .attr("src", url)
+                .attr("title", getTitle);
+            }
           }
           currentView = viewValue; // onthoud welke 2D toggle actief is
         } else {
@@ -4593,7 +4594,6 @@
           }, 0);
         });
       }
-    }
     </script>
   </body>
 </html>
