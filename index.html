@@ -1704,10 +1704,12 @@
 
         var img1Input = document.getElementById("img1LabelInput");
         var img2Input = document.getElementById("img2LabelInput");
-        var liveImg1 =
-          (img1Input && img1Input.value ? img1Input.value : "").trim();
-        var liveImg2 =
-          (img2Input && img2Input.value ? img2Input.value : "").trim();
+        var liveImg1 = (
+          img1Input && img1Input.value ? img1Input.value : ""
+        ).trim();
+        var liveImg2 = (
+          img2Input && img2Input.value ? img2Input.value : ""
+        ).trim();
         if (liveImg1.length > 0) labels.IMG_1 = liveImg1;
         if (liveImg2.length > 0) labels.IMG_2 = liveImg2;
 
@@ -1819,7 +1821,20 @@
           var cleanKey = key.trim().replace(".", " ");
           var upperKey = cleanKey.toUpperCase();
 
-          if (upperKey === "IMG") {
+          // normalize any IMG/IMG_#/IMG # variants
+          var imgMatch = upperKey.match(/^IMG[\s_-]*(\d+)?$/);
+          if (imgMatch) {
+            var idx = imgMatch[1] ? parseInt(imgMatch[1], 10) : 1;
+            if (imageLinkKeys.indexOf(cleanKey) === -1) {
+              imageLinkKeys.push(cleanKey);
+            }
+            if (idx === 1 || isNaN(idx)) {
+              imageKeyAliases.IMG = cleanKey;
+              imageKeyAliases.IMG_1 = cleanKey;
+            } else if (idx === 2) {
+              imageKeyAliases.IMG_2 = cleanKey;
+            }
+          } else if (upperKey === "IMG") {
             if (imageLinkKeys.indexOf(cleanKey) === -1) {
               imageLinkKeys.push(cleanKey);
             }
@@ -1935,11 +1950,9 @@
       }
 
       function drawTable(data) {
-        var grid = d3
-          .divgrid()
-          .headerFormatter(function (d) {
-            return getDimLabel(d);
-          });
+        var grid = d3.divgrid().headerFormatter(function (d) {
+          return getDimLabel(d);
+        });
         var tableSel = d3
           .select("#tbContainer")
           .datum(data.slice(0, 20))
@@ -3565,7 +3578,9 @@
           var direct = _userSetting.dimScales[dim];
           if (direct) return direct;
           var norm = normalizeDimKey(dim);
-          var match = Object.keys(_userSetting.dimScales || {}).find(function (k) {
+          var match = Object.keys(_userSetting.dimScales || {}).find(function (
+            k
+          ) {
             return normalizeDimKey(k) === norm;
           });
           return match ? _userSetting.dimScales[match] : undefined;
@@ -4578,6 +4593,7 @@
           }, 0);
         });
       }
+    }
     </script>
   </body>
 </html>
