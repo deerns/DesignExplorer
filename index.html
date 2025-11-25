@@ -1774,6 +1774,44 @@
         }
       }
 
+      // helper: choose image url based on current toggle with safe fallbacks
+      function pickImageForView(datum, viewKey) {
+        if (!datum) return "";
+        var useSecond = viewKey && viewKey.indexOf("2D_2") === 0;
+        var key = null;
+
+        if (useSecond) {
+          key =
+            imageKeyAliases.IMG_2 ||
+            imageKeyAliases.IMG2 ||
+            imageLinkKeys[1] ||
+            imageLinkKeys[0];
+        } else {
+          key =
+            imageKeyAliases.IMG ||
+            imageKeyAliases.IMG_1 ||
+            imageKeyAliases.IMG1 ||
+            imageLinkKeys[0];
+        }
+
+        if (key && datum[key]) {
+          return makeUrl(datum[key], "img");
+        }
+
+        // fallback: first available image field
+        for (var i = 0; i < imageLinkKeys.length; i++) {
+          var k = imageLinkKeys[i];
+          if (datum[k]) return makeUrl(datum[k], "img");
+        }
+
+        // last resort: any field starting with img
+        var firstImgKey = Object.keys(datum).find(function (k) {
+          return /^img[_\\s\\d]*/i.test(k) && datum[k];
+        });
+        if (firstImgKey) return makeUrl(datum[firstImgKey], "img");
+        return "";
+      }
+
       function analyzeInputData(originalData) {
         var keys = d3.keys(originalData[0]);
         //get keys []
@@ -3249,26 +3287,6 @@
         }
 
         return imageLinkKeys[0];
-      }
-
-      // Return an image URL for the given datum respecting the current toggle (with fallback)
-      function pickImageForView(datum, viewKey) {
-        if (!datum) return "";
-        var key = resolveImageKey(viewKey) || imageLinkKeys[0];
-        if (key && datum[key]) {
-          return makeUrl(datum[key], "img");
-        }
-        // fallback to first available image field on this datum (using configured keys)
-        for (var i = 0; i < imageLinkKeys.length; i++) {
-          var k = imageLinkKeys[i];
-          if (datum[k]) return makeUrl(datum[k], "img");
-        }
-        // last-resort: search datum keys for anything starting with img/IMG
-        var firstImgKey = Object.keys(datum).find(function (k) {
-          return /^img[_\s\d]*/i.test(k) && datum[k];
-        });
-        if (firstImgKey) return makeUrl(datum[firstImgKey], "img");
-        return "";
       }
 
       function hasImageForToggle(toggleValue, selectedData) {
