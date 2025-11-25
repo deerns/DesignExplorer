@@ -232,6 +232,15 @@
       return dimName;
     }
 
+    function normalizeDimKey(key) {
+      return (key || "")
+        .trim()
+        .replace(/[_\.]/g, " ")
+        .replace(/^in:/i, "")
+        .replace(/^out:/i, "")
+        .toLowerCase();
+    }
+
     function withDimLabel(key, value) {
       return getDimLabel(key) + ": " + value;
     }
@@ -3349,7 +3358,7 @@
             name: _userSetting.studyInfo.name,
             date: _userSetting.studyInfo.date,
           },
-          dimScales: {},
+          dimScales: Object.assign({}, _userSetting.dimScales || {}),
           dimTicks: {},
           dimMark: {},
           dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
@@ -3370,10 +3379,22 @@
         var dimMark = {}; //for current value
         // var userDimMark = {}; //for saved
 
+        function findUserScaleForDim(dim) {
+          var direct = _userSetting.dimScales[dim];
+          if (direct) return direct;
+          var norm = normalizeDimKey(dim);
+          var match = Object.keys(_userSetting.dimScales || {}).find(function (k) {
+            return normalizeDimKey(k) === norm;
+          });
+          return match ? _userSetting.dimScales[match] : undefined;
+        }
+
         //filter dimensions are string type
         d3.selectAll("#graph svg .dimension").each(function (d) {
           if (graph.dimensions()[d].type != "string") {
-            dimScales[d] = graph.dimensions()[d].yscale.domain();
+            // prefer saved scale if available, otherwise current domain
+            dimScales[d] =
+              findUserScaleForDim(d) || graph.dimensions()[d].yscale.domain();
             dimTicks[d] = d3.select(this).selectAll(".tick").size();
             if (_userSetting.dimMark[d] !== undefined) {
               dimTicks[d]--;
@@ -3858,22 +3879,33 @@
         if (!chart || typeof chart.dimensions !== "function") return;
 
         d3.keys(scales).forEach(function (d) {
-          if (!chart.dimensions()[d]) return;
+          var targetKey = d;
+          var norm = normalizeDimKey(d);
+          var dimKeys = Object.keys(chart.dimensions());
+          var matched = dimKeys.find(function (k) {
+            return normalizeDimKey(k) === norm;
+          });
+          if (matched) {
+            targetKey = matched;
+          }
+
+          if (!chart.dimensions()[targetKey]) return;
 
           // update scales
-          chart.dimensions()[d].yscale.domain(scales[d]);
+          chart.dimensions()[targetKey].yscale.domain(scales[d]);
 
           // persist domains if the parcoords instance exposes yscaleDomains
           if (typeof chart.yscaleDomains === "function") {
             var domains = chart.yscaleDomains() || {};
-            domains[d] = scales[d];
+            domains[targetKey] = scales[d];
             chart.yscaleDomains(domains);
           } else if (chart.yscaleDomains) {
-            chart.yscaleDomains[d] = scales[d];
+            chart.yscaleDomains[targetKey] = scales[d];
           }
 
           //update the global _userSetting
           _userSetting.dimScales[d] = scales[d];
+          _userSetting.dimScales[targetKey] = scales[d];
         });
       }
 
