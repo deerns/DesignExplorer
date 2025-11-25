@@ -3368,9 +3368,9 @@
             name: _userSetting.studyInfo.name,
             date: _userSetting.studyInfo.date,
           },
-          dimScales: {},
-          dimTicks: {},
-          dimMark: {},
+          dimScales: Object.assign({}, _userSetting.dimScales || {}),
+          dimTicks: Object.assign({}, _userSetting.dimTicks || {}),
+          dimMark: Object.assign({}, _userSetting.dimMark || {}),
           dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
           imageLabels: Object.assign({}, _userSetting.imageLabels || {}),
         };
@@ -3389,10 +3389,22 @@
         var dimMark = {}; //for current value
         // var userDimMark = {}; //for saved
 
+        function findUserScaleForDim(dim) {
+          var direct = _userSetting.dimScales[dim];
+          if (direct) return direct;
+          var norm = normalizeDimKey(dim);
+          var match = Object.keys(_userSetting.dimScales || {}).find(function (k) {
+            return normalizeDimKey(k) === norm;
+          });
+          return match ? _userSetting.dimScales[match] : undefined;
+        }
+
         //filter dimensions are string type
         d3.selectAll("#graph svg .dimension").each(function (d) {
           if (graph.dimensions()[d].type != "string") {
-            dimScales[d] = graph.dimensions()[d].yscale.domain();
+            // prefer saved scale if available, otherwise current domain
+            dimScales[d] =
+              findUserScaleForDim(d) || graph.dimensions()[d].yscale.domain();
             dimTicks[d] = d3.select(this).selectAll(".tick").size();
             if (_userSetting.dimMark[d] !== undefined) {
               dimTicks[d]--;
