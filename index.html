@@ -3243,11 +3243,16 @@
         if (key && datum[key]) {
           return makeUrl(datum[key], "img");
         }
-        // fallback to first available image field on this datum
+        // fallback to first available image field on this datum (using configured keys)
         for (var i = 0; i < imageLinkKeys.length; i++) {
           var k = imageLinkKeys[i];
           if (datum[k]) return makeUrl(datum[k], "img");
         }
+        // last-resort: search datum keys for anything starting with img/IMG
+        var firstImgKey = Object.keys(datum).find(function (k) {
+          return /^img[_\s\d]*/i.test(k) && datum[k];
+        });
+        if (firstImgKey) return makeUrl(datum[firstImgKey], "img");
         return "";
       }
 
