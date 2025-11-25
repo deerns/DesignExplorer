@@ -2605,7 +2605,9 @@
           if (newData === false || newData.length === 0) {
             alert("You need to select some data to be kept!");
           } else {
-            graph.data(newData).dimensions(d3.keys(graph.dimensions()));
+            var currentDims = graph.dimensions() || {};
+            var dimKeys = Object.keys(currentDims);
+            graph.data(newData).dimensions(toDimensionObject(dimKeys, currentDims));
             updateSlidersTickValues(newData);
           }
         });
@@ -3483,17 +3485,17 @@
             //turn on rating rectangle
             d3.selectAll("rect.legend").attr("class", function (d) {
               if (d.name == "Rating") {
-                d.enabled = true;
-                return "legend";
-              }
-            });
-
-            // add Rating to dimensions
-            graph.dimensions(cleanedKeys4pc);
-            graph.scale("Rating", [0, 5]);
-            graph.updateAxes();
-            firstRating = false;
+            d.enabled = true;
+            return "legend";
           }
+        });
+
+        // add Rating to dimensions
+        graph.dimensions(toDimensionObject(Object.keys(cleanedKeys4pc), graph.dimensions()));
+        graph.scale("Rating", [0, 5]);
+        graph.updateAxes();
+        firstRating = false;
+      }
 
           // check if this is the first rating
 
