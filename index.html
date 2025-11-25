@@ -273,15 +273,6 @@
       return match || dimName;
     }
 
-    // build parcoords dimension object from an array of keys
-    function toDimensionObject(keys, source) {
-      var src = source || {};
-      return (keys || []).reduce(function (acc, k) {
-        acc[k] = src[k] || {};
-        return acc;
-      }, {});
-    }
-
     // ensure dimensions have valid yscales/domains to avoid NaN in transforms
     function sanitizeDimensions(chart, data) {
       if (!chart || typeof chart.dimensions !== "function") return;
@@ -2646,9 +2637,7 @@
           if (newData === false || newData.length === 0) {
             alert("You need to select some data to be kept!");
           } else {
-            var currentDims = graph.dimensions() || {};
-            var dimKeys = Object.keys(currentDims);
-            graph.data(newData).dimensions(toDimensionObject(dimKeys, currentDims));
+            graph.data(newData);
             updateSlidersTickValues(newData);
           }
         });
@@ -2677,12 +2666,8 @@
         });
 
         function updateGraph(newData) {
-          var currentDims = graph.dimensions() || {};
-          var dimKeys = Object.keys(currentDims);
           graph
             .data(newData)
-            .dimensions(toDimensionObject(dimKeys, currentDims))
-            .dimensions(sanitizeDimensions(graph, newData) || currentDims)
             .brushReset()
             .render()
             .interactive()
@@ -2723,11 +2708,11 @@
               return d.name;
             });
 
-          var currentDims = graph.dimensions() || {};
+          // if nothing left enabled, keep existing dimensions to avoid empty set
           if (activeDimensions.length === 0) {
-            activeDimensions = Object.keys(currentDims);
+            activeDimensions = Object.keys(graph.dimensions() || {});
           }
-          graph.dimensions(toDimensionObject(activeDimensions, currentDims));
+          graph.dimensions(activeDimensions);
 
           //if removed the pcIsColoredBy's dim, then update color by the first
           if (activeDimensions.lastIndexOf(pcIsColoredBy) == -1) {
