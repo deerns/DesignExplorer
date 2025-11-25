@@ -802,6 +802,7 @@
                 <!-- place holder for the viewer -->
               </div>
               <div id="viewer2d" class="viewer2d">
+                <div id="viewer2d-toggles"></div>
                 <div class="viewer2d-main">
                   <!--<button id="imgPrev" class="nav-btn" title="Vorige">‹</button>-->
                   <img id="viewer2d-mainimg" src="" alt="2D view" />
@@ -1670,6 +1671,9 @@
         if (hasSecondImg) {
           $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
         }
+
+        // keep viewer toggles in sync
+        renderViewer2dToggles();
       }
 
       function refreshImageRadioTexts() {
@@ -1678,6 +1682,8 @@
         var defaultLabel2 = "2D #2";
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
         $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
+
+        renderViewer2dToggles();
       }
 
       function resolveImageLabelFromMap(labelMap, key, fallback) {
@@ -1756,6 +1762,8 @@
         } else {
           d3.select("#IMG2Label").classed("hidden", true);
         }
+
+        renderViewer2dToggles();
       }
 
       function syncRadioLabelsFromCurrentInputs() {
@@ -2811,6 +2819,9 @@
 
         // add thumbnails
         updateImageGrid(graph.data(), true); // true will set the size of btm div
+
+        // render 2D image toggles near the viewer if multiple images exist
+        renderViewer2dToggles();
 
         // add place holder image to zoomed area
         //addPlaceHolderImage();
@@ -4620,3 +4631,61 @@
     </script>
   </body>
 </html>
+      function renderViewer2dToggles() {
+        var container = d3.select("#viewer2d-toggles");
+        if (container.empty()) return;
+
+        var count = imageLinkKeys.length || 0;
+        container.selectAll("*").remove();
+
+        if (count < 2) {
+          container.style("display", "none");
+          return;
+        }
+
+        container.style("display", "block");
+
+        var data = d3.range(count).map(function (i) {
+          var idx = i + 1;
+          return {
+            value: "2D_" + idx,
+            label: getImageLabel(
+              "IMG_" + idx,
+              idx === 1 ? "2D #1" : "2D #" + idx
+            ),
+          };
+        });
+
+        var current = currentView && currentView.indexOf("2D_") === 0
+          ? currentView
+          : "2D_1";
+
+        var items = container
+          .selectAll("label.img-toggle")
+          .data(data)
+          .enter()
+          .append("label")
+          .attr("class", "img-toggle")
+          .style("margin-right", "10px");
+
+        items
+          .append("input")
+          .attr("type", "radio")
+          .attr("name", "visMode")
+          .attr("class", "toggleView")
+          .attr("value", function (d) {
+            return d.value;
+          })
+          .property("checked", function (d) {
+            return d.value === current;
+          });
+
+        items
+          .append("span")
+          .text(function (d) {
+            return d.label;
+          });
+
+        // bind toggle handler for the new inputs
+        d3.selectAll("input.toggleView").on("change", toggleView);
+      }
