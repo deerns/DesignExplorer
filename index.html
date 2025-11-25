@@ -3255,34 +3255,23 @@
           return imageLinkKeys[0];
         }
 
-        if (canonical && imageKeyAliases[canonical] !== undefined) {
+        // prefer explicit aliases
+        if (imageKeyAliases[canonical] !== undefined) {
           return imageKeyAliases[canonical];
         }
 
+        // direct index-based fallback
         if (canonical === "IMG_1") {
-          if (imageKeyAliases.IMG !== undefined) {
-            return imageKeyAliases.IMG;
-          }
-          if (imageKeyAliases.IMG_1 !== undefined) {
-            return imageKeyAliases.IMG_1;
-          }
-          // fallback: first image column
           return imageLinkKeys[0];
         }
-
         if (canonical === "IMG_2") {
-          if (imageKeyAliases.IMG_2 !== undefined) {
-            return imageKeyAliases.IMG_2;
-          }
-          // fallback: second image if present, otherwise first
           return imageLinkKeys[1] || imageLinkKeys[0];
         }
 
-        if (canonical) {
-          for (var i = 0; i < imageLinkKeys.length; i++) {
-            if (imageLinkKeys[i].toUpperCase() === canonical) {
-              return imageLinkKeys[i];
-            }
+        // otherwise try to match normalized key names
+        for (var i = 0; i < imageLinkKeys.length; i++) {
+          if (imageLinkKeys[i].toUpperCase() === canonical) {
+            return imageLinkKeys[i];
           }
         }
 
