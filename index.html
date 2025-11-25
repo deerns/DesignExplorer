@@ -199,7 +199,17 @@
     function getDimLabel(dimName) {
       var dimLabels = _userSetting.dimLabels || {};
       var dimLabelsNorm = _userSetting.dimLabelsNormalized || {};
-      var key = (dimName || "").trim();
+      // normalize input to string; D3 can pass objects
+      var raw = dimName;
+      if (raw && typeof raw === "object") {
+        raw =
+          raw.name ||
+          raw.key ||
+          raw.dim ||
+          raw.dimension ||
+          (typeof raw.toString === "function" ? raw.toString() : "");
+      }
+      var key = (raw || "").toString().trim();
       var norm = function (s) {
         return (s || "")
           .trim()
@@ -233,7 +243,17 @@
     }
 
     function normalizeDimKey(key) {
-      return (key || "")
+      var raw = key;
+      if (raw && typeof raw === "object") {
+        raw =
+          raw.name ||
+          raw.key ||
+          raw.dim ||
+          raw.dimension ||
+          (typeof raw.toString === "function" ? raw.toString() : "");
+      }
+      return (raw || "")
+        .toString()
         .trim()
         .replace(/[_\.]/g, " ")
         .replace(/^in:/i, "")
