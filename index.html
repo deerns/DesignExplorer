@@ -273,42 +273,13 @@
       return match || dimName;
     }
 
-    // ensure dimensions have valid yscales/domains to avoid NaN in transforms
-    function sanitizeDimensions(chart, data) {
-      if (!chart || typeof chart.dimensions !== "function") return;
-      var dims = chart.dimensions() || {};
-      var rows = data || chart.data() || [];
-      Object.keys(dims).forEach(function (k) {
-        var dim = dims[k] || {};
-        // Ensure there is a yscale object with a copy() fn
-        if (!dim.yscale || typeof dim.yscale.copy !== "function") {
-          dim.yscale = d3.scale.linear().domain([0, 1]).range([1, 0]);
-        }
-
-        // Try to set numeric domain if possible
-        var vals = rows
-          .map(function (r) {
-            return r && r[k];
-          })
-          .map(function (v) {
-            var n = +v;
-            return isNaN(n) ? null : n;
-          })
-          .filter(function (v) {
-            return v !== null;
-          });
-        if (vals.length > 0) {
-          var min = d3.min(vals);
-          var max = d3.max(vals);
-          if (!isNaN(min) && !isNaN(max)) {
-            dim.yscale.domain([min, max]);
-          }
-        }
-
-        dims[k] = dim;
-      });
-      chart.dimensions(dims);
-      return dims;
+    // build parcoords dimension object from an array of keys
+    function toDimensionObject(keys, source) {
+      var src = source || {};
+      return (keys || []).reduce(function (acc, k) {
+        acc[k] = src[k] || {};
+        return acc;
+      }, {});
     }
 
     function withDimLabel(key, value) {
@@ -2184,16 +2155,13 @@
           .mode("queue")
           .rate(40)
           .dimensions(iniDimensions)
+          .render()
           .brushMode("1D-axes") // enable brushing
           .interactive()
           .reorderable();
 
-        sanitizeDimensions(graph, cleanedData);
-        graph.render();
-
         // keep labels in sync whenever parcoords renders (initial draw, resize, reorder)
         graph.on("render", function () {
-          sanitizeDimensions(graph);
           updateLabels();
           refreshGraphLabelsWithRetry(0);
         });
@@ -2637,7 +2605,9 @@
           if (newData === false || newData.length === 0) {
             alert("You need to select some data to be kept!");
           } else {
-            graph.data(newData);
+            var currentDims = graph.dimensions() || {};
+            var dimKeys = Object.keys(currentDims);
+            graph.data(newData).dimensions(toDimensionObject(dimKeys, currentDims));
             updateSlidersTickValues(newData);
           }
         });
@@ -2666,8 +2636,11 @@
         });
 
         function updateGraph(newData) {
+          var currentDims = graph.dimensions() || {};
+          var dimKeys = Object.keys(currentDims);
           graph
             .data(newData)
+            .dimensions(toDimensionObject(dimKeys, currentDims))
             .brushReset()
             .render()
             .interactive()
@@ -2708,11 +2681,11 @@
               return d.name;
             });
 
-          // if nothing left enabled, keep existing dimensions to avoid empty set
+          var currentDims = graph.dimensions() || {};
           if (activeDimensions.length === 0) {
-            activeDimensions = Object.keys(graph.dimensions() || {});
+            activeDimensions = Object.keys(currentDims);
           }
-          graph.dimensions(activeDimensions);
+          graph.dimensions(toDimensionObject(activeDimensions, currentDims));
 
           //if removed the pcIsColoredBy's dim, then update color by the first
           if (activeDimensions.lastIndexOf(pcIsColoredBy) == -1) {
