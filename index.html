@@ -1434,7 +1434,13 @@
         d3.select("#viewer2d")
           .select("img")
           .data(selectedImage.data())
-          .attr("src", makeUrl(selectedImage.datum()[imageLinkKeys[0]], "img"))
+          .attr("src", function () {
+            var viewKey =
+              currentView && currentView.indexOf("2D_") === 0
+                ? currentView
+                : "2D_1";
+            return pickImageForView(selectedImage.datum(), viewKey);
+          })
           .attr("title", getTitle);
 
         updateIterationData(selectedImage.data());
@@ -2446,6 +2452,12 @@
 
         // attach images ---------------------------------------------------------------------------------------------------
         var imgLink = function (d) {
+          var viewKey =
+            currentView && currentView.indexOf("2D_") === 0
+              ? currentView
+              : "2D_1";
+          var url = pickImageForView(d, viewKey);
+          if (url) return url;
           var theFirstImg = imageLinkKeys[0];
           return makeUrl(d[theFirstImg], "img");
         };
@@ -3046,7 +3058,13 @@
           // push the image to zoomed area
           d3.select("#viewer2d")
             .select("img")
-            .attr("src", makeUrl(selectedData[imageLinkKeys[0]], "img"));
+            .attr("src", function () {
+              var viewKey =
+                currentView && currentView.indexOf("2D_") === 0
+                  ? currentView
+                  : "2D_1";
+              return pickImageForView(selectedData, viewKey);
+            });
 
           if (currentView == "3D") loadNew3DModel();
 
@@ -3218,6 +3236,21 @@
         return imageLinkKeys[0];
       }
 
+      // Return an image URL for the given datum respecting the current toggle (with fallback)
+      function pickImageForView(datum, viewKey) {
+        if (!datum) return "";
+        var key = resolveImageKey(viewKey);
+        if (key && datum[key]) {
+          return makeUrl(datum[key], "img");
+        }
+        // fallback to first available image field on this datum
+        for (var i = 0; i < imageLinkKeys.length; i++) {
+          var k = imageLinkKeys[i];
+          if (datum[k]) return makeUrl(datum[k], "img");
+        }
+        return "";
+      }
+
       function hasImageForToggle(toggleValue, selectedData) {
         if (!hasAliasForToggle(toggleValue)) {
           return false;
@@ -3252,11 +3285,13 @@
         var viewValue = this.value;
 
         if (viewValue.indexOf("2D_") === 0) {
-          var imgKey = resolveImageKey(viewValue);
+          var viewKey = viewValue;
           var selected = graph.highlight()[0];
-          if (imgKey && selected && selected[imgKey]) {
+          if (selected) {
+            var url = pickImageForView(selected, viewKey);
+            if (url) {
             d3.select("#viewer2d img")
-              .attr("src", makeUrl(selected[imgKey], "img"))
+              .attr("src", url)
               .attr("title", getTitle);
           }
           currentView = viewValue; // onthoud welke 2D toggle actief is
