@@ -2554,6 +2554,7 @@
     <script type="text/javascript">
       // change the chart size;
       function resizePcChart(newWidth, newHeight) {
+        if (!graph) return;
         //resize #graph
         d3.select("#graph.parcoords")
           .transition()
