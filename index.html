@@ -3855,10 +3855,22 @@
       }
 
       function setAllScales(chart, scales) {
+        if (!chart || typeof chart.dimensions !== "function") return;
+
         d3.keys(scales).forEach(function (d) {
-          //update scales
+          if (!chart.dimensions()[d]) return;
+
+          // update scales
           chart.dimensions()[d].yscale.domain(scales[d]);
-          chart.yscaleDomains()[d] = scales[d];
+
+          // persist domains if the parcoords instance exposes yscaleDomains
+          if (typeof chart.yscaleDomains === "function") {
+            var domains = chart.yscaleDomains() || {};
+            domains[d] = scales[d];
+            chart.yscaleDomains(domains);
+          } else if (chart.yscaleDomains) {
+            chart.yscaleDomains[d] = scales[d];
+          }
 
           //update the global _userSetting
           _userSetting.dimScales[d] = scales[d];
