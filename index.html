@@ -3188,6 +3188,7 @@
       d3.select("#viewer2d-mainimg").on("click", cycle2DImage);
 
       function getCanonicalImageKey(toggleValue) {
+        if (!toggleValue || typeof toggleValue !== "string") return null;
         var parts = toggleValue.split("_");
         return parts.length > 1 ? "IMG_" + parts[1] : null;
       }
@@ -3210,7 +3211,11 @@
           return null;
         }
 
+        // fallback to first image if toggleValue is missing/invalid
         var canonical = getCanonicalImageKey(toggleValue);
+        if (!canonical) {
+          return imageLinkKeys[0];
+        }
 
         if (canonical && imageKeyAliases[canonical] !== undefined) {
           return imageKeyAliases[canonical];
@@ -3223,6 +3228,16 @@
           if (imageKeyAliases.IMG_1 !== undefined) {
             return imageKeyAliases.IMG_1;
           }
+          // fallback: first image column
+          return imageLinkKeys[0];
+        }
+
+        if (canonical === "IMG_2") {
+          if (imageKeyAliases.IMG_2 !== undefined) {
+            return imageKeyAliases.IMG_2;
+          }
+          // fallback: second image if present, otherwise first
+          return imageLinkKeys[1] || imageLinkKeys[0];
         }
 
         if (canonical) {
@@ -3239,7 +3254,7 @@
       // Return an image URL for the given datum respecting the current toggle (with fallback)
       function pickImageForView(datum, viewKey) {
         if (!datum) return "";
-        var key = resolveImageKey(viewKey);
+        var key = resolveImageKey(viewKey) || imageLinkKeys[0];
         if (key && datum[key]) {
           return makeUrl(datum[key], "img");
         }
