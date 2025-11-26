@@ -52,12 +52,15 @@
       href="./rangeslider_files/css/ion.rangeSlider.skinNice.css"
     />
     <style>
-      /* keep main view toggles aligned to the right */
+      /* keep main view toggles aligned to the right edge */
       #vis {
-        float: right;
-        display: inline-flex;
+        float: none !important;
+        display: flex;
+        justify-content: flex-end;
         align-items: center;
         gap: 8px;
+        width: 100%;
+        margin: 0;
       }
     </style>
 
