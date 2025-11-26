@@ -316,7 +316,10 @@
         var idx = i + 1;
         return {
           value: "2D_" + idx,
-          label: getImageLabel("IMG_" + idx, idx === 1 ? "#1" : "#" + idx),
+          label: getImageLabel(
+            "IMG_" + idx,
+            idx === 1 && count < 2 ? "2D" : "#" + idx
+          ),
         };
       });
 
@@ -794,7 +797,7 @@
                       id="IMG_1"
                       checked
                     />
-                    <span id="IMG1LabelText">#1</span></label
+                    <span id="IMG1LabelText">2D</span></label
                   >
 
                   <!-- show 2D image on load-->
@@ -1858,7 +1861,7 @@
       function updateImageRadioLabels(imgCount) {
         var hasSecondImg = imgCount > 1;
         var hasThirdImg = imgCount > 2;
-        var defaultLabel1 = "#1";
+        var defaultLabel1 = hasSecondImg ? "#1" : "2D";
         var defaultLabel2 = "#2";
         var defaultLabel3 = "#3";
 
@@ -1913,7 +1916,7 @@
       function refreshImageRadioTexts() {
         var hasSecondImg = !d3.select("#IMG2Label").classed("hidden");
         var hasThirdImg = !d3.select("#IMG3Label").classed("hidden");
-        var defaultLabel1 = "#1";
+        var defaultLabel1 = hasSecondImg || hasThirdImg ? "#1" : "2D";
         var defaultLabel2 = "#2";
         var defaultLabel3 = "#3";
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
@@ -2009,7 +2012,7 @@
         // hard set the DOM text from the latest inputs (fallback to defaults and effective labels)
         var hasSecondImg = count > 1;
         var hasThirdImg = count > 2;
-        var defaultLabel1 = "#1";
+        var defaultLabel1 = hasSecondImg ? "#1" : "2D";
         var defaultLabel2 = "#2";
         var defaultLabel3 = "#3";
         var finalLabel1 = liveImg1.length
@@ -2046,7 +2049,7 @@
         var hasSecondImg = imageLinkKeys.length > 1;
         var hasThirdImg = imageLinkKeys.length > 2;
 
-        var defaultLabel1 = "#1";
+        var defaultLabel1 = hasSecondImg || hasThirdImg ? "#1" : "2D";
         var defaultLabel2 = "#2";
         var defaultLabel3 = "#3";
 
@@ -2185,27 +2188,34 @@
             } else if (upperCleanKey.startsWith("OUT:")) {
               cleanKey = cleanKey.slice(4);
               outputParams[cleanKey] = row[key];
-            } else if (upperCleanKey === "IMG") {
-              img1Params.IMG_1 = row[key];
-              img1Params[cleanKey] = row[key];
-              imageKeyAliases.IMG = cleanKey;
-              if (!imageKeyAliases.IMG_1) {
-                imageKeyAliases.IMG_1 = cleanKey;
-              }
-            } else if (upperCleanKey.startsWith("IMG_1")) {
-              img1Params[cleanKey] = row[key];
-              if (!imageKeyAliases[upperCleanKey]) {
-                imageKeyAliases[upperCleanKey] = cleanKey;
-              }
-            } else if (upperCleanKey.startsWith("IMG_2")) {
-              img2Params[cleanKey] = row[key];
-              if (!imageKeyAliases.IMG_2) {
-                imageKeyAliases.IMG_2 = cleanKey;
-              }
-            } else if (upperCleanKey.startsWith("IMG_3")) {
-              img3Params[cleanKey] = row[key];
-              if (!imageKeyAliases.IMG_3) {
-                imageKeyAliases.IMG_3 = cleanKey;
+            } else if (/^IMG[\s_-]*\d*$/.test(upperCleanKey) || upperCleanKey === "IMG") {
+              var imgMatchRow = upperCleanKey.match(/^IMG[\s_-]*(\d*)$/);
+              var idxStr = imgMatchRow && imgMatchRow[1] ? imgMatchRow[1] : "";
+              var imgIdx = idxStr.length ? parseInt(idxStr, 10) : 1;
+              if (!isFinite(imgIdx) || imgIdx < 1) imgIdx = 1;
+
+              if (imgIdx === 1) {
+                img1Params[cleanKey] = row[key];
+                img1Params.IMG_1 = row[key];
+                imageKeyAliases.IMG = cleanKey;
+                if (!imageKeyAliases.IMG_1) {
+                  imageKeyAliases.IMG_1 = cleanKey;
+                }
+              } else if (imgIdx === 2) {
+                img2Params[cleanKey] = row[key];
+                if (!imageKeyAliases.IMG_2) {
+                  imageKeyAliases.IMG_2 = cleanKey;
+                }
+              } else if (imgIdx === 3) {
+                img3Params[cleanKey] = row[key];
+                if (!imageKeyAliases.IMG_3) {
+                  imageKeyAliases.IMG_3 = cleanKey;
+                }
+              } else {
+                // support additional IMG columns beyond 3
+                if (!imageKeyAliases["IMG_" + imgIdx]) {
+                  imageKeyAliases["IMG_" + imgIdx] = cleanKey;
+                }
               }
             } else if (upperCleanKey.startsWith("THREED")) {
               threeDParams[cleanKey] = row[key];
@@ -4355,7 +4365,7 @@
           // hard set the DOM text from the latest inputs (fallback to defaults and effective labels)
           var hasSecondImg = count > 1;
           var hasThirdImg = count > 2;
-          var defaultLabel1 = "#1";
+          var defaultLabel1 = hasSecondImg ? "#1" : "2D";
           var defaultLabel2 = "#2";
           var defaultLabel3 = "#3";
           var finalLabel1 = liveImg1.length
@@ -4418,7 +4428,7 @@
                 imageLinkKeys.length || 0,
                 Object.keys(_userSetting.imageLabels || {}).length
               ) > 2;
-            var defaultLabel1 = "#1";
+            var defaultLabel1 = hasSecondImg ? "#1" : "2D";
             var defaultLabel2 = "#2";
             var defaultLabel3 = "#3";
             var liveImg1 = ($("#img1LabelInput").val() || "").trim();
