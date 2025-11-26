@@ -843,32 +843,6 @@
                     ></span>
                   </button>
                 </form>
-                <form
-                  id="thumbViewControls"
-                  style="display: none; margin-left: 10px"
-                >
-                  <label id="thumbIMG1Label"
-                    ><input
-                      type="radio"
-                      class="thumbToggleView"
-                      name="thumbMode"
-                      value="2D_1"
-                      id="thumb_IMG_1"
-                      checked
-                    />
-                    <span id="thumbIMG1LabelText">2D #1</span></label
-                  >
-                  <label id="thumbIMG2Label"
-                    ><input
-                      type="radio"
-                      class="thumbToggleView"
-                      name="thumbMode"
-                      value="2D_2"
-                      id="thumb_IMG_2"
-                    />
-                    <span id="thumbIMG2LabelText">2D #2</span></label
-                  >
-                </form>
                 <form>
                   <!--rating div-->
                   <input class="star" type="radio" name="rating" value="1" />
@@ -1743,8 +1717,43 @@
       }
 
       function ensureThumbControls() {
-        var form = d3.select("#thumbViewControls");
-        if (form.empty()) return null;
+        var sorting = d3.select(".sorting");
+        if (sorting.empty()) return null;
+
+        var form = sorting.select("#thumbViewControls");
+        if (form.empty()) {
+          form = sorting
+            .append("span")
+            .attr("id", "thumbViewControls")
+            .style("margin-left", "12px")
+            .style("display", "inline-block")
+            .style("vertical-align", "middle");
+
+          var label1 = form
+            .append("label")
+            .attr("id", "thumbIMG1Label")
+            .style("margin-right", "8px");
+          label1
+            .append("input")
+            .attr("type", "radio")
+            .attr("class", "thumbToggleView")
+            .attr("name", "thumbMode")
+            .attr("value", "2D_1")
+            .attr("id", "thumb_IMG_1")
+            .property("checked", true);
+          label1.append("span").attr("id", "thumbIMG1LabelText").text("2D #1");
+
+          var label2 = form.append("label").attr("id", "thumbIMG2Label");
+          label2
+            .append("input")
+            .attr("type", "radio")
+            .attr("class", "thumbToggleView")
+            .attr("name", "thumbMode")
+            .attr("value", "2D_2")
+            .attr("id", "thumb_IMG_2");
+          label2.append("span").attr("id", "thumbIMG2LabelText").text("2D #2");
+        }
+
         form.selectAll("input.thumbToggleView").on("change", toggleThumbView);
         return form;
       }
@@ -2493,9 +2502,12 @@
         sortBy = d3.keys(graph.dimensions())[0]; // will be used to sort thumbnail images
         ascending = true;
 
-        var select = d3
-          .select(".sorting")
-          .text("Sort by: ")
+        var sorting = d3.select(".sorting");
+        sorting.html("");
+
+        sorting.append("span").text("Sort by: ");
+
+        var select = sorting
           .append("select")
           .attr("class", "btn btn-default btn-xs");
 
@@ -2528,7 +2540,7 @@
 
         // add option to reverse sorting order
         var sortingBtn = d3
-          .selectAll(".sorting")
+          .select(".sorting")
           .append("button")
           .attr("type", "button")
           .attr("class", "btn btn-default btn-xs")
@@ -2552,6 +2564,9 @@
 
           updateImageGrid(graph.brushed(), false);
         });
+
+        // keep thumbnail controls in place inside the sorting bar
+        ensureThumbControls();
       }
     </script>
 
