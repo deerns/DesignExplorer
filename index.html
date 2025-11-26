@@ -2092,25 +2092,12 @@
         var canonical = "IMG_" + index;
         var key =
           (canonical === "IMG_1" && imageKeyAliases.IMG) ||
-          imageKeyAliases[canonical] ||
-          imageLinkKeys[index - 1] ||
-          imageLinkKeys[0];
+          resolveImageKey(canonical, true);
 
+        // when a specific 2D view is requested, don't fall back to other images
         if (key && datum[key]) {
           return makeUrl(datum[key], "img");
         }
-
-        // fallback: first available image field
-        for (var i = 0; i < imageLinkKeys.length; i++) {
-          var k = imageLinkKeys[i];
-          if (datum[k]) return makeUrl(datum[k], "img");
-        }
-
-        // last resort: any field starting with img
-        var firstImgKey = Object.keys(datum).find(function (k) {
-          return /^img[_\\s\\d]*/i.test(k) && datum[k];
-        });
-        if (firstImgKey) return makeUrl(datum[firstImgKey], "img");
         return "";
       }
 
@@ -3632,7 +3619,7 @@
         return false;
       }
 
-      function resolveImageKey(toggleValue) {
+      function resolveImageKey(toggleValue, strictIndex) {
         if (!imageLinkKeys || imageLinkKeys.length === 0) {
           return null;
         }
@@ -3653,7 +3640,10 @@
         if (match && match[1]) {
           var idx = parseInt(match[1], 10);
           var fallbackIdx = Math.max(0, idx - 1);
-          return imageLinkKeys[fallbackIdx] || imageLinkKeys[0];
+          if (fallbackIdx >= imageLinkKeys.length) {
+            return strictIndex ? null : imageLinkKeys[0];
+          }
+          return imageLinkKeys[fallbackIdx];
         }
 
         // otherwise try to match normalized key names
