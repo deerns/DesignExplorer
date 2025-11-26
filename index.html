@@ -1741,6 +1741,31 @@
         form.style("display", show ? "inline-flex" : "none");
       }
 
+      function hasValidDomain(dim) {
+        if (!dim || !dim.yscale || typeof dim.yscale.domain !== "function")
+          return false;
+        var dom = dim.yscale.domain();
+        if (!dom || !dom.length) return false;
+        return dom.every(function (v) {
+          if (v === undefined || v === null || v === "") return false;
+          var num = Number(v);
+          return isFinite(num) || typeof v === "string";
+        });
+      }
+
+      function validDimensionKeys(baseDims, keys) {
+        var dims = baseDims || {};
+        var list = (keys || Object.keys(dims) || []).filter(function (k) {
+          return hasValidDomain(dims[k]);
+        });
+        if (list.length === 0) {
+          list = Object.keys(dims).filter(function (k) {
+            return hasValidDomain(dims[k]);
+          });
+        }
+        return list;
+      }
+
       function ensureThumbControls() {
         var sorting = d3.select(".sorting");
         if (sorting.empty()) return null;
@@ -2836,7 +2861,7 @@
 
         function updateGraph(newData) {
           var currentDims = graph.dimensions() || {};
-          var dimKeys = Object.keys(currentDims);
+          var dimKeys = validDimensionKeys(currentDims, Object.keys(currentDims));
           graph
             .data(newData)
             .dimensions(toDimensionObject(dimKeys, currentDims))
@@ -2888,28 +2913,7 @@
             window.__allDimensions = baseDims;
           }
 
-          function hasValidDomain(dim) {
-            if (!dim || !dim.yscale || typeof dim.yscale.domain !== "function")
-              return false;
-            var dom = dim.yscale.domain();
-            if (!dom || !dom.length) return false;
-            return dom.every(function (v) {
-              if (v === undefined || v === null || v === "") return false;
-              var num = Number(v);
-              return isFinite(num) || typeof v === "string";
-            });
-          }
-
-          var validDimensions = activeDimensions.filter(function (key) {
-            return hasValidDomain(baseDims[key]);
-          });
-
-          // fallback if none valid
-          if (validDimensions.length === 0) {
-            validDimensions = Object.keys(baseDims).filter(function (key) {
-              return hasValidDomain(baseDims[key]);
-            });
-          }
+          var validDimensions = validDimensionKeys(baseDims, activeDimensions);
 
           if (validDimensions.length > 0) {
             graph.dimensions(toDimensionObject(validDimensions, baseDims));
