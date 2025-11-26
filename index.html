@@ -837,13 +837,39 @@
                   >
                     <span
                       class="glyphicon glyphicon-remove"
-                      aria-hidden="true"
-                    ></span>
-                  </button>
-                </form>
-                <form>
-                  <!--rating div-->
-                  <input class="star" type="radio" name="rating" value="1" />
+              aria-hidden="true"
+            ></span>
+          </button>
+        </form>
+        <form
+          id="thumbViewControls"
+          style="display: none; margin-left: 8px; vertical-align: middle"
+        >
+          <label id="thumbIMG1Label"
+            ><input
+              type="radio"
+              class="thumbToggleView"
+              name="thumbMode"
+              value="2D_1"
+              id="thumb_IMG_1"
+              checked
+            />
+            <span id="thumbIMG1LabelText">2D #1</span></label
+          >
+          <label id="thumbIMG2Label"
+            ><input
+              type="radio"
+              class="thumbToggleView"
+              name="thumbMode"
+              value="2D_2"
+              id="thumb_IMG_2"
+            />
+            <span id="thumbIMG2LabelText">2D #2</span></label
+          >
+        </form>
+        <form>
+          <!--rating div-->
+          <input class="star" type="radio" name="rating" value="1" />
                   <input class="star" type="radio" name="rating" value="2" />
                   <input class="star" type="radio" name="rating" value="3" />
                   <input class="star" type="radio" name="rating" value="4" />
@@ -1715,50 +1741,9 @@
       }
 
       function ensureThumbControls() {
-        var sorting = d3.select(".sorting");
-        if (sorting.empty()) return null;
-
-        sorting
-          .style("display", "flex")
-          .style("align-items", "center")
-          .style("gap", "6px");
-
-        var form = sorting.select("#thumbViewControls");
-        if (form.empty()) {
-          form = sorting
-            .append("span")
-            .attr("id", "thumbViewControls")
-            .style("margin-left", "auto")
-            .style("padding-left", "12px")
-            .style("display", "inline-flex")
-            .style("align-items", "center")
-            .style("gap", "10px");
-
-          var label1 = form
-            .append("label")
-            .attr("id", "thumbIMG1Label")
-            .style("margin-right", "4px");
-          label1
-            .append("input")
-            .attr("type", "radio")
-            .attr("class", "thumbToggleView")
-            .attr("name", "thumbMode")
-            .attr("value", "2D_1")
-            .attr("id", "thumb_IMG_1")
-            .property("checked", true);
-          label1.append("span").attr("id", "thumbIMG1LabelText").text("2D #1");
-
-          var label2 = form.append("label").attr("id", "thumbIMG2Label");
-          label2
-            .append("input")
-            .attr("type", "radio")
-            .attr("class", "thumbToggleView")
-            .attr("name", "thumbMode")
-            .attr("value", "2D_2")
-            .attr("id", "thumb_IMG_2");
-          label2.append("span").attr("id", "thumbIMG2LabelText").text("2D #2");
-        }
-
+        var form = d3.select("#thumbViewControls");
+        if (form.empty()) return null;
+        form.style("display", "inline-block");
         form.selectAll("input.thumbToggleView").on("change", toggleThumbView);
         return form;
       }
@@ -2509,10 +2494,6 @@
 
         var sorting = d3.select(".sorting");
         sorting.html("");
-        sorting
-          .style("display", "flex")
-          .style("align-items", "center")
-          .style("gap", "6px");
 
         sorting.append("span").text("Sort by: ");
 
