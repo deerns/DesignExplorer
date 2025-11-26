@@ -3218,6 +3218,15 @@
           d3.selectAll(".popupWindow").style("display", "none");
         });
 
+        // click outside content to close welcome overlay
+        d3.select("#welcome").on("click", function () {
+          var evt = d3.event;
+          // only close when clicking the backdrop itself
+          if (evt && evt.target === this) {
+            d3.selectAll(".popupWindow").style("display", "none");
+          }
+        });
+
         // Close welcome overlay with Esc
         document.addEventListener("keydown", function (e) {
           if (e.key === "Escape" || e.keyCode === 27) {
