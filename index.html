@@ -1552,6 +1552,8 @@
           });
 
         isAnyItemSelected = true;
+
+        updateThumbVisibility();
       }
 
       // function viewer2dNextImg(imgKeyList, currentImgKey){
@@ -1612,6 +1614,8 @@
         $("#radarChart").collapse("show");
 
         isAnyItemSelected = false;
+
+        updateThumbVisibility();
       }
 
       // hide/show parallel coordinates
@@ -1714,6 +1718,23 @@
         return fallback;
       }
 
+      function thumbShouldShow(hasSecondImg) {
+        if (!hasSecondImg) return false;
+        var selectedCount =
+          graph && graph.highlight && graph.highlight().length
+            ? graph.highlight().length
+            : 0;
+        return selectedCount !== 1;
+      }
+
+      function updateThumbVisibility() {
+        var form = ensureThumbControls();
+        if (!form) return;
+        var hasSecondImg = (imageLinkKeys.length || 0) > 1;
+        var show = thumbShouldShow(hasSecondImg);
+        form.style("display", show ? "inline-flex" : "none");
+      }
+
       function ensureThumbControls() {
         var sorting = d3.select(".sorting");
         if (sorting.empty()) return null;
@@ -1776,7 +1797,8 @@
         // thumbnails toggle (only when multiple image columns)
         var thumbForm = ensureThumbControls();
         if (thumbForm) {
-          thumbForm.style("display", hasSecondImg ? "inline-block" : "none");
+          var showThumbs = thumbShouldShow(hasSecondImg);
+          thumbForm.style("display", showThumbs ? "inline-flex" : "none");
           $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
           d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
           if (hasSecondImg) {
@@ -1813,6 +1835,7 @@
         // thumbnails toggle labels
         var thumbForm = ensureThumbControls();
         if (thumbForm) {
+          var showThumbs = thumbShouldShow(hasSecondImg);
           $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
           d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
           if (hasSecondImg) {
@@ -1820,7 +1843,7 @@
               getImageLabel("IMG_2", defaultLabel2)
             );
           }
-          thumbForm.style("display", hasSecondImg ? "inline-block" : "none");
+          thumbForm.style("display", showThumbs ? "inline-flex" : "none");
         }
 
         renderViewer2dToggles();
