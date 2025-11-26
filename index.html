@@ -1779,18 +1779,15 @@
       }
 
       function updateImageRadioLabels(imgCount) {
-        var img2 = d3.select("#IMG2Label");
-        var hasSecondImg = imgCount > 1 && !img2.empty();
+        var hasSecondImg = imgCount > 1;
         var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
         var defaultLabel2 = "2D #2";
 
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
 
-        if (!img2.empty()) {
-          img2.classed("hidden", !hasSecondImg);
-          if (hasSecondImg) {
-            $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
-          }
+        d3.select("#IMG2Label").classed("hidden", !hasSecondImg);
+        if (hasSecondImg) {
+          $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
         }
 
         // thumbnails toggle (only when multiple image columns)
@@ -1825,8 +1822,7 @@
       }
 
       function refreshImageRadioTexts() {
-        var img2 = d3.select("#IMG2Label");
-        var hasSecondImg = !img2.empty() && !img2.classed("hidden");
+        var hasSecondImg = !d3.select("#IMG2Label").classed("hidden");
         var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
         var defaultLabel2 = "2D #2";
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
@@ -3772,11 +3768,8 @@
 
       // set the value for rating based on the current value
       function setStarValue(value) {
-        var ratingData = $(".star").data("rating");
-        if (!ratingData) return;
-
         // remove any current value
-        ratingData.current = undefined; // set current value to undefined
+        $(".star").data("rating").current = undefined; // set current value to undefined
 
         // set current value to undefined
         var offClass =
