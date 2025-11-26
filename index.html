@@ -843,29 +843,6 @@
                     ></span>
                   </button>
                 </form>
-                <form id="thumbViewControls" style="display: none; margin-top: 6px">
-                  <label id="thumbIMG1Label"
-                    ><input
-                      type="radio"
-                      class="thumbToggleView"
-                      name="thumbMode"
-                      value="2D_1"
-                      id="thumb_IMG_1"
-                      checked
-                    />
-                    <span id="thumbIMG1LabelText">2D #1</span></label
-                  >
-                  <label id="thumbIMG2Label"
-                    ><input
-                      type="radio"
-                      class="thumbToggleView"
-                      name="thumbMode"
-                      value="2D_2"
-                      id="thumb_IMG_2"
-                    />
-                    <span id="thumbIMG2LabelText">2D #2</span></label
-                  >
-                </form>
                 <form>
                   <!--rating div-->
                   <input class="star" type="radio" name="rating" value="1" />
@@ -1739,6 +1716,47 @@
         return fallback;
       }
 
+      function ensureThumbControls() {
+        var sorting = d3.select(".sorting");
+        if (sorting.empty()) return null;
+
+        var form = sorting.select("#thumbViewControls");
+        if (!form.empty()) return form;
+
+        form = sorting
+          .append("span")
+          .attr("id", "thumbViewControls")
+          .style("margin-left", "10px");
+
+        var label1 = form
+          .append("label")
+          .attr("id", "thumbIMG1Label")
+          .style("margin-right", "8px");
+        label1
+          .append("input")
+          .attr("type", "radio")
+          .attr("class", "thumbToggleView")
+          .attr("name", "thumbMode")
+          .attr("value", "2D_1")
+          .attr("id", "thumb_IMG_1")
+          .property("checked", true);
+        label1.append("span").attr("id", "thumbIMG1LabelText").text("2D #1");
+
+        var label2 = form.append("label").attr("id", "thumbIMG2Label");
+        label2
+          .append("input")
+          .attr("type", "radio")
+          .attr("class", "thumbToggleView")
+          .attr("name", "thumbMode")
+          .attr("value", "2D_2")
+          .attr("id", "thumb_IMG_2");
+        label2.append("span").attr("id", "thumbIMG2LabelText").text("2D #2");
+
+        // bind handlers after creation
+        form.selectAll("input.thumbToggleView").on("change", toggleThumbView);
+        return form;
+      }
+
       function updateImageRadioLabels(imgCount) {
         var hasSecondImg = imgCount > 1;
         var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
@@ -1752,9 +1770,9 @@
         }
 
         // thumbnails toggle (only when multiple image columns)
-        var thumbForm = d3.select("#thumbViewControls");
-        if (!thumbForm.empty()) {
-          thumbForm.style("display", hasSecondImg ? "block" : "none");
+        var thumbForm = ensureThumbControls();
+        if (thumbForm) {
+          thumbForm.style("display", hasSecondImg ? "inline-block" : "none");
           $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
           d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
           if (hasSecondImg) {
@@ -1770,6 +1788,11 @@
             .property("checked", function () {
               return this.value === activeThumb;
             });
+
+          // ensure handler bound if elements recreated
+          thumbForm
+            .selectAll("input.thumbToggleView")
+            .on("change", toggleThumbView);
         }
 
         // keep viewer toggles in sync
@@ -1784,15 +1807,17 @@
         $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
 
         // thumbnails toggle labels
-        $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
-        d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
-        if (hasSecondImg) {
-          $("#thumbIMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
+        var thumbForm = ensureThumbControls();
+        if (thumbForm) {
+          $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
+          d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
+          if (hasSecondImg) {
+            $("#thumbIMG2LabelText").text(
+              getImageLabel("IMG_2", defaultLabel2)
+            );
+          }
+          thumbForm.style("display", hasSecondImg ? "inline-block" : "none");
         }
-        d3.select("#thumbViewControls").style(
-          "display",
-          hasSecondImg ? "block" : "none"
-        );
 
         renderViewer2dToggles();
       }
@@ -2535,6 +2560,9 @@
 
           updateImageGrid(graph.brushed(), false);
         });
+
+        // place thumbnail view toggle next to sorting controls
+        ensureThumbControls();
       }
     </script>
 
