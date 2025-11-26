@@ -813,6 +813,17 @@
                     />
                     <span id="IMG2LabelText">2D #2</span></label
                   >
+                  <label id="IMG3Label"
+                    ><input
+                      type="radio"
+                      class="toggleView"
+                      data-debug-group="vis-main"
+                      name="visMode"
+                      value="2D_3"
+                      id="IMG_3"
+                    />
+                    <span id="IMG3LabelText">2D #3</span></label
+                  >
                   <label id="threeDLabel"
                     ><input
                       type="radio"
@@ -1218,6 +1229,15 @@
                         2D #2 Label:
                         <input
                           id="img2LabelInput"
+                          class="form-control input-sm"
+                          type="text"
+                          style="width: 80%; margin-left: 0.6em"
+                        />
+                      </li>
+                      <li class="list-group-item form-inline">
+                        2D #3 Label:
+                        <input
+                          id="img3LabelInput"
                           class="form-control input-sm"
                           type="text"
                           style="width: 80%; margin-left: 0.6em"
@@ -1736,8 +1756,8 @@
         return fallback;
       }
 
-      function thumbShouldShow(hasSecondImg) {
-        if (!hasSecondImg) return false;
+      function thumbShouldShow(hasExtraImages) {
+        if (!hasExtraImages) return false;
         var selectedCount =
           graph && graph.highlight && graph.highlight().length
             ? graph.highlight().length
@@ -1820,6 +1840,17 @@
             .attr("value", "2D_2")
             .attr("id", "thumb_IMG_2");
           label2.append("span").attr("id", "thumbIMG2LabelText").text("2D #2");
+
+          var label3 = form.append("label").attr("id", "thumbIMG3Label");
+          label3
+            .append("input")
+            .attr("type", "radio")
+            .attr("class", "thumbToggleView")
+            .attr("data-debug-group", "thumb-toggles")
+            .attr("name", "thumbMode")
+            .attr("value", "2D_3")
+            .attr("id", "thumb_IMG_3");
+          label3.append("span").attr("id", "thumbIMG3LabelText").text("2D #3");
         }
 
         form.style("display", "inline-flex");
@@ -1829,8 +1860,10 @@
 
       function updateImageRadioLabels(imgCount) {
         var hasSecondImg = imgCount > 1;
+        var hasThirdImg = imgCount > 2;
         var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
         var defaultLabel2 = "2D #2";
+        var defaultLabel3 = "2D #3";
 
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
 
@@ -1838,17 +1871,27 @@
         if (hasSecondImg) {
           $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
         }
+        d3.select("#IMG3Label").classed("hidden", !hasThirdImg);
+        if (hasThirdImg) {
+          $("#IMG3LabelText").text(getImageLabel("IMG_3", defaultLabel3));
+        }
 
         // thumbnails toggle (only when multiple image columns)
         var thumbForm = ensureThumbControls();
         if (thumbForm) {
-          var showThumbs = thumbShouldShow(hasSecondImg);
+          var showThumbs = thumbShouldShow(hasSecondImg || hasThirdImg);
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
           $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
           d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
           if (hasSecondImg) {
             $("#thumbIMG2LabelText").text(
               getImageLabel("IMG_2", defaultLabel2)
+            );
+          }
+          d3.select("#thumbIMG3Label").classed("hidden", !hasThirdImg);
+          if (hasThirdImg) {
+            $("#thumbIMG3LabelText").text(
+              getImageLabel("IMG_3", defaultLabel3)
             );
           }
 
@@ -1872,20 +1915,29 @@
 
       function refreshImageRadioTexts() {
         var hasSecondImg = !d3.select("#IMG2Label").classed("hidden");
+        var hasThirdImg = !d3.select("#IMG3Label").classed("hidden");
         var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
         var defaultLabel2 = "2D #2";
+        var defaultLabel3 = "2D #3";
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
         $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
+        $("#IMG3LabelText").text(getImageLabel("IMG_3", defaultLabel3));
 
         // thumbnails toggle labels
         var thumbForm = ensureThumbControls();
         if (thumbForm) {
-          var showThumbs = thumbShouldShow(hasSecondImg);
+          var showThumbs = thumbShouldShow(hasSecondImg || hasThirdImg);
           $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
           d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
           if (hasSecondImg) {
             $("#thumbIMG2LabelText").text(
               getImageLabel("IMG_2", defaultLabel2)
+            );
+          }
+          d3.select("#thumbIMG3Label").classed("hidden", !hasThirdImg);
+          if (hasThirdImg) {
+            $("#thumbIMG3LabelText").text(
+              getImageLabel("IMG_3", defaultLabel3)
             );
           }
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
@@ -1927,14 +1979,19 @@
 
         var img1Input = document.getElementById("img1LabelInput");
         var img2Input = document.getElementById("img2LabelInput");
+        var img3Input = document.getElementById("img3LabelInput");
         var liveImg1 = (
           img1Input && img1Input.value ? img1Input.value : ""
         ).trim();
         var liveImg2 = (
           img2Input && img2Input.value ? img2Input.value : ""
         ).trim();
+        var liveImg3 = (
+          img3Input && img3Input.value ? img3Input.value : ""
+        ).trim();
         if (liveImg1.length > 0) labels.IMG_1 = liveImg1;
         if (liveImg2.length > 0) labels.IMG_2 = liveImg2;
+        if (liveImg3.length > 0) labels.IMG_3 = liveImg3;
 
         // persist into global settings immediately
         _userSetting.imageLabels = Object.assign(
@@ -1954,14 +2011,19 @@
 
         // hard set the DOM text from the latest inputs (fallback to defaults and effective labels)
         var hasSecondImg = count > 1;
+        var hasThirdImg = count > 2;
         var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
         var defaultLabel2 = "2D #2";
+        var defaultLabel3 = "2D #3";
         var finalLabel1 = liveImg1.length
           ? liveImg1
           : resolveImageLabelFromMap(effectiveLabels, "IMG_1", defaultLabel1);
         var finalLabel2 = liveImg2.length
           ? liveImg2
           : resolveImageLabelFromMap(effectiveLabels, "IMG_2", defaultLabel2);
+        var finalLabel3 = liveImg3.length
+          ? liveImg3
+          : resolveImageLabelFromMap(effectiveLabels, "IMG_3", defaultLabel3);
 
         $("#IMG1LabelText").text(finalLabel1);
         if (hasSecondImg) {
@@ -1970,6 +2032,12 @@
         } else {
           d3.select("#IMG2Label").classed("hidden", true);
         }
+        if (hasThirdImg) {
+          $("#IMG3LabelText").text(finalLabel3);
+          d3.select("#IMG3Label").classed("hidden", false);
+        } else {
+          d3.select("#IMG3Label").classed("hidden", true);
+        }
 
         renderViewer2dToggles();
       }
@@ -1977,10 +2045,13 @@
       function syncRadioLabelsFromCurrentInputs() {
         var liveImg1 = ($("#img1LabelInput").val() || "").trim();
         var liveImg2 = ($("#img2LabelInput").val() || "").trim();
+        var liveImg3 = ($("#img3LabelInput").val() || "").trim();
         var hasSecondImg = imageLinkKeys.length > 1;
+        var hasThirdImg = imageLinkKeys.length > 2;
 
         var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
         var defaultLabel2 = "2D #2";
+        var defaultLabel3 = "2D #3";
 
         var label1 =
           liveImg1.length > 0
@@ -1990,6 +2061,10 @@
           liveImg2.length > 0
             ? liveImg2
             : getImageLabel("IMG_2", defaultLabel2);
+        var label3 =
+          liveImg3.length > 0
+            ? liveImg3
+            : getImageLabel("IMG_3", defaultLabel3);
 
         $("#IMG1LabelText").text(label1);
 
@@ -1999,27 +2074,27 @@
         } else {
           d3.select("#IMG2Label").classed("hidden", true);
         }
+        if (hasThirdImg) {
+          d3.select("#IMG3Label").classed("hidden", false);
+          $("#IMG3LabelText").text(label3);
+        } else {
+          d3.select("#IMG3Label").classed("hidden", true);
+        }
       }
 
       // helper: choose image url based on current toggle with safe fallbacks
       function pickImageForView(datum, viewKey) {
         if (!datum) return "";
-        var useSecond = viewKey && viewKey.indexOf("2D_2") === 0;
-        var key = null;
+        var match = (viewKey || "").match(/2D_(\d+)/);
+        var index = match && match[1] ? parseInt(match[1], 10) : 1;
+        if (!isFinite(index) || index < 1) index = 1;
 
-        if (useSecond) {
-          key =
-            imageKeyAliases.IMG_2 ||
-            imageKeyAliases.IMG2 ||
-            imageLinkKeys[1] ||
-            imageLinkKeys[0];
-        } else {
-          key =
-            imageKeyAliases.IMG ||
-            imageKeyAliases.IMG_1 ||
-            imageKeyAliases.IMG1 ||
-            imageLinkKeys[0];
-        }
+        var canonical = "IMG_" + index;
+        var key =
+          (canonical === "IMG_1" && imageKeyAliases.IMG) ||
+          imageKeyAliases[canonical] ||
+          imageLinkKeys[index - 1] ||
+          imageLinkKeys[0];
 
         if (key && datum[key]) {
           return makeUrl(datum[key], "img");
@@ -2068,6 +2143,10 @@
               imageKeyAliases.IMG_1 = cleanKey;
             } else if (idx === 2) {
               imageKeyAliases.IMG_2 = cleanKey;
+            } else if (idx === 3) {
+              imageKeyAliases.IMG_3 = cleanKey;
+            } else if (idx > 3) {
+              imageKeyAliases["IMG_" + idx] = cleanKey;
             }
           } else if (upperKey === "IMG") {
             if (imageLinkKeys.indexOf(cleanKey) === -1) {
@@ -2095,7 +2174,8 @@
             outputParams = {},
             otherParams = {},
             img1Params = {},
-            img2Params = {};
+            img2Params = {},
+            img3Params = {};
           (threeDParams = {}), (cleanedParams = {});
 
           keys.forEach(function (key, i) {
@@ -2125,6 +2205,11 @@
               if (!imageKeyAliases.IMG_2) {
                 imageKeyAliases.IMG_2 = cleanKey;
               }
+            } else if (upperCleanKey.startsWith("IMG_3")) {
+              img3Params[cleanKey] = row[key];
+              if (!imageKeyAliases.IMG_3) {
+                imageKeyAliases.IMG_3 = cleanKey;
+              }
             } else if (upperCleanKey.startsWith("THREED")) {
               threeDParams[cleanKey] = row[key];
             } else {
@@ -2139,6 +2224,7 @@
             otherParams,
             img1Params,
             img2Params,
+            img3Params,
             threeDParams
           );
 
@@ -3524,11 +3610,19 @@
         if (imageKeyAliases[canonical] !== undefined) {
           return true;
         }
-        return (
+        if (
           canonical === "IMG_1" &&
           (imageKeyAliases.IMG_1 !== undefined ||
             imageKeyAliases.IMG !== undefined)
-        );
+        ) {
+          return true;
+        }
+        var match = canonical.match(/^IMG_(\d+)$/);
+        if (match && match[1]) {
+          var idx = parseInt(match[1], 10);
+          return imageLinkKeys.length >= idx;
+        }
+        return false;
       }
 
       function resolveImageKey(toggleValue) {
@@ -3548,11 +3642,11 @@
         }
 
         // direct index-based fallback
-        if (canonical === "IMG_1") {
-          return imageLinkKeys[0];
-        }
-        if (canonical === "IMG_2") {
-          return imageLinkKeys[1] || imageLinkKeys[0];
+        var match = canonical.match(/^IMG_(\d+)$/);
+        if (match && match[1]) {
+          var idx = parseInt(match[1], 10);
+          var fallbackIdx = Math.max(0, idx - 1);
+          return imageLinkKeys[fallbackIdx] || imageLinkKeys[0];
         }
 
         // otherwise try to match normalized key names
@@ -3683,6 +3777,7 @@
         var onOff = {
           "2D_1": ["zoomed", "viewer3d"],
           "2D_2": ["zoomed", "viewer3d"],
+          "2D_3": ["zoomed", "viewer3d"],
           "3D": ["viewer3d", "zoomed"],
         };
 
@@ -3710,7 +3805,7 @@
           return;
         }
 
-        var available = ["2D_1", "2D_2"].filter(function (val) {
+        var available = ["2D_1", "2D_2", "2D_3"].filter(function (val) {
           return hasImageForToggle(val, selected);
         });
 
@@ -3977,6 +4072,19 @@
             applyImageLabelsImmediate(newUserSetting.imageLabels);
             syncRadioLabelsFromCurrentInputs();
           });
+        dimSettingListDiv
+          .select("#img3LabelInput")
+          .property("value", newUserSetting.imageLabels["IMG_3"] || "")
+          .on("input change", function () {
+            var value = ($(this).val() || "").trim();
+            if (value.length === 0) {
+              delete newUserSetting.imageLabels["IMG_3"];
+            } else {
+              newUserSetting.imageLabels["IMG_3"] = value;
+            }
+            applyImageLabelsImmediate(newUserSetting.imageLabels);
+            syncRadioLabelsFromCurrentInputs();
+          });
 
         var selectList = dimSettingListDiv
           .selectAll("#dimSettingList")
@@ -4172,6 +4280,7 @@
         function updateImageLabelsFromInputs() {
           var img1Val = ($("#img1LabelInput").val() || "").trim();
           var img2Val = ($("#img2LabelInput").val() || "").trim();
+          var img3Val = ($("#img3LabelInput").val() || "").trim();
 
           if (img1Val.length === 0) {
             delete newUserSetting.imageLabels["IMG_1"];
@@ -4183,6 +4292,12 @@
             delete newUserSetting.imageLabels["IMG_2"];
           } else {
             newUserSetting.imageLabels["IMG_2"] = img2Val;
+          }
+
+          if (img3Val.length === 0) {
+            delete newUserSetting.imageLabels["IMG_3"];
+          } else {
+            newUserSetting.imageLabels["IMG_3"] = img3Val;
           }
         }
 
@@ -4219,8 +4334,10 @@
           // include current input values to avoid stale label maps
           var liveImg1 = ($("#img1LabelInput").val() || "").trim();
           var liveImg2 = ($("#img2LabelInput").val() || "").trim();
+          var liveImg3 = ($("#img3LabelInput").val() || "").trim();
           if (liveImg1.length > 0) labels.IMG_1 = liveImg1;
           if (liveImg2.length > 0) labels.IMG_2 = liveImg2;
+          if (liveImg3.length > 0) labels.IMG_3 = liveImg3;
 
           // persist into global settings immediately
           _userSetting.imageLabels = Object.assign(
@@ -4240,14 +4357,19 @@
 
           // hard set the DOM text from the latest inputs (fallback to defaults and effective labels)
           var hasSecondImg = count > 1;
+          var hasThirdImg = count > 2;
           var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
           var defaultLabel2 = "2D #2";
+          var defaultLabel3 = "2D #3";
           var finalLabel1 = liveImg1.length
             ? liveImg1
             : resolveImageLabelFromMap(effectiveLabels, "IMG_1", defaultLabel1);
           var finalLabel2 = liveImg2.length
             ? liveImg2
             : resolveImageLabelFromMap(effectiveLabels, "IMG_2", defaultLabel2);
+          var finalLabel3 = liveImg3.length
+            ? liveImg3
+            : resolveImageLabelFromMap(effectiveLabels, "IMG_3", defaultLabel3);
 
           $("#IMG1LabelText").text(finalLabel1);
           if (hasSecondImg) {
@@ -4255,6 +4377,12 @@
             d3.select("#IMG2Label").classed("hidden", false);
           } else {
             d3.select("#IMG2Label").classed("hidden", true);
+          }
+          if (hasThirdImg) {
+            $("#IMG3LabelText").text(finalLabel3);
+            d3.select("#IMG3Label").classed("hidden", false);
+          } else {
+            d3.select("#IMG3Label").classed("hidden", true);
           }
         }
 
@@ -4288,10 +4416,17 @@
                 imageLinkKeys.length || 0,
                 Object.keys(_userSetting.imageLabels || {}).length
               ) > 1;
+            var hasThirdImg =
+              Math.max(
+                imageLinkKeys.length || 0,
+                Object.keys(_userSetting.imageLabels || {}).length
+              ) > 2;
             var defaultLabel1 = hasSecondImg ? "2D #1" : "2D";
             var defaultLabel2 = "2D #2";
+            var defaultLabel3 = "2D #3";
             var liveImg1 = ($("#img1LabelInput").val() || "").trim();
             var liveImg2 = ($("#img2LabelInput").val() || "").trim();
+            var liveImg3 = ($("#img3LabelInput").val() || "").trim();
             var label1 =
               liveImg1.length > 0
                 ? liveImg1
@@ -4308,6 +4443,14 @@
                     "IMG_2",
                     defaultLabel2
                   );
+            var label3 =
+              liveImg3.length > 0
+                ? liveImg3
+                : resolveImageLabelFromMap(
+                    _userSetting.imageLabels || {},
+                    "IMG_3",
+                    defaultLabel3
+                  );
 
             $("#IMG1LabelText").text(label1);
             if (hasSecondImg) {
@@ -4315,6 +4458,12 @@
               d3.select("#IMG2Label").classed("hidden", false);
             } else {
               d3.select("#IMG2Label").classed("hidden", true);
+            }
+            if (hasThirdImg) {
+              $("#IMG3LabelText").text(label3);
+              d3.select("#IMG3Label").classed("hidden", false);
+            } else {
+              d3.select("#IMG3Label").classed("hidden", true);
             }
           }, 0);
         });
