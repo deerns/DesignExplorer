@@ -2888,20 +2888,26 @@
             window.__allDimensions = baseDims;
           }
 
-          var validDimensions = activeDimensions.filter(function (key) {
-            var dim = baseDims[key];
-            if (!dim || !dim.yscale) return false;
+          function hasValidDomain(dim) {
+            if (!dim || !dim.yscale || typeof dim.yscale.domain !== "function")
+              return false;
             var dom = dim.yscale.domain();
-            return dom && dom.length === 2 && !isNaN(dom[0]) && !isNaN(dom[1]);
+            if (!dom || !dom.length) return false;
+            return dom.every(function (v) {
+              if (v === undefined || v === null || v === "") return false;
+              var num = Number(v);
+              return isFinite(num) || typeof v === "string";
+            });
+          }
+
+          var validDimensions = activeDimensions.filter(function (key) {
+            return hasValidDomain(baseDims[key]);
           });
 
           // fallback if none valid
           if (validDimensions.length === 0) {
             validDimensions = Object.keys(baseDims).filter(function (key) {
-              var dim = baseDims[key];
-              if (!dim || !dim.yscale) return false;
-              var dom = dim.yscale.domain();
-              return dom && dom.length === 2 && !isNaN(dom[0]) && !isNaN(dom[1]);
+              return hasValidDomain(baseDims[key]);
             });
           }
 
