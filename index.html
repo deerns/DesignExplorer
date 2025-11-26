@@ -2579,6 +2579,28 @@
           updateImageGrid(graph.brushed(), false);
         });
 
+        // spacer to push toggles to the right
+        d3.select(".sorting")
+          .append("span")
+          .attr("class", "sorting-spacer")
+          .style("flex", "1 1 auto");
+
+        // place main view toggles in the sorting bar, aligned right
+        var vis = d3.select("#vis");
+        if (!vis.empty()) {
+          vis.classed("pull-right", false);
+          if (vis.node().parentNode !== sorting.node()) {
+            sorting.node().appendChild(vis.node());
+          }
+          vis
+            .style("display", "inline-flex")
+            .style("align-items", "center")
+            .style("gap", "8px")
+            .style("margin-left", "12px")
+            .style("margin-bottom", "0")
+            .style("visibility", "visible");
+        }
+
         // keep thumbnail controls in place inside the sorting bar
         ensureThumbControls();
       }
