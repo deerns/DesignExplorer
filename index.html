@@ -3996,6 +3996,10 @@
     <!--dataSetting-->
     <script type="text/javascript">
       function dataSetting(chart) {
+        // ensure load-data overlay is dismissed when settings open
+        d3.select("#welcome").style("display", "none");
+        d3.select("#loadDataContainer").style("display", "none");
+
         d3.select("#showSetting").style("display", "flex");
 
         var dimKeys = d3.keys(graph.dimensions());
