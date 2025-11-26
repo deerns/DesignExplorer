@@ -2881,10 +2881,26 @@
             });
 
           var currentDims = graph.dimensions() || {};
-          if (activeDimensions.length === 0) {
-            activeDimensions = Object.keys(currentDims);
+          var validDimensions = activeDimensions.filter(function (key) {
+            var dim = currentDims[key];
+            if (!dim || !dim.yscale) return false;
+            var dom = dim.yscale.domain();
+            return dom && dom.length === 2 && !isNaN(dom[0]) && !isNaN(dom[1]);
+          });
+
+          // fallback if none valid
+          if (validDimensions.length === 0) {
+            validDimensions = Object.keys(currentDims).filter(function (key) {
+              var dim = currentDims[key];
+              if (!dim || !dim.yscale) return false;
+              var dom = dim.yscale.domain();
+              return dom && dom.length === 2 && !isNaN(dom[0]) && !isNaN(dom[1]);
+            });
           }
-          graph.dimensions(toDimensionObject(activeDimensions, currentDims));
+
+          if (validDimensions.length > 0) {
+            graph.dimensions(toDimensionObject(validDimensions, currentDims));
+          }
 
           //if removed the pcIsColoredBy's dim, then update color by the first
           if (activeDimensions.lastIndexOf(pcIsColoredBy) == -1) {
