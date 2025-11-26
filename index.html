@@ -1727,6 +1727,18 @@
           .style("align-items", "center")
           .style("gap", "8px");
 
+        // place main view toggles in the same flex row
+        var vis = d3.select("#vis");
+        if (!vis.empty() && vis.node().parentNode !== sorting.node()) {
+          sorting.node().appendChild(vis.node());
+        }
+        vis
+          .style("display", "inline-flex")
+          .style("align-items", "center")
+          .style("gap", "8px")
+          .style("margin-left", "12px")
+          .style("margin-bottom", "0");
+
         var form = sorting.select("#thumbViewControls");
         if (form.empty()) {
           form = sorting
