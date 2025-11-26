@@ -1419,17 +1419,17 @@
       var isRightChartFullScreenToggled = false;
 
       // side bar for sliders
-      $("#menu-toggle").click(function (e) {
-        e.preventDefault();
-
-        //$("#wrapper").toggleClass("toggled");
-        isToggled = !isToggled;
-        d3.select("#wrapper")
-          .classed("toggled", isToggled)
-          .transition()
-          .duration(300); //length of toggle animation
-        //.each("end", resizeRadarChart())
-      });
+      $("#menu-toggle").off("click").prop("disabled", true); //click(function (e) {
+      //    //e.preventDefault();  //SIDEBAR TOGGLE OFF
+      //
+      //    //$("#wrapper").toggleClass("toggled");
+      //    isToggled = !isToggled;
+      //    d3.select("#wrapper")
+      //      .classed("toggled", isToggled)
+      //      .transition()
+      //     .duration(300); //length of toggle animation
+      //    //.each("end", resizeRadarChart())
+      //  });
 
       $("#scatter-menu-toggle, .scatter-matrix-control").click(function (e) {
         isScatterToggled = !isScatterToggled;
@@ -2861,7 +2861,10 @@
 
         function updateGraph(newData) {
           var currentDims = graph.dimensions() || {};
-          var dimKeys = validDimensionKeys(currentDims, Object.keys(currentDims));
+          var dimKeys = validDimensionKeys(
+            currentDims,
+            Object.keys(currentDims)
+          );
           graph
             .data(newData)
             .dimensions(toDimensionObject(dimKeys, currentDims))
@@ -4917,18 +4920,3 @@
     </script>
   </body>
 </html>
-function renderViewer2dToggles() { var container =
-d3.select("#viewer2d-toggles"); if (container.empty()) return; var count =
-imageLinkKeys.length || 0; container.selectAll("*").remove(); if (count < 2) {
-container.style("display", "none"); return; } container.style("display",
-"block"); var data = d3.range(count).map(function (i) { var idx = i + 1; return
-{ value: "2D_" + idx, label: getImageLabel( "IMG_" + idx, idx === 1 ? "2D #1" :
-"2D #" + idx ), }; }); var current = currentView && currentView.indexOf("2D_")
-=== 0 ? currentView : "2D_1"; var items = container
-.selectAll("label.img-toggle") .data(data) .enter() .append("label")
-.attr("class", "img-toggle") .style("margin-right", "10px"); items
-.append("input") .attr("type", "radio") .attr("name", "visMode") .attr("class",
-"toggleView") .attr("value", function (d) { return d.value; })
-.property("checked", function (d) { return d.value === current; }); items
-.append("span") .text(function (d) { return d.label; }); // bind toggle handler
-for the new inputs d3.selectAll("input.toggleView").on("change", toggleView); }
