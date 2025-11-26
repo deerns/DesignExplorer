@@ -303,6 +303,7 @@
         .attr("type", "radio")
         .attr("name", "visMode")
         .attr("class", "toggleView")
+        .attr("data-debug-group", "viewer2d-toggles")
         .attr("value", function (d) {
           return d.value;
         })
@@ -776,6 +777,7 @@
                     ><input
                       type="radio"
                       class="toggleView"
+                      data-debug-group="vis-main"
                       name="visMode"
                       value="2D_1"
                       id="IMG_1"
@@ -790,6 +792,7 @@
                     ><input
                       type="radio"
                       class="toggleView"
+                      data-debug-group="vis-main"
                       name="visMode"
                       value="2D_2"
                       id="IMG_2"
@@ -800,6 +803,7 @@
                     ><input
                       type="radio"
                       class="toggleView"
+                      data-debug-group="vis-main"
                       name="visMode"
                       value="3D"
                       id="threeDRadio"
@@ -1760,6 +1764,7 @@
             .append("input")
             .attr("type", "radio")
             .attr("class", "thumbToggleView")
+            .attr("data-debug-group", "thumb-toggles")
             .attr("name", "thumbMode")
             .attr("value", "2D_1")
             .attr("id", "thumb_IMG_1")
@@ -1771,6 +1776,7 @@
             .append("input")
             .attr("type", "radio")
             .attr("class", "thumbToggleView")
+            .attr("data-debug-group", "thumb-toggles")
             .attr("name", "thumbMode")
             .attr("value", "2D_2")
             .attr("id", "thumb_IMG_2");
