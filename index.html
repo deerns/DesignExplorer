@@ -290,30 +290,8 @@
       var current =
         currentView && currentView.indexOf("2D_") === 0 ? currentView : "2D_1";
 
-      var items = container
-        .selectAll("label.img-toggle")
-        .data(data)
-        .enter()
-        .append("label")
-        .attr("class", "img-toggle")
-        .style("margin-right", "10px");
-
-      items
-        .append("input")
-        .attr("type", "radio")
-        .attr("name", "visMode")
-        .attr("class", "toggleView")
-        .attr("data-debug-group", "viewer2d-toggles")
-        .attr("value", function (d) {
-          return d.value;
-        })
-        .property("checked", function (d) {
-          return d.value === current;
-        });
-
-      items.append("span").text(function (d) {
-        return d.label;
-      });
+      // viewer2d toggles no longer needed; skip rendering them
+      return;
 
       // bind toggle handler for the new inputs
       d3.selectAll("input.toggleView").on("change", toggleView);
