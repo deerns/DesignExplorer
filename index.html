@@ -2090,14 +2090,39 @@
         if (!isFinite(index) || index < 1) index = 1;
 
         var canonical = "IMG_" + index;
-        var key =
-          (canonical === "IMG_1" && imageKeyAliases.IMG) ||
-          resolveImageKey(canonical, true);
 
-        // when a specific 2D view is requested, don't fall back to other images
-        if (key && datum[key]) {
-          return makeUrl(datum[key], "img");
+        // Build candidate keys: target first, then all known image keys
+        var candidates = [];
+        var targetKey =
+          (canonical === "IMG_1" && imageKeyAliases.IMG) ||
+          resolveImageKey(canonical, false);
+        if (targetKey) candidates.push(targetKey);
+        (imageLinkKeys || []).forEach(function (k) {
+          candidates.push(k);
+        });
+
+        // de-duplicate while preserving order
+        var seen = {};
+        candidates = candidates.filter(function (k) {
+          if (!k) return false;
+          var key = k.toString();
+          if (seen[key]) return false;
+          seen[key] = true;
+          return true;
+        });
+
+        for (var i = 0; i < candidates.length; i++) {
+          var key = candidates[i];
+          if (datum[key]) {
+            return makeUrl(datum[key], "img");
+          }
         }
+
+        // last resort: any field starting with img
+        var firstImgKey = Object.keys(datum).find(function (k) {
+          return /^img[_\s\d]*/i.test(k) && datum[k];
+        });
+        if (firstImgKey) return makeUrl(datum[firstImgKey], "img");
         return "";
       }
 
