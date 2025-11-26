@@ -1727,17 +1727,20 @@
           .style("align-items", "center")
           .style("gap", "8px");
 
-        // place main view toggles in the same flex row
+        // place main view toggles in the same flex row (always visible)
         var vis = d3.select("#vis");
-        if (!vis.empty() && vis.node().parentNode !== sorting.node()) {
-          sorting.node().appendChild(vis.node());
+        if (!vis.empty()) {
+          if (vis.node().parentNode !== sorting.node()) {
+            sorting.node().appendChild(vis.node());
+          }
+          vis
+            .style("display", "inline-flex")
+            .style("align-items", "center")
+            .style("gap", "8px")
+            .style("margin-left", "12px")
+            .style("margin-bottom", "0")
+            .style("visibility", "visible");
         }
-        vis
-          .style("display", "inline-flex")
-          .style("align-items", "center")
-          .style("gap", "8px")
-          .style("margin-left", "12px")
-          .style("margin-bottom", "0");
 
         var form = sorting.select("#thumbViewControls");
         if (form.empty()) {
