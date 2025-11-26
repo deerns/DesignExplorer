@@ -1727,6 +1727,21 @@
           .style("align-items", "center")
           .style("gap", "8px");
 
+        // place main view toggles in the same flex row (always visible)
+        var vis = d3.select("#vis");
+        if (!vis.empty()) {
+          if (vis.node().parentNode !== sorting.node()) {
+            sorting.node().appendChild(vis.node());
+          }
+          vis
+            .style("display", "inline-flex")
+            .style("align-items", "center")
+            .style("gap", "8px")
+            .style("margin-left", "12px")
+            .style("margin-bottom", "0")
+            .style("visibility", "visible");
+        }
+
         var form = sorting.select("#thumbViewControls");
         if (form.empty()) {
           form = sorting
@@ -2522,23 +2537,6 @@
           .style("display", "flex")
           .style("align-items", "center")
           .style("gap", "8px");
-
-        // ensure main view toggles are appended into the sorting bar and visible
-        var vis = d3.select("#vis");
-        if (!vis.empty()) {
-          // remove any bootstrap pull-right that might hide it in flex
-          vis.classed("pull-right", false);
-          if (vis.node().parentNode !== sorting.node()) {
-            sorting.node().appendChild(vis.node());
-          }
-          vis
-            .style("display", "inline-flex")
-            .style("align-items", "center")
-            .style("gap", "8px")
-            .style("margin-left", "12px")
-            .style("margin-bottom", "0")
-            .style("visibility", "visible");
-        }
 
         sorting.append("span").text("Sort by: ");
 
