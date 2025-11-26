@@ -843,6 +843,29 @@
                     ></span>
                   </button>
                 </form>
+                <form id="thumbViewControls" style="display: none; margin-top: 6px">
+                  <label id="thumbIMG1Label"
+                    ><input
+                      type="radio"
+                      class="thumbToggleView"
+                      name="thumbMode"
+                      value="2D_1"
+                      id="thumb_IMG_1"
+                      checked
+                    />
+                    <span id="thumbIMG1LabelText">2D #1</span></label
+                  >
+                  <label id="thumbIMG2Label"
+                    ><input
+                      type="radio"
+                      class="thumbToggleView"
+                      name="thumbMode"
+                      value="2D_2"
+                      id="thumb_IMG_2"
+                    />
+                    <span id="thumbIMG2LabelText">2D #2</span></label
+                  >
+                </form>
                 <form>
                   <!--rating div-->
                   <input class="star" type="radio" name="rating" value="1" />
@@ -1504,10 +1527,7 @@
           .select("img")
           .data(selectedImage.data())
           .attr("src", function () {
-            var viewKey =
-              currentView && currentView.indexOf("2D_") === 0
-                ? currentView
-                : "2D_1";
+            var viewKey = getActiveThumbView();
             return pickImageForView(selectedImage.datum(), viewKey);
           })
           .attr("title", getTitle);
@@ -1731,6 +1751,27 @@
           $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
         }
 
+        // thumbnails toggle (only when multiple image columns)
+        var thumbForm = d3.select("#thumbViewControls");
+        if (!thumbForm.empty()) {
+          thumbForm.style("display", hasSecondImg ? "block" : "none");
+          $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
+          d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
+          if (hasSecondImg) {
+            $("#thumbIMG2LabelText").text(
+              getImageLabel("IMG_2", defaultLabel2)
+            );
+          }
+
+          // keep the thumb radio selection aligned to the active view
+          var activeThumb = getActiveThumbView();
+          thumbForm
+            .selectAll("input.thumbToggleView")
+            .property("checked", function () {
+              return this.value === activeThumb;
+            });
+        }
+
         // keep viewer toggles in sync
         renderViewer2dToggles();
       }
@@ -1741,6 +1782,17 @@
         var defaultLabel2 = "2D #2";
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
         $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
+
+        // thumbnails toggle labels
+        $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
+        d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
+        if (hasSecondImg) {
+          $("#thumbIMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
+        }
+        d3.select("#thumbViewControls").style(
+          "display",
+          hasSecondImg ? "block" : "none"
+        );
 
         renderViewer2dToggles();
       }
@@ -1888,6 +1940,16 @@
         });
         if (firstImgKey) return makeUrl(datum[firstImgKey], "img");
         return "";
+      }
+
+      function getActiveThumbView() {
+        if (currentThumbView && currentThumbView.indexOf("2D_") === 0) {
+          return currentThumbView;
+        }
+        if (currentView && currentView.indexOf("2D_") === 0) {
+          return currentView;
+        }
+        return "2D_1";
       }
 
       function analyzeInputData(originalData) {
@@ -2579,10 +2641,7 @@
 
         // attach images ---------------------------------------------------------------------------------------------------
         var imgLink = function (d) {
-          var viewKey =
-            currentView && currentView.indexOf("2D_") === 0
-              ? currentView
-              : "2D_1";
+          var viewKey = getActiveThumbView();
           var url = pickImageForView(d, viewKey);
           if (url) return url;
           var theFirstImg = imageLinkKeys[0];
@@ -3265,6 +3324,7 @@
     <!-- 3D Viewer -->
     <script type="text/javascript">
       var currentView = "2D_1";
+      var currentThumbView = "2D_1";
       var initit3DViewer = true;
       var fullscreen = false;
       var va3cViewer;
@@ -3329,6 +3389,7 @@
       // toggle between 2d and 3d
       // toggle between 2d and 3d
       d3.selectAll("input.toggleView").on("change", toggleView);
+      d3.selectAll("input.thumbToggleView").on("change", toggleThumbView);
       d3.select("#viewer2d-mainimg").on("click", cycle2DImage);
 
       function getCanonicalImageKey(toggleValue) {
@@ -3414,12 +3475,55 @@
         );
       }
 
+      function toggleThumbView() {
+        var viewValue = this.value;
+        if (!viewValue || viewValue.indexOf("2D_") !== 0) {
+          return;
+        }
+
+        currentThumbView = viewValue;
+
+        // sync main 2D toggle if we are in a 2D mode
+        var mainToggle = d3.select("input.toggleView[value='" + viewValue + "']");
+        if (!mainToggle.empty() && currentView && currentView.indexOf("3D") !== 0) {
+          mainToggle.property("checked", true);
+          currentView = viewValue;
+        }
+
+        var selected =
+          graph && graph.highlight && graph.highlight().length
+            ? graph.highlight()[0]
+            : null;
+
+        if (selected) {
+          var url = pickImageForView(selected, viewValue);
+          if (url) {
+            d3.select("#viewer2d img").attr("src", url).attr("title", getTitle);
+          }
+        }
+
+        if (graph && typeof updateImageGrid === "function") {
+          var dataForGrid =
+            graph.brushed && graph.brushed() ? graph.brushed() : graph.data();
+          updateImageGrid(dataForGrid, false);
+        }
+      }
+
       function toggleView() {
         var viewValue = this.value;
 
         if (viewValue.indexOf("2D_") === 0) {
           var viewKey = viewValue;
-          var selected = graph.highlight()[0];
+          currentThumbView = viewKey;
+          // keep thumbnail radio in sync with the main 2D selection
+          d3.selectAll("input.thumbToggleView").property("checked", function () {
+            return this.value === viewKey;
+          });
+
+          var selected =
+            graph && graph.highlight && graph.highlight().length
+              ? graph.highlight()[0]
+              : null;
           if (selected) {
             var url = pickImageForView(selected, viewKey);
             if (url) {
@@ -3429,6 +3533,13 @@
             }
           }
           currentView = viewValue; // onthoud welke 2D toggle actief is
+
+          // refresh thumbnails to match the chosen 2D column
+          if (graph && typeof updateImageGrid === "function") {
+            var dataForGrid =
+              graph.brushed && graph.brushed() ? graph.brushed() : graph.data();
+            updateImageGrid(dataForGrid, false);
+          }
         } else {
           currentView = "3D";
 
