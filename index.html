@@ -1745,6 +1745,16 @@
           .style("align-items", "center")
           .style("gap", "8px");
 
+        // move the main view toggles into the sorting bar (only one copy)
+        var visControls = d3.select("#vis");
+        if (!visControls.empty() && visControls.node().parentNode !== sorting.node()) {
+          sorting.node().appendChild(visControls.node());
+          visControls
+            .style("float", "none")
+            .style("margin-left", "12px")
+            .style("margin-bottom", "0");
+        }
+
         var form = sorting.select("#thumbViewControls");
         if (form.empty()) {
           form = sorting
