@@ -1718,19 +1718,26 @@
         var sorting = d3.select(".sorting");
         if (sorting.empty()) return null;
 
+        sorting
+          .style("display", "flex")
+          .style("align-items", "center")
+          .style("gap", "6px");
+
         var form = sorting.select("#thumbViewControls");
         if (form.empty()) {
           form = sorting
             .append("span")
             .attr("id", "thumbViewControls")
-            .style("margin-left", "16px")
-            .style("display", "inline-block")
-            .style("vertical-align", "middle");
+            .style("margin-left", "auto")
+            .style("padding-left", "12px")
+            .style("display", "inline-flex")
+            .style("align-items", "center")
+            .style("gap", "10px");
 
           var label1 = form
             .append("label")
             .attr("id", "thumbIMG1Label")
-            .style("margin-right", "8px");
+            .style("margin-right", "4px");
           label1
             .append("input")
             .attr("type", "radio")
@@ -2502,6 +2509,10 @@
 
         var sorting = d3.select(".sorting");
         sorting.html("");
+        sorting
+          .style("display", "flex")
+          .style("align-items", "center")
+          .style("gap", "6px");
 
         sorting.append("span").text("Sort by: ");
 
