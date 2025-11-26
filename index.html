@@ -52,14 +52,21 @@
       href="./rangeslider_files/css/ion.rangeSlider.skinNice.css"
     />
     <style>
-      /* keep main view toggles aligned to the right edge */
+      /* keep main view toggles aligned to the right edge, with rating below */
       #vis {
         float: none !important;
         display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 8px;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
         width: 100%;
+        margin: 0;
+      }
+
+      #vis form.ratingBar {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         margin: 0;
       }
     </style>
@@ -835,9 +842,9 @@
                     ></span>
                   </button>
                 </form>
-        <form>
-          <!--rating div-->
-          <input class="star" type="radio" name="rating" value="1" />
+                <form class="ratingBar">
+                  <!--rating div-->
+                  <input class="star" type="radio" name="rating" value="1" />
                   <input class="star" type="radio" name="rating" value="2" />
                   <input class="star" type="radio" name="rating" value="3" />
                   <input class="star" type="radio" name="rating" value="4" />
