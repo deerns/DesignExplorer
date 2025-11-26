@@ -1216,7 +1216,7 @@
                           style="width: 80%; margin-left: 1.1em"
                         />
                       </li>
-                      <li class="list-group-item form-inline">
+                      <li class="list-group-item form-inline" id="img1LabelRow">
                         2D #1 Label:
                         <input
                           id="img1LabelInput"
@@ -1225,7 +1225,7 @@
                           style="width: 80%; margin-left: 0.6em"
                         />
                       </li>
-                      <li class="list-group-item form-inline">
+                      <li class="list-group-item form-inline" id="img2LabelRow">
                         2D #2 Label:
                         <input
                           id="img2LabelInput"
@@ -1234,7 +1234,7 @@
                           style="width: 80%; margin-left: 0.6em"
                         />
                       </li>
-                      <li class="list-group-item form-inline">
+                      <li class="list-group-item form-inline" id="img3LabelRow">
                         2D #3 Label:
                         <input
                           id="img3LabelInput"
@@ -4107,6 +4107,16 @@
             applyImageLabelsImmediate(newUserSetting.imageLabels);
             syncRadioLabelsFromCurrentInputs();
           });
+
+        // show only the number of image label inputs that match available images/labels
+        var imgCount = Math.max(
+          imageLinkKeys.length || 0,
+          Object.keys(newUserSetting.imageLabels || {}).length
+        );
+        var hasSecondImg = imgCount > 1;
+        var hasThirdImg = imgCount > 2;
+        d3.select("#img2LabelRow").style("display", hasSecondImg ? "block" : "none");
+        d3.select("#img3LabelRow").style("display", hasThirdImg ? "block" : "none");
 
         var selectList = dimSettingListDiv
           .selectAll("#dimSettingList")
