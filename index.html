@@ -310,11 +310,9 @@
           return d.value === current;
         });
 
-      items
-        .append("span")
-        .text(function (d) {
-          return d.label;
-        });
+      items.append("span").text(function (d) {
+        return d.label;
+      });
 
       // bind toggle handler for the new inputs
       d3.selectAll("input.toggleView").on("change", toggleView);
@@ -2766,7 +2764,9 @@
           } else {
             var currentDims = graph.dimensions() || {};
             var dimKeys = Object.keys(currentDims);
-            graph.data(newData).dimensions(toDimensionObject(dimKeys, currentDims));
+            graph
+              .data(newData)
+              .dimensions(toDimensionObject(dimKeys, currentDims));
             updateSlidersTickValues(newData);
           }
         });
@@ -3516,8 +3516,14 @@
         currentThumbView = viewValue;
 
         // sync main 2D toggle if we are in a 2D mode
-        var mainToggle = d3.select("input.toggleView[value='" + viewValue + "']");
-        if (!mainToggle.empty() && currentView && currentView.indexOf("3D") !== 0) {
+        var mainToggle = d3.select(
+          "input.toggleView[value='" + viewValue + "']"
+        );
+        if (
+          !mainToggle.empty() &&
+          currentView &&
+          currentView.indexOf("3D") !== 0
+        ) {
           mainToggle.property("checked", true);
           currentView = viewValue;
         }
@@ -3548,9 +3554,12 @@
           var viewKey = viewValue;
           currentThumbView = viewKey;
           // keep thumbnail radio in sync with the main 2D selection
-          d3.selectAll("input.thumbToggleView").property("checked", function () {
-            return this.value === viewKey;
-          });
+          d3.selectAll("input.thumbToggleView").property(
+            "checked",
+            function () {
+              return this.value === viewKey;
+            }
+          );
 
           var selected =
             graph && graph.highlight && graph.highlight().length
@@ -3699,17 +3708,19 @@
             //turn on rating rectangle
             d3.selectAll("rect.legend").attr("class", function (d) {
               if (d.name == "Rating") {
-            d.enabled = true;
-            return "legend";
-          }
-        });
+                d.enabled = true;
+                return "legend";
+              }
+            });
 
-        // add Rating to dimensions
-        graph.dimensions(toDimensionObject(Object.keys(cleanedKeys4pc), graph.dimensions()));
-        graph.scale("Rating", [0, 5]);
-        graph.updateAxes();
-        firstRating = false;
-      }
+            // add Rating to dimensions
+            graph.dimensions(
+              toDimensionObject(Object.keys(cleanedKeys4pc), graph.dimensions())
+            );
+            graph.scale("Rating", [0, 5]);
+            graph.updateAxes();
+            firstRating = false;
+          }
 
           // check if this is the first rating
 
@@ -4833,61 +4844,18 @@
     </script>
   </body>
 </html>
-      function renderViewer2dToggles() {
-        var container = d3.select("#viewer2d-toggles");
-        if (container.empty()) return;
-
-        var count = imageLinkKeys.length || 0;
-        container.selectAll("*").remove();
-
-        if (count < 2) {
-          container.style("display", "none");
-          return;
-        }
-
-        container.style("display", "block");
-
-        var data = d3.range(count).map(function (i) {
-          var idx = i + 1;
-          return {
-            value: "2D_" + idx,
-            label: getImageLabel(
-              "IMG_" + idx,
-              idx === 1 ? "2D #1" : "2D #" + idx
-            ),
-          };
-        });
-
-        var current = currentView && currentView.indexOf("2D_") === 0
-          ? currentView
-          : "2D_1";
-
-        var items = container
-          .selectAll("label.img-toggle")
-          .data(data)
-          .enter()
-          .append("label")
-          .attr("class", "img-toggle")
-          .style("margin-right", "10px");
-
-        items
-          .append("input")
-          .attr("type", "radio")
-          .attr("name", "visMode")
-          .attr("class", "toggleView")
-          .attr("value", function (d) {
-            return d.value;
-          })
-          .property("checked", function (d) {
-            return d.value === current;
-          });
-
-        items
-          .append("span")
-          .text(function (d) {
-            return d.label;
-          });
-
-        // bind toggle handler for the new inputs
-        d3.selectAll("input.toggleView").on("change", toggleView);
-      }
+function renderViewer2dToggles() { var container =
+d3.select("#viewer2d-toggles"); if (container.empty()) return; var count =
+imageLinkKeys.length || 0; container.selectAll("*").remove(); if (count < 2) {
+container.style("display", "none"); return; } container.style("display",
+"block"); var data = d3.range(count).map(function (i) { var idx = i + 1; return
+{ value: "2D_" + idx, label: getImageLabel( "IMG_" + idx, idx === 1 ? "2D #1" :
+"2D #" + idx ), }; }); var current = currentView && currentView.indexOf("2D_")
+=== 0 ? currentView : "2D_1"; var items = container
+.selectAll("label.img-toggle") .data(data) .enter() .append("label")
+.attr("class", "img-toggle") .style("margin-right", "10px"); items
+.append("input") .attr("type", "radio") .attr("name", "visMode") .attr("class",
+"toggleView") .attr("value", function (d) { return d.value; })
+.property("checked", function (d) { return d.value === current; }); items
+.append("span") .text(function (d) { return d.label; }); // bind toggle handler
+for the new inputs d3.selectAll("input.toggleView").on("change", toggleView); }
