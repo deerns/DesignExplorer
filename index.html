@@ -3873,6 +3873,12 @@
         if (key === "Escape" || key === "Esc" || key === 27) {
           if (fullscreen) {
             toggleFullscreen();
+            return;
+          }
+
+          // allow closing a single selected image with Esc (same as the close button)
+          if (isAnyItemSelected) {
+            updateLayoutOnDeselect();
           }
         }
       });
