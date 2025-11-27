@@ -366,13 +366,15 @@
           loadDataToDesignExplorer(data);
           loadSetting(settingFilePathLink);
           updateLayoutOnDeselect();
+
+          // If a server link was provided manually, open settings (same as the Setting button)
+          // only after data finishes loading so image counts are ready
+          if (document.getElementById("folderLink").value) {
+            setTimeout(function () {
+              dataSetting(graph);
+            }, 200);
+          }
         });
-        // If a server link was provided manually, open settings (same as the Setting button)
-        if (document.getElementById("folderLink").value) {
-          setTimeout(function () {
-            dataSetting(graph);
-          }, 200);
-        }
       } else {
         alert("You have to put Google Drive Folder information first!");
       }
