@@ -3250,6 +3250,13 @@
           document.getElementById("csv-file").value = "";
           document.getElementById("folderLink").value = "";
           document.getElementById("folderLinkID").value = "";
+
+           // focus and select the server link field for immediate typing
+          var folderLinkInput = document.getElementById("folderLink");
+          if (folderLinkInput) {
+            folderLinkInput.focus();
+            folderLinkInput.select();
+          }
         });
 
         var fileInput = document.getElementById("csv-file");
