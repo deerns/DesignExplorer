@@ -315,11 +315,15 @@ function checkInputLink(link, callback) {
     var lowerLink = sanitizedLink.toLowerCase();
     var csvSuffix = "data.csv";
 
+    // strip a trailing data.csv file reference
     if (lowerLink.endsWith(csvSuffix)) {
-      sanitizedLink = sanitizedLink.slice(
-        0,
-        sanitizedLink.length - csvSuffix.length
-      );
+      sanitizedLink = sanitizedLink.slice(0, sanitizedLink.length - csvSuffix.length);
+    }
+
+    // strip trailing file references (csv/json/png) to get the containing folder
+    var fileMatch = sanitizedLink.match(/^(.*\/)[^\/]+\.(csv|json|png)(\?.*)?$/i);
+    if (fileMatch && fileMatch[1]) {
+      sanitizedLink = fileMatch[1];
     }
 
     if (sanitizedLink.slice(-1) !== "/") {
