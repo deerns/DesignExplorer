@@ -1913,11 +1913,7 @@
         var idx = match ? match[1] : "1";
         var fb =
           fallback !== undefined ? fallback : idx === "1" ? "2D" : "#" + idx;
-        // try custom label first
-        var lbl = getImageLabel("IMG_" + idx, fb);
-        if (typeof lbl === "string" && lbl.trim().length > 0) {
-          return lbl.trim();
-        }
+        // For dropdowns, keep it simple and deterministic
         return fb;
       }
 
@@ -1939,9 +1935,19 @@
         select.selectAll("*").remove();
         options.forEach(function (opt) {
           var value = opt && opt.value ? opt.value : "";
-          var text = imageOptionLabel(opt, opt && opt.fallback);
-          if (!text || !text.length) {
-            text = valueToLabel(value, opt && opt.fallback);
+          var text = "";
+          if (opt && typeof opt.label === "string" && opt.label.trim().length) {
+            text = opt.label.trim();
+          } else {
+            var match = value.match(/^2D_(\d+)/);
+            var idx = match ? match[1] : "1";
+            var fb =
+              opt && opt.fallback
+                ? opt.fallback
+                : idx === "1"
+                ? "2D"
+                : "#" + idx;
+            text = fb;
           }
           select.append("option").attr("value", value).text(text);
         });
