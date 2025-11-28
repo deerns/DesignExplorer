@@ -112,6 +112,9 @@
       #dataSetting .list-group-item.form-inline button {
         flex-shrink: 0;
       }
+      #dataSetting .list-group-item.form-inline .target-remove-btn {
+        margin-left: auto;
+      }
       #labelSizeRow {
         gap: 12px;
       }
@@ -4341,7 +4344,9 @@
         panelBodyContent
           .append("li")
           .attr("class", "list-group-item form-inline")
-          .text("Slider Label: ")
+          .call(function (li) {
+            li.append("span").attr("class", "setting-label").text("Slider Label:");
+          })
           .append("input")
           .attr("class", "form-control input-sm slider-label-input")
           .attr("placeholder", function (d) {
@@ -4367,7 +4372,9 @@
         var itemTickNumberSetting = panelBodyContent
           .append("li")
           .attr("class", "list-group-item form-inline")
-          .text("Tick Number: ");
+          .call(function (li) {
+            li.append("span").attr("class", "setting-label").text("Tick Number:");
+          });
 
         itemTickNumberSetting
           .append("input")
@@ -4385,7 +4392,9 @@
         var itemScaleSetting = panelBodyContent
           .append("li")
           .attr("class", "list-group-item form-inline")
-          .text("Scale Range: ");
+          .call(function (li) {
+            li.append("span").attr("class", "setting-label").text("Scale Range:");
+          });
 
         //min scale input
         itemScaleSetting
@@ -4425,7 +4434,9 @@
         var itemTickNumberSetting = panelBodyContent
           .append("li")
           .attr("class", "list-group-item form-inline")
-          .text("Target Mark: ");
+          .call(function (li) {
+            li.append("span").attr("class", "setting-label").text("Target Mark:");
+          });
 
         itemTickNumberSetting
           .append("input")
@@ -4474,7 +4485,8 @@
 
         itemTickNumberSetting
           .append("button")
-          .attr("class", "btn btn-sm")
+          .attr("class", "btn btn-sm target-remove-btn")
+          .style("margin-left", "auto")
           .text("Remove")
           .attr("type", "button")
           .on("click", function (d) {
