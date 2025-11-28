@@ -1913,7 +1913,11 @@
         var idx = match ? match[1] : "1";
         var fb =
           fallback !== undefined ? fallback : idx === "1" ? "2D" : "#" + idx;
-        // For dropdowns, keep it simple and deterministic
+        // try custom label, else fallback
+        var lbl = getImageLabel("IMG_" + idx, fb);
+        if (typeof lbl === "string" && lbl.trim().length > 0) {
+          return lbl.trim();
+        }
         return fb;
       }
 
