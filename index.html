@@ -4217,6 +4217,9 @@
             var numeric = normalizeLabelSizeToNumber(value);
             if (numeric !== null) {
               syncLabelSizeUI(numeric + "%");
+              if (typeof applyLabelFontSize === "function") {
+                applyLabelFontSize(numeric + "%");
+              }
             } else {
               d3.select("#labelSizeValue").text("");
             }
