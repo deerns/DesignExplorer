@@ -432,24 +432,13 @@
       var current =
         currentView && currentView.indexOf("2D_") === 0 ? currentView : "2D_1";
 
-        var select = container
-          .append("select")
-          .attr("class", "form-control input-sm toggleView")
-          .style("width", "180px");
+      var select = container
+        .append("select")
+        .attr("class", "form-control input-sm toggleView")
+        .style("width", "180px");
 
-      var optSel = select.selectAll("option").data(data);
-      optSel.exit().remove();
-      optSel.enter().append("option");
-      select
-        .selectAll("option")
-        .attr("value", function (d) {
-          return d.value;
-        })
-        .text(function (d) {
-          return imageOptionLabel(d);
-        });
-
-      select.property("value", current);
+      setSelectOptions(select, data, current);
+      enforceSelectLabelText(select);
 
       select.on("change", function () {
         toggleView.call(this);
@@ -1930,6 +1919,31 @@
         return fb;
       }
 
+      function setSelectOptions(select, options, activeValue) {
+        if (!select || select.empty()) return;
+        select.selectAll("*").remove();
+        options.forEach(function (opt) {
+          var text = imageOptionLabel(opt);
+          var value = opt && opt.value ? opt.value : "";
+          select
+            .append("option")
+            .attr("value", value)
+            .text(text);
+        });
+        if (activeValue) {
+          select.property("value", activeValue);
+        }
+      }
+
+      function enforceSelectLabelText(select) {
+        if (!select || select.empty()) return;
+        select.selectAll("option").each(function () {
+          var optVal = d3.select(this).attr("value") || this.value || "";
+          var label = imageOptionLabel({ value: optVal });
+          this.textContent = label;
+        });
+      }
+
       function thumbShouldShow(hasExtraImages) {
         if (!hasExtraImages) return false;
         var selectedCount =
@@ -2151,20 +2165,30 @@
 
           var select = thumbForm.select("select.thumbToggleView");
           if (!select.empty()) {
-            var optSel = select.selectAll("option").data(options);
-            optSel.exit().remove();
-            optSel.enter().append("option");
-            select
-              .selectAll("option")
-              .attr("value", function (d) {
-                return d.value;
-              })
-              .text(function (d) {
-                return imageOptionLabel(d);
-              });
-
             var activeThumb = getActiveThumbView();
-            select.property("value", activeThumb);
+            setSelectOptions(select, options, activeThumb);
+          }
+        }
+
+        // enforce select options with safe labels
+        var thumbForm2 = ensureThumbControls();
+        if (thumbForm2) {
+          var totalImgs2 = Math.max(
+            imageLinkKeys.length || 0,
+            Object.keys(_userSetting.imageLabels || {}).length
+          );
+          if (totalImgs2 > 0) {
+            var opts = [];
+            for (var j = 1; j <= totalImgs2; j++) {
+              var k = "2D_" + j;
+              var fb = j === 1 && totalImgs2 < 2 ? "2D" : "#" + j;
+              opts.push({ value: k, label: imageOptionLabel({ value: k }, fb) });
+            }
+            setSelectOptions(
+              thumbForm2.select("select.thumbToggleView"),
+              opts,
+              getActiveThumbView()
+            );
           }
         }
 
