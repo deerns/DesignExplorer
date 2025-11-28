@@ -420,12 +420,12 @@
 
       var data = d3.range(count).map(function (i) {
         var idx = i + 1;
-        var labelStr = String(
-          getImageLabel("IMG_" + idx, idx === 1 && count < 2 ? "2D" : "#" + idx)
-        );
         return {
           value: "2D_" + idx,
-          label: labelStr,
+          label: imageOptionLabel(
+            { value: "2D_" + idx },
+            idx === 1 && count < 2 ? "2D" : "#" + idx
+          ),
         };
       });
 
@@ -445,12 +445,7 @@
           return d.value;
         })
         .text(function (d) {
-          var lbl = d && d.label;
-          if (typeof lbl === "string" && lbl.length) return lbl;
-          var key = d && d.value ? String(d.value) : "";
-          var idx = key.indexOf("2D_") === 0 ? key.replace("2D_", "") : "";
-          var fallback = getImageLabel("IMG_" + idx, key || "");
-          return typeof fallback === "string" ? fallback : key;
+          return imageOptionLabel(d);
         });
 
       select.property("value", current);
@@ -1916,6 +1911,22 @@
         return fallback;
       }
 
+      function imageOptionLabel(option, fallback) {
+        var viewKey = option && option.value ? String(option.value) : "";
+        var match = viewKey.match(/^2D_(\d+)/);
+        var idx = match ? match[1] : "1";
+        var fb =
+          fallback !== undefined
+            ? fallback
+            : idx === "1"
+            ? "2D"
+            : "#" + idx;
+        var lbl = getImageLabel("IMG_" + idx, fb);
+        if (typeof lbl === "string") return lbl;
+        if (lbl && typeof lbl.toString === "function") return lbl.toString();
+        return fb;
+      }
+
       function thumbShouldShow(hasExtraImages) {
         if (!hasExtraImages) return false;
         var selectedCount =
@@ -2083,18 +2094,27 @@
           var options = [];
           options.push({
             value: "2D_1",
-            label: String(getImageLabel("IMG_1", defaultLabel1)),
+            label: imageOptionLabel(
+              { value: "2D_1" },
+              String(getImageLabel("IMG_1", defaultLabel1))
+            ),
           });
           if (hasSecondImg) {
             options.push({
               value: "2D_2",
-              label: String(getImageLabel("IMG_2", defaultLabel2)),
+              label: imageOptionLabel(
+                { value: "2D_2" },
+                String(getImageLabel("IMG_2", defaultLabel2))
+              ),
             });
           }
           if (hasThirdImg) {
             options.push({
               value: "2D_3",
-              label: String(getImageLabel("IMG_3", defaultLabel3)),
+              label: imageOptionLabel(
+                { value: "2D_3" },
+                String(getImageLabel("IMG_3", defaultLabel3))
+              ),
             });
           }
 
