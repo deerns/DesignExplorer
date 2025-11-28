@@ -432,10 +432,10 @@
       var current =
         currentView && currentView.indexOf("2D_") === 0 ? currentView : "2D_1";
 
-        var select = container
-          .append("select")
-          .attr("class", "form-control input-sm toggleView")
-          .style("width", "180px");
+      var select = container
+        .append("select")
+        .attr("class", "form-control input-sm toggleView")
+        .style("width", "180px");
 
       var optSel = select.selectAll("option").data(data);
       optSel.exit().remove();
@@ -445,7 +445,7 @@
           return d.value;
         })
         .text(function (d) {
-          return d.label || d.value || "";
+          return d.label;
         });
 
       select.property("value", current);
@@ -2027,7 +2027,7 @@
                 return d.value;
               })
               .text(function (d) {
-                return d.label || d.value || "";
+                return d.label;
               });
 
             var activeThumb = getActiveThumbView();
@@ -2086,7 +2086,7 @@
                 return d.value;
               })
               .text(function (d) {
-                return d.label || d.value || "";
+                return d.label;
               });
 
             var activeThumb = getActiveThumbView();
