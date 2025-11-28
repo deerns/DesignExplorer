@@ -1260,7 +1260,7 @@
                         <input
                           id="labelSizeSlider"
                           type="range"
-                          min="0"
+                          min="50"
                           max="200"
                           step="1"
                           style="flex: 1 1 150px"
@@ -4123,7 +4123,7 @@
           var numeric = normalizeLabelSizeToNumber(value);
           if (numeric === null) return;
           // clamp to slider bounds
-          numeric = Math.max(0, Math.min(200, numeric));
+          numeric = Math.max(50, Math.min(200, numeric));
           var asPercent = numeric + "%";
           d3.select("#labelSizeSlider").property("value", numeric);
           d3.select("#labelSizeInput").property("value", asPercent);
