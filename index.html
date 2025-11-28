@@ -404,9 +404,9 @@
     }
 
     // render image toggles near the 2d viewer when multiple images exist
-      function renderViewer2dToggles() {
-        var container = d3.select("#viewer2d-toggles");
-        if (container.empty()) return;
+    function renderViewer2dToggles() {
+      var container = d3.select("#viewer2d-toggles");
+      if (container.empty()) return;
 
       var count = imageLinkKeys.length || 0;
       container.selectAll("*").remove();
@@ -437,10 +437,11 @@
         .attr("class", "form-control input-sm toggleView")
         .style("width", "180px");
 
-      var optSel = select.selectAll("option").data(data);
-      optSel.exit().remove();
-      optSel.enter().append("option");
-      optSel
+      select
+        .selectAll("option")
+        .data(data)
+        .enter()
+        .append("option")
         .attr("value", function (d) {
           return d.value;
         })
