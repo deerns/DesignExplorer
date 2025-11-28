@@ -228,6 +228,7 @@
             dimMark: {},
             dimLabels: {},
             imageLabels: {},
+            labelSize: "",
           };
     var imageLinkKeys = [];
     var imageKeyAliases = {};
@@ -1243,6 +1244,16 @@
                           class="form-control input-sm"
                           type="text"
                           style="width: 80%; margin-left: 0.6em"
+                        />
+                      </li>
+                      <li class="list-group-item form-inline">
+                        Label Size:
+                        <input
+                          id="labelSizeInput"
+                          class="form-control input-sm"
+                          type="text"
+                          placeholder="e.g. 90% or 14px"
+                          style="width: 60%; margin-left: 1.2em"
                         />
                       </li>
                       <li class="list-group-item form-inline">
@@ -4039,6 +4050,7 @@
           dimMark: {},
           dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
           imageLabels: Object.assign({}, _userSetting.imageLabels || {}),
+          labelSize: _userSetting.labelSize || "",
         };
 
         // var userStudyInfo = {
@@ -4134,6 +4146,21 @@
             }
             applyImageLabelsImmediate(newUserSetting.imageLabels);
             syncRadioLabelsFromCurrentInputs();
+          });
+        dimSettingListDiv
+          .select("#labelSizeInput")
+          .property("value", newUserSetting.labelSize || "")
+          .on("input change", function () {
+            var value = ($(this).val() || "").trim();
+            if (value.length === 0) {
+              delete newUserSetting.labelSize;
+            } else {
+              newUserSetting.labelSize = value;
+              // apply immediately so user sees feedback
+              if (typeof applyLabelFontSize === "function") {
+                applyLabelFontSize(value);
+              }
+            }
           });
 
         // show only the number of image label inputs that match available images/labels
@@ -4454,6 +4481,12 @@
               newUserSetting.dimLabels[dimName] = value;
             }
           });
+          var labelSizeVal = ($("#labelSizeInput").val() || "").trim();
+          if (labelSizeVal.length > 0) {
+            newUserSetting.labelSize = labelSizeVal;
+          } else {
+            delete newUserSetting.labelSize;
+          }
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
           // force slider/axis labels to refresh immediately
@@ -4535,6 +4568,12 @@
               newUserSetting.dimLabels[dimName] = value;
             }
           });
+          var labelSizeVal = ($("#labelSizeInput").val() || "").trim();
+          if (labelSizeVal.length > 0) {
+            newUserSetting.labelSize = labelSizeVal;
+          } else {
+            delete newUserSetting.labelSize;
+          }
           updateImageLabelsFromInputs();
           // refresh radio labels immediately even before saving
           applyImageLabelsImmediate(newUserSetting.imageLabels || {});
@@ -4548,9 +4587,14 @@
         var userDimTicks = userSetting.dimTicks || {};
         var userDimLabels = userSetting.dimLabels || {};
         var userImageLabels = userSetting.imageLabels || {};
+        var userLabelSize = userSetting.labelSize;
         var isThereNewDimTicks = Object.keys(userDimTicks).length > 0;
         var isThereNewDimLabels = Object.keys(userDimLabels).length > 0;
         var isThereNewImageLabels = Object.keys(userImageLabels).length > 0;
+        var hasLabelSize =
+          userLabelSize !== undefined &&
+          userLabelSize !== null &&
+          String(userLabelSize).trim().length > 0;
 
         if (isThereNewStudyInfo) {
           setStudyInfo(userSetting.studyInfo);
@@ -4580,6 +4624,10 @@
           if (graph) {
             updateLabels();
           }
+        }
+
+        if (hasLabelSize && typeof applyLabelFontSize === "function") {
+          applyLabelFontSize(userLabelSize);
         }
 
         // always sync image labels so UI picks up values from settings.json
@@ -4990,6 +5038,16 @@
           globalUserSetting.imageLabels,
           newUserSetting.imageLabels
         );
+        if (newUserSetting.hasOwnProperty("labelSize")) {
+          if (
+            newUserSetting.labelSize === null ||
+            newUserSetting.labelSize === ""
+          ) {
+            delete globalUserSetting.labelSize;
+          } else {
+            globalUserSetting.labelSize = newUserSetting.labelSize;
+          }
+        }
 
         var exportJson = globalUserSetting;
 
@@ -5067,6 +5125,10 @@
             _userSetting.imageLabels || {},
             d.imageLabels || {}
           );
+          mergedSetting.labelSize =
+            d.labelSize !== undefined && d.labelSize !== null
+              ? d.labelSize
+              : _userSetting.labelSize;
 
           // update the global _userSetting
           _userSetting = mergedSetting;
@@ -5087,6 +5149,9 @@
           // safety: re-apply labels after settings in case elements render asynchronously
           setTimeout(function () {
             setDimLabels(_userSetting.dimLabels);
+            if (_userSetting.labelSize) {
+              applyLabelFontSize(_userSetting.labelSize);
+            }
             setImageLabels(_userSetting.imageLabels);
             refreshImageRadioTexts();
             if (graph) updateLabels();
@@ -5104,6 +5169,9 @@
               );
               refreshImageRadioTexts();
               refreshGraphLabelsWithRetry(0);
+              if (_userSetting.labelSize) {
+                applyLabelFontSize(_userSetting.labelSize);
+              }
               if (graph) graph.render();
             }, 0);
             // extra delayed pass in case parcoords re-renders after settings
@@ -5131,6 +5199,9 @@
                 d3.selectAll(".dimension text.label").text(function (d) {
                   return getDimLabel(d);
                 });
+                if (_userSetting.labelSize) {
+                  applyLabelFontSize(_userSetting.labelSize);
+                }
                 graph.render();
                 applyDimLabelsToGraph(3);
               }

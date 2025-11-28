@@ -83,6 +83,7 @@ function overwriteInitialGlobalValues() {
     dimMark: {},
     dimLabels: {},
     imageLabels: {},
+    labelSize: "",
   };
 
   rcheight = height = d3.select("#graph").style("height").replace("px", "");
@@ -292,14 +293,40 @@ function loadFromUrl(rawUrl) {
   });
 }
 
-function changeLabelSize(size) {
-  if (size == "largeLabel") {
-    d3.selectAll(".label").style("font-size", "95%");
-  } else if (size == "mediumLabel") {
-    d3.selectAll(".label").style("font-size", "85%");
-  } else if (size == "smallLabel") {
-    d3.selectAll(".label").style("font-size", "75%");
+function applyLabelFontSize(size) {
+  // Accept either preset keys or a raw CSS font-size string/number
+  var map = {
+    largeLabel: "95%",
+    mediumLabel: "85%",
+    smallLabel: "75%",
+  };
+
+  var resolved = map.hasOwnProperty(size) ? map[size] : size;
+
+  if (typeof resolved === "number") {
+    resolved = resolved + "%";
+  } else if (typeof resolved === "string") {
+    var trimmed = resolved.trim();
+    // If only a number is provided, treat it as a percentage for consistency
+    if (/^[0-9.]+$/.test(trimmed)) {
+      resolved = trimmed + "%";
+    } else {
+      resolved = trimmed;
+    }
+  } else {
+    return;
   }
+
+  d3.selectAll(".label").style("font-size", resolved);
+
+  // persist into global settings if available
+  if (typeof _userSetting !== "undefined") {
+    _userSetting.labelSize = resolved;
+  }
+}
+
+function changeLabelSize(size) {
+  applyLabelFontSize(size);
 }
 //TODO remove link after test
 function checkInputLink(link, callback) {
