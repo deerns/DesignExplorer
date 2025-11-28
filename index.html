@@ -408,23 +408,26 @@
       var container = d3.select("#viewer2d-toggles");
       if (container.empty()) return;
 
-      var count = Math.max(1, imageLinkKeys.length || 0);
-      container.selectAll("*").remove();
+      var totalImgs = Math.max(
+        imageLinkKeys.length || 0,
+        Object.keys(_userSetting.imageLabels || {}).length,
+        1
+      );
 
-      if (count < 2) {
+      if (totalImgs < 1) {
         container.style("display", "none");
         return;
       }
 
       container.style("display", "block");
 
-      var data = d3.range(count).map(function (i) {
+      var data = d3.range(totalImgs).map(function (i) {
         var idx = i + 1;
         return {
           value: "2D_" + idx,
           label: imageOptionLabel(
             { value: "2D_" + idx },
-            idx === 1 && count < 2 ? "2D" : "#" + idx
+            idx === 1 && totalImgs < 2 ? "2D" : "#" + idx
           ),
         };
       });
@@ -432,10 +435,13 @@
       var current =
         currentView && currentView.indexOf("2D_") === 0 ? currentView : "2D_1";
 
-      var select = container
-        .append("select")
-        .attr("class", "form-control input-sm toggleView")
-        .style("width", "180px");
+      var select = container.select("select.toggleView");
+      if (select.empty()) {
+        select = container
+          .append("select")
+          .attr("class", "form-control input-sm toggleView")
+          .style("width", "180px");
+      }
 
       setSelectOptions(select, data, current);
       enforceSelectLabelText(select);
@@ -1901,6 +1907,19 @@
         return fallback;
       }
 
+      function valueToLabel(val, fallback) {
+        var key = val ? String(val) : "";
+        var match = key.match(/^2D_(\d+)/);
+        var idx = match ? match[1] : "1";
+        var fb =
+          fallback !== undefined ? fallback : idx === "1" ? "2D" : "#" + idx;
+        var lbl = getImageLabel("IMG_" + idx, fb);
+        if (typeof lbl === "string" && lbl.trim().length > 0) {
+          return lbl.trim();
+        }
+        return fb;
+      }
+
       function imageOptionLabel(option, fallback) {
         if (
           option &&
@@ -1910,16 +1929,7 @@
           return option.label.trim();
         }
         var viewKey = option && option.value ? String(option.value) : "";
-        var match = viewKey.match(/^2D_(\d+)/);
-        var idx = match ? match[1] : "1";
-        var fb =
-          fallback !== undefined ? fallback : idx === "1" ? "2D" : "#" + idx;
-        var lbl = getImageLabel("IMG_" + idx, fb);
-        if (typeof lbl === "string") {
-          var trimmed = lbl.trim();
-          if (trimmed.length > 0) return trimmed;
-        }
-        return fb;
+        return valueToLabel(viewKey, fallback);
       }
 
       function setSelectOptions(select, options, activeValue) {
@@ -1928,13 +1938,13 @@
         select.selectAll("*").remove();
         options.forEach(function (opt) {
           var value = opt && opt.value ? opt.value : "";
-          var text = imageOptionLabel(opt);
-          if (!text || !text.length) {
-            var match = value.match(/^2D_(\d+)/);
-            var idx = match ? match[1] : "1";
-            var fb = idx === "1" ? "2D" : "#" + idx;
-            text = fb;
-          }
+          var text =
+            (opt &&
+              typeof opt.label === "string" &&
+              opt.label.trim().length > 0 &&
+              opt.label.trim()) ||
+            imageOptionLabel(opt, opt && opt.fallback) ||
+            valueToLabel(value, opt && opt.fallback);
           select.append("option").attr("value", value).text(text);
         });
         if (activeValue) {
@@ -1946,12 +1956,7 @@
         if (!select || select.empty()) return;
         select.selectAll("option").each(function () {
           var optVal = d3.select(this).attr("value") || this.value || "";
-          var label = imageOptionLabel({ value: optVal });
-          if (!label || !label.length) {
-            var match = optVal.match(/^2D_(\d+)/);
-            var idx = match ? match[1] : "1";
-            label = idx === "1" ? "2D" : "#" + idx;
-          }
+          var label = valueToLabel(optVal);
           this.textContent = label;
         });
       }
