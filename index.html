@@ -1932,6 +1932,28 @@
       function setSelectOptions(select, options, activeValue) {
         if (!select || select.empty()) return;
         if (!options || !options.length) return;
+
+        // If options are unchanged, avoid rebuilding (prevents flicker/overwrite)
+        var existing = select.selectAll("option").nodes().map(function (n) {
+          return n.value || "";
+        });
+        var incoming = options.map(function (opt) {
+          return (opt && opt.value) || "";
+        });
+        var sameLength = existing.length === incoming.length;
+        var sameValues =
+          sameLength &&
+          existing.every(function (v, i) {
+            return v === incoming[i];
+          });
+        if (sameValues) {
+          // only update active value if provided
+          if (activeValue) {
+            select.property("value", activeValue);
+          }
+          return;
+        }
+
         select.selectAll("*").remove();
         options.forEach(function (opt) {
           var value = opt && opt.value ? opt.value : "";
