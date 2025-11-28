@@ -4235,6 +4235,31 @@
           setLabelSizeFromAny(sliderVal, true);
         });
 
+        // Fallback plain DOM bindings to ensure slider/input stay in sync
+        var labelSizeSliderEl = document.getElementById("labelSizeSlider");
+        var labelSizeInputEl = document.getElementById("labelSizeInput");
+        var labelSizeValueEl = document.getElementById("labelSizeValue");
+
+        if (labelSizeSliderEl) {
+          labelSizeSliderEl.oninput = labelSizeSliderEl.onchange = function () {
+            var sliderVal = parseFloat(this.value);
+            if (isNaN(sliderVal)) return;
+            setLabelSizeFromAny(sliderVal, true);
+          };
+        }
+
+        if (labelSizeInputEl) {
+          labelSizeInputEl.oninput = labelSizeInputEl.onchange = function () {
+            var val = (this.value || "").trim();
+            if (val.length === 0) {
+              if (labelSizeValueEl) labelSizeValueEl.textContent = "";
+              delete newUserSetting.labelSize;
+              return;
+            }
+            setLabelSizeFromAny(val, true);
+          };
+        }
+
         // show only the number of image label inputs that match available images/labels
         var imgCount = Math.max(
           imageLinkKeys.length || 0,
