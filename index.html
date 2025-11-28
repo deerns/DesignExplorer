@@ -102,16 +102,11 @@
         flex: 1 1 auto;
         min-width: 120px;
       }
-      #dataSetting
-        .list-group-item.form-inline.double-input-row
-        input.form-control {
+      #dataSetting .list-group-item.form-inline.double-input-row input.form-control {
         flex: 1 1 45%;
         min-width: 100px;
       }
-      #dataSetting
-        .list-group-item.form-inline.double-input-row
-        input.form-control
-        + input.form-control {
+      #dataSetting .list-group-item.form-inline.double-input-row input.form-control + input.form-control {
         margin-left: 10px;
       }
       #dataSetting .list-group-item.form-inline.target-mark-row {
@@ -120,21 +115,15 @@
       #dataSetting .list-group-item.form-inline.target-mark-row .setting-label {
         min-width: 120px;
       }
-      #dataSetting
-        .list-group-item.form-inline.target-mark-row
-        .target-mark-value {
+      #dataSetting .list-group-item.form-inline.target-mark-row .target-mark-value {
         flex: 1 1 25%;
         min-width: 80px;
       }
-      #dataSetting
-        .list-group-item.form-inline.target-mark-row
-        .target-mark-prefix {
+      #dataSetting .list-group-item.form-inline.target-mark-row .target-mark-prefix {
         flex: 1 1 60%;
         min-width: 120px;
       }
-      #dataSetting
-        .list-group-item.form-inline.target-mark-row
-        .target-remove-btn {
+      #dataSetting .list-group-item.form-inline.target-mark-row .target-remove-btn {
         margin-left: 10px;
       }
       #dataSetting .list-group-item.form-inline button {
@@ -146,42 +135,22 @@
       #dataSetting .list-group-item.form-inline.password-row {
         flex-wrap: nowrap;
       }
-      #dataSetting
-        .list-group-item.form-inline.password-row
-        input.form-control {
+      #dataSetting .list-group-item.form-inline.password-row input.form-control {
         flex: 1 1 45%;
         min-width: 120px;
       }
-      #dataSetting
-        .list-group-item.form-inline.password-row
-        input.form-control
-        + input.form-control {
+      #dataSetting .list-group-item.form-inline.password-row input.form-control + input.form-control {
         margin-left: 10px;
       }
       #labelSizeRow input[type="range"] {
-        flex: 1 1 auto;
-        min-width: 200px;
-        width: 100%;
-        margin: 0;
+        flex: 1 1 60%;
+        min-width: 120px;
       }
       #labelSizeRow {
         gap: 12px;
       }
       #labelSizeValue {
         text-align: right;
-      }
-      /* Override Bootstrap primary color to match steelblue (#4682b4) */
-      .panel-primary {
-        border-color: steelblue;
-      }
-      .panel-primary > .panel-heading {
-        color: #fff;
-        background-color: steelblue;
-        border-color: steelblue;
-      }
-      .panel-primary > .panel-heading + .panel-collapse > .panel-body,
-      .panel-primary > .panel-heading + .panel-collapse > .list-group {
-        border-top-color: steelblue;
       }
     </style>
 
@@ -1362,9 +1331,7 @@
                           style="min-width: 60px"
                         ></span>
                       </li>
-                      <li
-                        class="list-group-item form-inline double-input-row password-row"
-                      >
+                      <li class="list-group-item form-inline double-input-row password-row">
                         <span class="setting-label">Password:</span>
                         <input
                           class="form-control input-sm"
@@ -4409,9 +4376,7 @@
           .append("li")
           .attr("class", "list-group-item form-inline")
           .call(function (li) {
-            li.append("span")
-              .attr("class", "setting-label")
-              .text("Slider Label:");
+            li.append("span").attr("class", "setting-label").text("Slider Label:");
           })
           .append("input")
           .attr("class", "form-control input-sm slider-label-input")
@@ -4439,9 +4404,7 @@
           .append("li")
           .attr("class", "list-group-item form-inline")
           .call(function (li) {
-            li.append("span")
-              .attr("class", "setting-label")
-              .text("Tick Number:");
+            li.append("span").attr("class", "setting-label").text("Tick Number:");
           });
 
         itemTickNumberSetting
@@ -4461,9 +4424,7 @@
           .append("li")
           .attr("class", "list-group-item form-inline")
           .call(function (li) {
-            li.append("span")
-              .attr("class", "setting-label")
-              .text("Scale Range:");
+            li.append("span").attr("class", "setting-label").text("Scale Range:");
           });
 
         //min scale input
@@ -4503,14 +4464,9 @@
         //TargetMark setting----------------------------------------------------------------------------------------------------------
         var itemTickNumberSetting = panelBodyContent
           .append("li")
-          .attr(
-            "class",
-            "list-group-item form-inline double-input-row target-mark-row"
-          )
+          .attr("class", "list-group-item form-inline double-input-row target-mark-row")
           .call(function (li) {
-            li.append("span")
-              .attr("class", "setting-label")
-              .text("Target Mark:");
+            li.append("span").attr("class", "setting-label").text("Target Mark:");
           });
 
         itemTickNumberSetting
