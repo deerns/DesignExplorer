@@ -99,13 +99,18 @@
         display: inline-block;
       }
       #dataSetting .list-group-item.form-inline input.form-control {
-        flex: 1 1 60%;
+        flex: 1 1 auto;
+        min-width: 120px;
       }
       #dataSetting .list-group-item.form-inline.double-input-row input.form-control {
         flex: 1 1 45%;
+        min-width: 100px;
       }
       #dataSetting .list-group-item.form-inline.double-input-row input.form-control + input.form-control {
         margin-left: 10px;
+      }
+      #dataSetting .list-group-item.form-inline button {
+        flex-shrink: 0;
       }
       #labelSizeRow {
         gap: 12px;
