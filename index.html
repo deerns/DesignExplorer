@@ -83,7 +83,7 @@
         margin-right: 10px;
       }
 
-      #thumbViewControls input.thumbToggleView {
+      #thumbViewControls select.thumbToggleView {
         margin: 0;
       }
 
@@ -432,11 +432,28 @@
       var current =
         currentView && currentView.indexOf("2D_") === 0 ? currentView : "2D_1";
 
-      // viewer2d toggles no longer needed; skip rendering them
-      return;
+      var select = container
+        .append("select")
+        .attr("class", "form-control input-sm toggleView")
+        .style("width", "180px");
 
-      // bind toggle handler for the new inputs
-      d3.selectAll("input.toggleView").on("change", toggleView);
+      select
+        .selectAll("option")
+        .data(data)
+        .enter()
+        .append("option")
+        .attr("value", function (d) {
+          return d.value;
+        })
+        .text(function (d) {
+          return d.label;
+        });
+
+      select.property("value", current);
+
+      select.on("change", function () {
+        toggleView.call(this);
+      });
     }
 
     // Find the actual dimension key on the chart using the original name first, then a normalized match.
@@ -1945,43 +1962,17 @@
             .style("align-items", "center")
             .style("gap", "10px");
 
-          var label1 = form.append("label").attr("id", "thumbIMG1Label");
-          label1
-            .append("input")
-            .attr("type", "radio")
-            .attr("class", "thumbToggleView")
-            .attr("data-debug-group", "thumb-toggles")
-            .attr("name", "thumbMode")
-            .attr("value", "2D_1")
-            .attr("id", "thumb_IMG_1")
-            .property("checked", true);
-          label1.append("span").attr("id", "thumbIMG1LabelText").text("#1");
+          form.append("label").attr("id", "thumbViewLabel").text("2D View:");
 
-          var label2 = form.append("label").attr("id", "thumbIMG2Label");
-          label2
-            .append("input")
-            .attr("type", "radio")
-            .attr("class", "thumbToggleView")
-            .attr("data-debug-group", "thumb-toggles")
-            .attr("name", "thumbMode")
-            .attr("value", "2D_2")
-            .attr("id", "thumb_IMG_2");
-          label2.append("span").attr("id", "thumbIMG2LabelText").text("#2");
-
-          var label3 = form.append("label").attr("id", "thumbIMG3Label");
-          label3
-            .append("input")
-            .attr("type", "radio")
-            .attr("class", "thumbToggleView")
-            .attr("data-debug-group", "thumb-toggles")
-            .attr("name", "thumbMode")
-            .attr("value", "2D_3")
-            .attr("id", "thumb_IMG_3");
-          label3.append("span").attr("id", "thumbIMG3LabelText").text("#3");
+          form
+            .append("select")
+            .attr("class", "thumbToggleView form-control input-sm")
+            .attr("id", "thumbViewSelect")
+            .style("width", "160px");
         }
 
         form.style("display", "inline-flex");
-        form.selectAll("input.thumbToggleView").on("change", toggleThumbView);
+        form.selectAll("select.thumbToggleView").on("change", toggleThumbView);
         return form;
       }
 
@@ -2008,32 +1999,46 @@
         if (thumbForm) {
           var showThumbs = thumbShouldShow(hasSecondImg || hasThirdImg);
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
-          $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
-          d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
+
+          var options = [];
+          options.push({
+            value: "2D_1",
+            label: getImageLabel("IMG_1", defaultLabel1),
+          });
           if (hasSecondImg) {
-            $("#thumbIMG2LabelText").text(
-              getImageLabel("IMG_2", defaultLabel2)
-            );
-          }
-          d3.select("#thumbIMG3Label").classed("hidden", !hasThirdImg);
-          if (hasThirdImg) {
-            $("#thumbIMG3LabelText").text(
-              getImageLabel("IMG_3", defaultLabel3)
-            );
-          }
-
-          // keep the thumb radio selection aligned to the active view
-          var activeThumb = getActiveThumbView();
-          thumbForm
-            .selectAll("input.thumbToggleView")
-            .property("checked", function () {
-              return this.value === activeThumb;
+            options.push({
+              value: "2D_2",
+              label: getImageLabel("IMG_2", defaultLabel2),
             });
+          }
+          if (hasThirdImg) {
+            options.push({
+              value: "2D_3",
+              label: getImageLabel("IMG_3", defaultLabel3),
+            });
+          }
 
-          // ensure handler bound if elements recreated
-          thumbForm
-            .selectAll("input.thumbToggleView")
-            .on("change", toggleThumbView);
+          var select = thumbForm.select("select.thumbToggleView");
+          if (!select.empty()) {
+            var optSel = select.selectAll("option").data(options);
+            optSel.exit().remove();
+            optSel
+              .enter()
+              .append("option")
+              .merge(optSel)
+              .attr("value", function (d) {
+                return d.value;
+              })
+              .text(function (d) {
+                return d.label;
+              });
+
+            var activeThumb = getActiveThumbView();
+            select.property("value", activeThumb);
+
+            // ensure handler bound if elements recreated
+            select.on("change", toggleThumbView);
+          }
         }
 
         // keep viewer toggles in sync
@@ -2054,20 +2059,44 @@
         var thumbForm = ensureThumbControls();
         if (thumbForm) {
           var showThumbs = thumbShouldShow(hasSecondImg || hasThirdImg);
-          $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
-          d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
-          if (hasSecondImg) {
-            $("#thumbIMG2LabelText").text(
-              getImageLabel("IMG_2", defaultLabel2)
-            );
-          }
-          d3.select("#thumbIMG3Label").classed("hidden", !hasThirdImg);
-          if (hasThirdImg) {
-            $("#thumbIMG3LabelText").text(
-              getImageLabel("IMG_3", defaultLabel3)
-            );
-          }
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
+
+          var options = [];
+          options.push({
+            value: "2D_1",
+            label: getImageLabel("IMG_1", defaultLabel1),
+          });
+          if (hasSecondImg) {
+            options.push({
+              value: "2D_2",
+              label: getImageLabel("IMG_2", defaultLabel2),
+            });
+          }
+          if (hasThirdImg) {
+            options.push({
+              value: "2D_3",
+              label: getImageLabel("IMG_3", defaultLabel3),
+            });
+          }
+
+          var select = thumbForm.select("select.thumbToggleView");
+          if (!select.empty()) {
+            var optSel = select.selectAll("option").data(options);
+            optSel.exit().remove();
+            optSel
+              .enter()
+              .append("option")
+              .merge(optSel)
+              .attr("value", function (d) {
+                return d.value;
+              })
+              .text(function (d) {
+                return d.label;
+              });
+
+            var activeThumb = getActiveThumbView();
+            select.property("value", activeThumb);
+          }
         }
 
         renderViewer2dToggles();
@@ -3759,8 +3788,11 @@
       } */
       // toggle between 2d and 3d
       // toggle between 2d and 3d
-      d3.selectAll("input.toggleView").on("change", toggleView);
-      d3.selectAll("input.thumbToggleView").on("change", toggleThumbView);
+      d3.selectAll("input.toggleView, select.toggleView").on(
+        "change",
+        toggleView
+      );
+      d3.selectAll("select.thumbToggleView").on("change", toggleThumbView);
       d3.select("#viewer2d-mainimg").on("click", cycle2DImage);
 
       function getCanonicalImageKey(toggleValue) {
@@ -3866,15 +3898,22 @@
         currentThumbView = viewValue;
 
         // sync main 2D toggle if we are in a 2D mode
-        var mainToggle = d3.select(
-          "input.toggleView[value='" + viewValue + "']"
-        );
+        var mainToggle = d3.select("select.toggleView");
+        if (mainToggle.empty()) {
+          mainToggle = d3.select(
+            "input.toggleView[value='" + viewValue + "']"
+          );
+        }
         if (
           !mainToggle.empty() &&
           currentView &&
           currentView.indexOf("3D") !== 0
         ) {
-          mainToggle.property("checked", true);
+          if (mainToggle.node().tagName.toLowerCase() === "select") {
+            mainToggle.property("value", viewValue);
+          } else {
+            mainToggle.property("checked", true);
+          }
           currentView = viewValue;
         }
 
@@ -3904,12 +3943,7 @@
           var viewKey = viewValue;
           currentThumbView = viewKey;
           // keep thumbnail radio in sync with the main 2D selection
-          d3.selectAll("input.thumbToggleView").property(
-            "checked",
-            function () {
-              return this.value === viewKey;
-            }
-          );
+          d3.selectAll("select.thumbToggleView").property("value", viewKey);
 
           var selected =
             graph && graph.highlight && graph.highlight().length
