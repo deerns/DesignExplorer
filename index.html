@@ -4433,7 +4433,7 @@
         //TargetMark setting----------------------------------------------------------------------------------------------------------
         var itemTickNumberSetting = panelBodyContent
           .append("li")
-          .attr("class", "list-group-item form-inline")
+          .attr("class", "list-group-item form-inline double-input-row")
           .call(function (li) {
             li.append("span").attr("class", "setting-label").text("Target Mark:");
           });
@@ -4441,7 +4441,6 @@
         itemTickNumberSetting
           .append("input")
           .attr("class", "form-control input-sm")
-          .attr("style", "margin-left: 1.1em;")
           .attr("placeholder", function (d) {
             return _userSetting.dimMark[d] !== undefined
               ? _userSetting.dimMark[d].value
