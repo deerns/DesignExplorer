@@ -4116,11 +4116,22 @@
         function syncLabelSizeUI(value) {
           var numeric = normalizeLabelSizeToNumber(value);
           if (numeric === null) return;
+          // clamp to slider bounds
+          numeric = Math.max(50, Math.min(200, numeric));
           var asPercent = numeric + "%";
           d3.select("#labelSizeSlider").property("value", numeric);
           d3.select("#labelSizeInput").property("value", asPercent);
           d3.select("#labelSizeValue").text(asPercent);
           newUserSetting.labelSize = asPercent;
+        }
+
+        function setLabelSizeFromAny(value, applyPreview) {
+          var numeric = normalizeLabelSizeToNumber(value);
+          if (numeric === null) return;
+          syncLabelSizeUI(numeric + "%");
+          if (applyPreview && typeof applyLabelFontSize === "function") {
+            applyLabelFontSize(numeric + "%");
+          }
         }
 
         function findUserScaleForDim(dim) {
@@ -4210,19 +4221,10 @@
             var value = ($(this).val() || "").trim();
             if (value.length === 0) {
               delete newUserSetting.labelSize;
-            } else {
-              newUserSetting.labelSize = value;
-            }
-            // keep slider/display in sync when typing
-            var numeric = normalizeLabelSizeToNumber(value);
-            if (numeric !== null) {
-              syncLabelSizeUI(numeric + "%");
-              if (typeof applyLabelFontSize === "function") {
-                applyLabelFontSize(numeric + "%");
-              }
-            } else {
               d3.select("#labelSizeValue").text("");
+              return;
             }
+            setLabelSizeFromAny(value, true);
           });
         // initialize slider from current label size
         var initialLabelSize = currentLabelSizePercent();
@@ -4230,12 +4232,7 @@
         d3.select("#labelSizeSlider").on("input change", function () {
           var sliderVal = parseFloat(this.value);
           if (isNaN(sliderVal)) return;
-          var asPercent = sliderVal + "%";
-          syncLabelSizeUI(asPercent);
-          // apply immediately for preview
-          if (typeof applyLabelFontSize === "function") {
-            applyLabelFontSize(asPercent);
-          }
+          setLabelSizeFromAny(sliderVal, true);
         });
 
         // show only the number of image label inputs that match available images/labels
