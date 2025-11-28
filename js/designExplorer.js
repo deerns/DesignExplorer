@@ -317,7 +317,11 @@ function applyLabelFontSize(size) {
     return;
   }
 
-  d3.selectAll(".label").style("font-size", resolved);
+  try {
+    d3.selectAll(".label").style("font-size", resolved);
+  } catch (err) {
+    console.warn("Could not apply label font size", err);
+  }
 
   // persist into global settings if available
   if (typeof _userSetting !== "undefined") {

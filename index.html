@@ -1249,12 +1249,21 @@
                       <li class="list-group-item form-inline">
                         Label Size:
                         <input
+                          id="labelSizeSlider"
+                          type="range"
+                          min="50"
+                          max="200"
+                          step="1"
+                          style="width: 45%; margin-left: 1.2em"
+                        />
+                        <input
                           id="labelSizeInput"
                           class="form-control input-sm"
                           type="text"
                           placeholder="e.g. 90% or 14px"
-                          style="width: 60%; margin-left: 1.2em"
+                          style="width: 30%; margin-left: 0.5em"
                         />
+                        <span id="labelSizeValue" style="margin-left: 0.5em"></span>
                       </li>
                       <li class="list-group-item form-inline">
                         Password:
@@ -4067,6 +4076,34 @@
         var dimMark = {}; //for current value
         // var userDimMark = {}; //for saved
 
+        function normalizeLabelSizeToNumber(val) {
+          if (val === undefined || val === null) return null;
+          var str = String(val).trim();
+          if (!str) return null;
+          if (str.endsWith("%")) {
+            return parseFloat(str.replace("%", ""));
+          }
+          // allow bare numbers
+          var num = parseFloat(str);
+          if (!isNaN(num)) return num;
+          return null;
+        }
+
+        function currentLabelSizePercent() {
+          // prefer saved setting
+          var saved = normalizeLabelSizeToNumber(_userSetting.labelSize);
+          if (saved !== null) return saved;
+          // fallback to current computed font-size on a label (assumes percent set)
+          var labelEl = d3.select(".label");
+          if (!labelEl.empty()) {
+            var computed = labelEl.style("font-size") || "";
+            var num = normalizeLabelSizeToNumber(computed);
+            if (num !== null) return num;
+          }
+          // default to medium 85%
+          return 85;
+        }
+
         function findUserScaleForDim(dim) {
           var direct = _userSetting.dimScales[dim];
           if (direct) return direct;
@@ -4156,12 +4193,37 @@
               delete newUserSetting.labelSize;
             } else {
               newUserSetting.labelSize = value;
-              // apply immediately so user sees feedback
-              if (typeof applyLabelFontSize === "function") {
-                applyLabelFontSize(value);
-              }
+            }
+            // keep slider/display in sync when typing
+            var numeric = normalizeLabelSizeToNumber(value);
+            if (numeric !== null) {
+              d3.select("#labelSizeSlider").property("value", numeric);
+              d3.select("#labelSizeValue").text(numeric + "%");
+            } else {
+              d3.select("#labelSizeValue").text("");
             }
           });
+        // initialize slider from current label size
+        var initialLabelSize = currentLabelSizePercent();
+        d3.select("#labelSizeSlider").property("value", initialLabelSize);
+        d3.select("#labelSizeValue").text(initialLabelSize + "%");
+        // keep input synced with slider default if empty
+        if (!newUserSetting.labelSize) {
+          d3.select("#labelSizeInput").property("value", initialLabelSize + "%");
+          newUserSetting.labelSize = initialLabelSize + "%";
+        }
+        d3.select("#labelSizeSlider").on("input change", function () {
+          var sliderVal = parseFloat(this.value);
+          if (isNaN(sliderVal)) return;
+          var asPercent = sliderVal + "%";
+          d3.select("#labelSizeValue").text(asPercent);
+          d3.select("#labelSizeInput").property("value", asPercent);
+          newUserSetting.labelSize = asPercent;
+          // apply immediately for preview
+          if (typeof applyLabelFontSize === "function") {
+            applyLabelFontSize(asPercent);
+          }
+        });
 
         // show only the number of image label inputs that match available images/labels
         var imgCount = Math.max(
@@ -4559,6 +4621,20 @@
               d3.select("#IMG3Label").classed("hidden", true);
             }
           }, 0);
+        });
+
+        // Allow Enter key inside the settings modal to trigger Set
+        d3.select("#showSetting").on("keydown", function () {
+          var e = d3.event;
+          if (!e) return;
+          var key = e.key || e.code || e.keyCode;
+          if (key === "Enter" || key === 13) {
+            e.preventDefault();
+            var btn = d3.select("#dataSetting #setUserSetting").node();
+            if (btn && typeof btn.click === "function") {
+              btn.click();
+            }
+          }
         });
 
         d3.select("#dataSetting  #saveUserSetting").on("click", function (d) {
