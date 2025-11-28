@@ -1272,7 +1272,10 @@
                           placeholder="e.g. 90% or 14px"
                           style="width: 90px"
                         />
-                        <span id="labelSizeValue" style="min-width: 60px"></span>
+                        <span
+                          id="labelSizeValue"
+                          style="min-width: 60px"
+                        ></span>
                       </li>
                       <li class="list-group-item form-inline">
                         Password:
@@ -2231,7 +2234,10 @@
             } else if (upperCleanKey.startsWith("OUT:")) {
               cleanKey = cleanKey.slice(4);
               outputParams[cleanKey] = row[key];
-            } else if (/^IMG[\s_-]*\d*$/.test(upperCleanKey) || upperCleanKey === "IMG") {
+            } else if (
+              /^IMG[\s_-]*\d*$/.test(upperCleanKey) ||
+              upperCleanKey === "IMG"
+            ) {
               var imgMatchRow = upperCleanKey.match(/^IMG[\s_-]*(\d*)$/);
               var idxStr = imgMatchRow && imgMatchRow[1] ? imgMatchRow[1] : "";
               var imgIdx = idxStr.length ? parseInt(idxStr, 10) : 1;
@@ -3280,7 +3286,7 @@
           document.getElementById("folderLink").value = "";
           document.getElementById("folderLinkID").value = "";
 
-           // focus and select the server link field for immediate typing
+          // focus and select the server link field for immediate typing
           var folderLinkInput = document.getElementById("folderLink");
           if (folderLinkInput) {
             folderLinkInput.focus();
@@ -4117,7 +4123,7 @@
           var numeric = normalizeLabelSizeToNumber(value);
           if (numeric === null) return;
           // clamp to slider bounds
-          numeric = Math.max(50, Math.min(200, numeric));
+          numeric = Math.max(0, Math.min(200, numeric));
           var asPercent = numeric + "%";
           d3.select("#labelSizeSlider").property("value", numeric);
           d3.select("#labelSizeInput").property("value", asPercent);
@@ -4267,8 +4273,14 @@
         );
         var hasSecondImg = imgCount > 1;
         var hasThirdImg = imgCount > 2;
-        d3.select("#img2LabelRow").style("display", hasSecondImg ? "block" : "none");
-        d3.select("#img3LabelRow").style("display", hasThirdImg ? "block" : "none");
+        d3.select("#img2LabelRow").style(
+          "display",
+          hasSecondImg ? "block" : "none"
+        );
+        d3.select("#img3LabelRow").style(
+          "display",
+          hasThirdImg ? "block" : "none"
+        );
 
         var selectList = dimSettingListDiv
           .selectAll("#dimSettingList")
