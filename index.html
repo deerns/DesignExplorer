@@ -2062,7 +2062,6 @@
               "value",
               getActiveThumbView() || initOptions[0].value
             );
-            enforceSelectLabelText(selectInit);
           }
         }
 
@@ -2111,7 +2110,6 @@
           var select = thumbForm.select("select.thumbToggleView");
           if (!select.empty()) {
             setSelectOptions(select, options, getActiveThumbView());
-            enforceSelectLabelText(select);
             select.on("change", toggleThumbView);
           }
         }
@@ -2134,7 +2132,6 @@
             });
           }
           setSelectOptions(mainSelect, mainOptions, currentView || "2D_1");
-          enforceSelectLabelText(mainSelect);
         }
 
         // keep viewer toggles in sync
