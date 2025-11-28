@@ -404,9 +404,9 @@
     }
 
     // render image toggles near the 2d viewer when multiple images exist
-      function renderViewer2dToggles() {
-        var container = d3.select("#viewer2d-toggles");
-        if (container.empty()) return;
+    function renderViewer2dToggles() {
+      var container = d3.select("#viewer2d-toggles");
+      if (container.empty()) return;
 
       var count = Math.max(1, imageLinkKeys.length || 0);
       container.selectAll("*").remove();
@@ -1906,11 +1906,7 @@
         var match = viewKey.match(/^2D_(\d+)/);
         var idx = match ? match[1] : "1";
         var fb =
-          fallback !== undefined
-            ? fallback
-            : idx === "1"
-            ? "2D"
-            : "#" + idx;
+          fallback !== undefined ? fallback : idx === "1" ? "2D" : "#" + idx;
         var lbl = getImageLabel("IMG_" + idx, fb);
         if (typeof lbl === "string") {
           var trimmed = lbl.trim();
@@ -1929,10 +1925,7 @@
             text = opt && opt.value ? String(opt.value) : "";
           }
           var value = opt && opt.value ? opt.value : "";
-          select
-            .append("option")
-            .attr("value", value)
-            .text(text);
+          select.append("option").attr("value", value).text(text);
         });
         if (activeValue) {
           select.property("value", activeValue);
@@ -2183,7 +2176,10 @@
             for (var j = 1; j <= totalImgs2; j++) {
               var k = "2D_" + j;
               var fb = j === 1 && totalImgs2 < 2 ? "2D" : "#" + j;
-              opts.push({ value: k, label: imageOptionLabel({ value: k }, fb) });
+              opts.push({
+                value: k,
+                label: imageOptionLabel({ value: k }, fb),
+              });
             }
             setSelectOptions(
               thumbForm2.select("select.thumbToggleView"),
@@ -3994,9 +3990,7 @@
         // sync main 2D toggle if we are in a 2D mode
         var mainToggle = d3.select("select.toggleView");
         if (mainToggle.empty()) {
-          mainToggle = d3.select(
-            "input.toggleView[value='" + viewValue + "']"
-          );
+          mainToggle = d3.select("input.toggleView[value='" + viewValue + "']");
         }
         if (
           !mainToggle.empty() &&
