@@ -445,7 +445,12 @@
           return d.value;
         })
         .text(function (d) {
-          return d.label || d.value || "";
+          if (d && typeof d.label === "string") return d.label;
+          if (d && d.label !== undefined && d.label !== null)
+            return String(d.label);
+          var key = d && d.value ? d.value : "";
+          var idx = key.indexOf("2D_") === 0 ? key.replace("2D_", "") : "";
+          return getImageLabel("IMG_" + idx, key || "");
         });
 
       select.property("value", current);
