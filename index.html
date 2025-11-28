@@ -1934,11 +1934,8 @@
         if (!options || !options.length) return;
 
         // If options are unchanged, avoid rebuilding (prevents flicker/overwrite)
-        var existing = select.selectAll("option").data().map(function (d, i) {
-          // prefer stored value on datum; fallback to DOM
-          var node = select.selectAll("option")[0][i];
-          var val = (d && d.value) || (node && node.value) || "";
-          return val;
+        var existing = select.selectAll("option").nodes().map(function (n) {
+          return n.value || "";
         });
         var incoming = options.map(function (opt) {
           return (opt && opt.value) || "";
