@@ -1927,14 +1927,11 @@
         if (!options || !options.length) return;
         select.selectAll("*").remove();
         options.forEach(function (opt) {
-          var value = opt && opt.value ? opt.value : "";
           var text = imageOptionLabel(opt);
           if (!text || !text.length) {
-            var match = value.match(/^2D_(\d+)/);
-            var idx = match ? match[1] : "1";
-            var fb = idx === "1" ? "2D" : "#" + idx;
-            text = fb;
+            text = opt && opt.value ? String(opt.value) : "";
           }
+          var value = opt && opt.value ? opt.value : "";
           select.append("option").attr("value", value).text(text);
         });
         if (activeValue) {
@@ -1947,11 +1944,6 @@
         select.selectAll("option").each(function () {
           var optVal = d3.select(this).attr("value") || this.value || "";
           var label = imageOptionLabel({ value: optVal });
-          if (!label || !label.length) {
-            var match = optVal.match(/^2D_(\d+)/);
-            var idx = match ? match[1] : "1";
-            label = idx === "1" ? "2D" : "#" + idx;
-          }
           this.textContent = label;
         });
       }
