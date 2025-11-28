@@ -115,8 +115,13 @@
       #dataSetting .list-group-item.form-inline.target-mark-row .setting-label {
         min-width: 120px;
       }
-      #dataSetting .list-group-item.form-inline.target-mark-row input.form-control {
-        flex: 1 1 40%;
+      #dataSetting .list-group-item.form-inline.target-mark-row .target-mark-value {
+        flex: 1 1 25%;
+        min-width: 80px;
+      }
+      #dataSetting .list-group-item.form-inline.target-mark-row .target-mark-prefix {
+        flex: 1 1 60%;
+        min-width: 120px;
       }
       #dataSetting .list-group-item.form-inline.target-mark-row .target-remove-btn {
         margin-left: 10px;
@@ -126,6 +131,16 @@
       }
       #dataSetting .list-group-item.form-inline .target-remove-btn {
         margin-left: auto;
+      }
+      #dataSetting .list-group-item.form-inline.password-row {
+        flex-wrap: nowrap;
+      }
+      #dataSetting .list-group-item.form-inline.password-row input.form-control {
+        flex: 1 1 45%;
+        min-width: 120px;
+      }
+      #dataSetting .list-group-item.form-inline.password-row input.form-control + input.form-control {
+        margin-left: 10px;
       }
       #labelSizeRow {
         gap: 12px;
@@ -1312,7 +1327,7 @@
                           style="min-width: 60px"
                         ></span>
                       </li>
-                      <li class="list-group-item form-inline double-input-row">
+                      <li class="list-group-item form-inline double-input-row password-row">
                         <span class="setting-label">Password:</span>
                         <input
                           class="form-control input-sm"
@@ -4452,7 +4467,7 @@
 
         itemTickNumberSetting
           .append("input")
-          .attr("class", "form-control input-sm")
+          .attr("class", "form-control input-sm target-mark-value")
           .attr("placeholder", function (d) {
             return _userSetting.dimMark[d] !== undefined
               ? _userSetting.dimMark[d].value
@@ -4474,7 +4489,7 @@
 
         itemTickNumberSetting
           .append("input")
-          .attr("class", "form-control input-sm")
+          .attr("class", "form-control input-sm target-mark-prefix")
           .attr("placeholder", function (d) {
             return _userSetting.dimMark[d] !== undefined
               ? _userSetting.dimMark[d].prefix
