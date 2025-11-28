@@ -1246,24 +1246,33 @@
                           style="width: 80%; margin-left: 0.6em"
                         />
                       </li>
-                      <li class="list-group-item form-inline">
-                        Label Size:
+                      <li
+                        class="list-group-item form-inline"
+                        id="labelSizeRow"
+                        style="
+                          display: flex;
+                          align-items: center;
+                          gap: 10px;
+                          flex-wrap: wrap;
+                        "
+                      >
+                        <span style="min-width: 110px">Label Size:</span>
                         <input
                           id="labelSizeSlider"
                           type="range"
                           min="50"
                           max="200"
                           step="1"
-                          style="width: 45%; margin-left: 1.2em"
+                          style="flex: 1 1 150px"
                         />
                         <input
                           id="labelSizeInput"
                           class="form-control input-sm"
                           type="text"
                           placeholder="e.g. 90% or 14px"
-                          style="width: 30%; margin-left: 0.5em"
+                          style="width: 90px"
                         />
-                        <span id="labelSizeValue" style="margin-left: 0.5em"></span>
+                        <span id="labelSizeValue" style="min-width: 60px"></span>
                       </li>
                       <li class="list-group-item form-inline">
                         Password:
@@ -4104,6 +4113,16 @@
           return 85;
         }
 
+        function syncLabelSizeUI(value) {
+          var numeric = normalizeLabelSizeToNumber(value);
+          if (numeric === null) return;
+          var asPercent = numeric + "%";
+          d3.select("#labelSizeSlider").property("value", numeric);
+          d3.select("#labelSizeInput").property("value", asPercent);
+          d3.select("#labelSizeValue").text(asPercent);
+          newUserSetting.labelSize = asPercent;
+        }
+
         function findUserScaleForDim(dim) {
           var direct = _userSetting.dimScales[dim];
           if (direct) return direct;
@@ -4197,28 +4216,19 @@
             // keep slider/display in sync when typing
             var numeric = normalizeLabelSizeToNumber(value);
             if (numeric !== null) {
-              d3.select("#labelSizeSlider").property("value", numeric);
-              d3.select("#labelSizeValue").text(numeric + "%");
+              syncLabelSizeUI(numeric + "%");
             } else {
               d3.select("#labelSizeValue").text("");
             }
           });
         // initialize slider from current label size
         var initialLabelSize = currentLabelSizePercent();
-        d3.select("#labelSizeSlider").property("value", initialLabelSize);
-        d3.select("#labelSizeValue").text(initialLabelSize + "%");
-        // keep input synced with slider default if empty
-        if (!newUserSetting.labelSize) {
-          d3.select("#labelSizeInput").property("value", initialLabelSize + "%");
-          newUserSetting.labelSize = initialLabelSize + "%";
-        }
+        syncLabelSizeUI(initialLabelSize + "%");
         d3.select("#labelSizeSlider").on("input change", function () {
           var sliderVal = parseFloat(this.value);
           if (isNaN(sliderVal)) return;
           var asPercent = sliderVal + "%";
-          d3.select("#labelSizeValue").text(asPercent);
-          d3.select("#labelSizeInput").property("value", asPercent);
-          newUserSetting.labelSize = asPercent;
+          syncLabelSizeUI(asPercent);
           // apply immediately for preview
           if (typeof applyLabelFontSize === "function") {
             applyLabelFontSize(asPercent);
