@@ -420,12 +420,12 @@
 
       var data = d3.range(count).map(function (i) {
         var idx = i + 1;
+        var labelStr = String(
+          getImageLabel("IMG_" + idx, idx === 1 && count < 2 ? "2D" : "#" + idx)
+        );
         return {
           value: "2D_" + idx,
-          label: getImageLabel(
-            "IMG_" + idx,
-            idx === 1 && count < 2 ? "2D" : "#" + idx
-          ),
+          label: labelStr,
         };
       });
 
@@ -445,7 +445,6 @@
           return d.value;
         })
         .text(function (d) {
-          if (d && typeof d.label === "string") return d.label;
           if (d && d.label !== undefined && d.label !== null)
             return String(d.label);
           var key = d && d.value ? d.value : "";
@@ -2012,13 +2011,13 @@
           if (hasSecondImg) {
             options.push({
               value: "2D_2",
-              label: getImageLabel("IMG_2", defaultLabel2),
+              label: String(getImageLabel("IMG_2", defaultLabel2)),
             });
           }
           if (hasThirdImg) {
             options.push({
               value: "2D_3",
-              label: getImageLabel("IMG_3", defaultLabel3),
+              label: String(getImageLabel("IMG_3", defaultLabel3)),
             });
           }
 
@@ -2066,18 +2065,18 @@
           var options = [];
           options.push({
             value: "2D_1",
-            label: getImageLabel("IMG_1", defaultLabel1),
+            label: String(getImageLabel("IMG_1", defaultLabel1)),
           });
           if (hasSecondImg) {
             options.push({
               value: "2D_2",
-              label: getImageLabel("IMG_2", defaultLabel2),
+              label: String(getImageLabel("IMG_2", defaultLabel2)),
             });
           }
           if (hasThirdImg) {
             options.push({
               value: "2D_3",
-              label: getImageLabel("IMG_3", defaultLabel3),
+              label: String(getImageLabel("IMG_3", defaultLabel3)),
             });
           }
 
