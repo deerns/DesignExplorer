@@ -2003,6 +2003,42 @@
 
         form.style("display", "inline-flex");
         form.selectAll("select.thumbToggleView").on("change", toggleThumbView);
+
+        // initial fill if options are empty
+        var selectInit = form.select("select.thumbToggleView");
+        if (!selectInit.empty() && selectInit.selectAll("option").empty()) {
+          var totalInit = Math.max(
+            imageLinkKeys.length || 0,
+            Object.keys(_userSetting.imageLabels || {}).length
+          );
+          var initOptions = [];
+          for (var i = 1; i <= totalInit; i++) {
+            var key = "2D_" + i;
+            var fallback = i === 1 && totalInit < 2 ? "2D" : "#" + i;
+            initOptions.push({
+              value: key,
+              label: imageOptionLabel({ value: key }, fallback),
+            });
+          }
+          if (initOptions.length > 0) {
+            selectInit
+              .selectAll("option")
+              .data(initOptions)
+              .enter()
+              .append("option")
+              .attr("value", function (d) {
+                return d.value;
+              })
+              .text(function (d) {
+                return imageOptionLabel(d);
+              });
+            selectInit.property(
+              "value",
+              getActiveThumbView() || initOptions[0].value
+            );
+          }
+        }
+
         return form;
       }
 
@@ -2092,33 +2128,24 @@
         // thumbnails toggle labels
         var thumbForm = ensureThumbControls();
         if (thumbForm) {
-          var showThumbs = thumbShouldShow(hasSecondImg || hasThirdImg);
+          var totalImgs = Math.max(
+            imageLinkKeys.length || 0,
+            Object.keys(_userSetting.imageLabels || {}).length
+          );
+          if (totalImgs < 1) {
+            thumbForm.style("display", "none");
+            return;
+          }
+          var showThumbs = thumbShouldShow(totalImgs > 1);
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
 
           var options = [];
-          options.push({
-            value: "2D_1",
-            label: imageOptionLabel(
-              { value: "2D_1" },
-              String(getImageLabel("IMG_1", defaultLabel1))
-            ),
-          });
-          if (hasSecondImg) {
+          for (var i = 1; i <= totalImgs; i++) {
+            var key = "2D_" + i;
+            var fallback = i === 1 && totalImgs < 2 ? "2D" : "#" + i;
             options.push({
-              value: "2D_2",
-              label: imageOptionLabel(
-                { value: "2D_2" },
-                String(getImageLabel("IMG_2", defaultLabel2))
-              ),
-            });
-          }
-          if (hasThirdImg) {
-            options.push({
-              value: "2D_3",
-              label: imageOptionLabel(
-                { value: "2D_3" },
-                String(getImageLabel("IMG_3", defaultLabel3))
-              ),
+              value: key,
+              label: imageOptionLabel({ value: key }, fallback),
             });
           }
 
@@ -2133,17 +2160,13 @@
                 return d.value;
               })
               .text(function (d) {
-                var lbl = d && d.label;
-                if (typeof lbl === "string" && lbl.length) return lbl;
-                var key = d && d.value ? String(d.value) : "";
-                var idx = key.indexOf("2D_") === 0 ? key.replace("2D_", "") : "";
-                var fallback = getImageLabel("IMG_" + idx, key || "");
-                return typeof fallback === "string" ? fallback : key;
+                return imageOptionLabel(d);
               });
 
             var activeThumb = getActiveThumbView();
             select.property("value", activeThumb);
           }
+        }
         }
 
         renderViewer2dToggles();
