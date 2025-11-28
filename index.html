@@ -2103,26 +2103,6 @@
           }
         }
 
-        // also refresh the main viewer dropdown with safe labels
-        var mainSelect = d3.select("#viewer2d-toggles select.toggleView");
-        if (!mainSelect.empty()) {
-          var mainCount = Math.max(
-            imageLinkKeys.length || 0,
-            Object.keys(_userSetting.imageLabels || {}).length,
-            1
-          );
-          var mainOptions = [];
-          for (var m = 1; m <= mainCount; m++) {
-            var mKey = "2D_" + m;
-            var mFallback = m === 1 && mainCount < 2 ? "2D" : "#" + m;
-            mainOptions.push({
-              value: mKey,
-              label: imageOptionLabel({ value: mKey }, mFallback),
-            });
-          }
-          setSelectOptions(mainSelect, mainOptions, currentView || "2D_1");
-        }
-
         // keep viewer toggles in sync
         renderViewer2dToggles();
       }
