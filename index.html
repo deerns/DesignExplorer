@@ -440,8 +440,7 @@
       var optSel = select.selectAll("option").data(data);
       optSel.exit().remove();
       optSel.enter().append("option");
-      select
-        .selectAll("option")
+      optSel
         .attr("value", function (d) {
           return d.value;
         })
@@ -2051,8 +2050,7 @@
             var optSel = select.selectAll("option").data(options);
             optSel.exit().remove();
             optSel.enter().append("option");
-            select
-              .selectAll("option")
+            optSel
               .attr("value", function (d) {
                 return d.value;
               })
@@ -2125,8 +2123,7 @@
             var optSel = select.selectAll("option").data(options);
             optSel.exit().remove();
             optSel.enter().append("option");
-            select
-              .selectAll("option")
+            optSel
               .attr("value", function (d) {
                 return d.value;
               })
