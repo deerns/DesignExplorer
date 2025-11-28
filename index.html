@@ -2078,50 +2078,27 @@
         // thumbnails toggle (only when multiple image columns)
         var thumbForm = ensureThumbControls();
         if (thumbForm) {
-          var showThumbs = thumbShouldShow(hasSecondImg || hasThirdImg);
+          var totalImgs = Math.max(
+            imageLinkKeys.length || 0,
+            Object.keys(_userSetting.imageLabels || {}).length,
+            1
+          );
+          var showThumbs = thumbShouldShow(totalImgs > 1);
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
 
           var options = [];
-          options.push({
-            value: "2D_1",
-            label: getImageLabel("IMG_1", defaultLabel1),
-          });
-          if (hasSecondImg) {
+          for (var i = 1; i <= totalImgs; i++) {
+            var key = "2D_" + i;
+            var fallback = i === 1 && totalImgs < 2 ? "2D" : "#" + i;
             options.push({
-              value: "2D_2",
-              label: String(getImageLabel("IMG_2", defaultLabel2)),
-            });
-          }
-          if (hasThirdImg) {
-            options.push({
-              value: "2D_3",
-              label: String(getImageLabel("IMG_3", defaultLabel3)),
+              value: key,
+              label: imageOptionLabel({ value: key }, fallback),
             });
           }
 
           var select = thumbForm.select("select.thumbToggleView");
           if (!select.empty()) {
-            var optSel = select.selectAll("option").data(options);
-            optSel.exit().remove();
-            optSel.enter().append("option");
-            select
-              .selectAll("option")
-              .attr("value", function (d) {
-                return d.value;
-              })
-              .text(function (d) {
-                var lbl = d && d.label;
-                if (typeof lbl === "string" && lbl.length) return lbl;
-                var key = d && d.value ? String(d.value) : "";
-                var idx = key.indexOf("2D_") === 0 ? key.replace("2D_", "") : "";
-                var fallback = getImageLabel("IMG_" + idx, key || "");
-                return typeof fallback === "string" ? fallback : key;
-              });
-
-            var activeThumb = getActiveThumbView();
-            select.property("value", activeThumb);
-
-            // ensure handler bound if elements recreated
+            setSelectOptions(select, options, getActiveThumbView());
             select.on("change", toggleThumbView);
           }
         }
