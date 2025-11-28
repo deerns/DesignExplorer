@@ -414,50 +414,36 @@
           1
         );
 
-        if (totalImgs < 1) {
+        if (totalImgs < 2) {
           container.style("display", "none");
           return;
         }
 
         container.style("display", "block");
+        container.selectAll("*").remove();
 
         var data = buildImageOptions(totalImgs);
-
         var current =
           currentView && currentView.indexOf("2D_") === 0 ? currentView : "2D_1";
 
-        var select = container.select("select.toggleView");
-        if (select.empty()) {
-          select = container
-            .append("select")
-            .attr("class", "form-control input-sm toggleView")
-            .style("width", "180px");
-        }
+        var select = container
+          .append("select")
+          .attr("class", "form-control input-sm toggleView")
+          .style("width", "180px");
 
-        // if already has same options, just set value
-        var existingVals = select
+        select
           .selectAll("option")
-          .data()
-          .map(function (d) {
-            return (d && d.value) || "";
-          });
-        var incomingVals = data.map(function (d) {
-          return d.value;
-        });
-        var same =
-          existingVals.length === incomingVals.length &&
-          existingVals.every(function (v, i) {
-            return v === incomingVals[i];
+          .data(data)
+          .enter()
+          .append("option")
+          .attr("value", function (d) {
+            return d.value;
+          })
+          .text(function (d) {
+            return d.label;
           });
 
-        if (!same || select.selectAll("option").empty()) {
-          setSelectOptions(select, data, current);
-        } else if (current) {
-          select.property("value", current);
-        }
-
-        enforceSelectLabelText(select);
-
+        select.property("value", current);
         select.on("change", function () {
           toggleView.call(this);
         });
@@ -2058,33 +2044,11 @@
             .style("gap", "10px");
 
           form.append("label").attr("id", "thumbViewLabel").text("2D View:");
-
-          form
-            .append("select")
-            .attr("class", "thumbToggleView form-control input-sm")
-            .attr("id", "thumbViewSelect")
-            .style("width", "160px");
+          // radio inputs will be created during updates
         }
 
         form.style("display", "inline-flex");
-        form.selectAll("select.thumbToggleView").on("change", toggleThumbView);
-
-        // initial fill if options are empty
-        var selectInit = form.select("select.thumbToggleView");
-        if (!selectInit.empty() && selectInit.selectAll("option").empty()) {
-          var totalInit = Math.max(
-            imageLinkKeys.length || 0,
-            Object.keys(_userSetting.imageLabels || {}).length,
-            1
-          );
-          var initOptions = buildImageOptions(totalInit);
-          setSelectOptions(
-            selectInit,
-            initOptions,
-            getActiveThumbView() || initOptions[0].value
-          );
-          enforceSelectLabelText(selectInit);
-        }
+        form.selectAll("input.thumbToggleView").on("change", toggleThumbView);
 
         return form;
       }
@@ -2152,7 +2116,8 @@
         if (thumbForm) {
           var totalImgs = Math.max(
             imageLinkKeys.length || 0,
-            Object.keys(_userSetting.imageLabels || {}).length
+            Object.keys(_userSetting.imageLabels || {}).length,
+            1
           );
           if (totalImgs < 1) {
             thumbForm.style("display", "none");
@@ -2161,46 +2126,27 @@
           var showThumbs = thumbShouldShow(totalImgs > 1);
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
 
-          var options = [];
-          for (var i = 1; i <= totalImgs; i++) {
-            var key = "2D_" + i;
-            var fallback = i === 1 && totalImgs < 2 ? "2D" : "#" + i;
-            options.push({
-              value: key,
-              label: imageOptionLabel({ value: key }, fallback),
-            });
-          }
+          // rebuild radios
+          thumbForm.selectAll("label.thumbOption").remove();
+          var options = buildImageOptions(totalImgs);
+          var activeThumb = getActiveThumbView() || options[0].value;
 
-          var select = thumbForm.select("select.thumbToggleView");
-          if (!select.empty()) {
-            var activeThumb = getActiveThumbView();
-            setSelectOptions(select, options, activeThumb);
-          }
-        }
+          options.forEach(function (opt) {
+            var lbl = thumbForm
+              .append("label")
+              .attr("class", "thumbOption")
+              .style("margin", "0");
+            lbl
+              .append("input")
+              .attr("type", "radio")
+              .attr("class", "thumbToggleView")
+              .attr("name", "thumbMode")
+              .attr("value", opt.value)
+              .property("checked", opt.value === activeThumb);
+            lbl.append("span").text(opt.label);
+          });
 
-        // enforce select options with safe labels
-        var thumbForm2 = ensureThumbControls();
-        if (thumbForm2) {
-          var totalImgs2 = Math.max(
-            imageLinkKeys.length || 0,
-            Object.keys(_userSetting.imageLabels || {}).length
-          );
-          if (totalImgs2 > 0) {
-            var opts = [];
-            for (var j = 1; j <= totalImgs2; j++) {
-              var k = "2D_" + j;
-              var fb = j === 1 && totalImgs2 < 2 ? "2D" : "#" + j;
-              opts.push({
-                value: k,
-                label: imageOptionLabel({ value: k }, fb),
-              });
-            }
-            setSelectOptions(
-              thumbForm2.select("select.thumbToggleView"),
-              opts,
-              getActiveThumbView()
-            );
-          }
+          thumbForm.selectAll("input.thumbToggleView").on("change", toggleThumbView);
         }
 
         renderViewer2dToggles();
