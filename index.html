@@ -1896,20 +1896,8 @@
           var candidate = normalizeImageLabelKey(candidates[i]);
           var value = labels[candidate];
           if (value !== undefined && value !== null) {
-            var strVal = null;
-            if (typeof value === "string") {
-              strVal = value;
-            } else if (
-              value &&
-              typeof value.toString === "function" &&
-              value.toString !== Object.prototype.toString
-            ) {
-              strVal = value.toString();
-            }
-            if (strVal !== null) {
-              var trimmed = String(strVal).trim();
-              if (trimmed.length > 0) return trimmed;
-            }
+            var trimmed = String(value).trim();
+            if (trimmed.length > 0) return trimmed;
           }
         }
 
