@@ -1955,6 +1955,17 @@
           }
           select.append("option").attr("value", value).text(text);
         });
+
+        // Ensure no empty option labels slip through
+        select.selectAll("option").each(function (d, i) {
+          var txt = (this.textContent || "").trim();
+          if (!txt.length) {
+            var v =
+              this.value || (d && d.value) || (options[i] && options[i].value);
+            this.textContent = valueToLabel(v);
+          }
+        });
+
         if (activeValue) {
           select.property("value", activeValue);
         }
