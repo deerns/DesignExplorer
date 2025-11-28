@@ -408,7 +408,7 @@
         var container = d3.select("#viewer2d-toggles");
         if (container.empty()) return;
 
-      var count = Math.max(1, imageLinkKeys.length || 0);
+      var count = imageLinkKeys.length || 0;
       container.selectAll("*").remove();
 
       if (count < 2) {
@@ -1921,7 +1921,6 @@
 
       function setSelectOptions(select, options, activeValue) {
         if (!select || select.empty()) return;
-        if (!options || !options.length) return;
         select.selectAll("*").remove();
         options.forEach(function (opt) {
           var text = imageOptionLabel(opt);
