@@ -1925,9 +1925,6 @@
         select.selectAll("*").remove();
         options.forEach(function (opt) {
           var text = imageOptionLabel(opt);
-          if (!text || !text.length) {
-            text = opt && opt.value ? String(opt.value) : "";
-          }
           var value = opt && opt.value ? opt.value : "";
           select
             .append("option")
