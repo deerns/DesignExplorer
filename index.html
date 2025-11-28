@@ -2022,8 +2022,10 @@
           if (!select.empty()) {
             var optSel = select.selectAll("option").data(options);
             optSel.exit().remove();
-            optSel.enter().append("option");
             optSel
+              .enter()
+              .append("option")
+              .merge(optSel)
               .attr("value", function (d) {
                 return d.value;
               })
@@ -2081,8 +2083,10 @@
           if (!select.empty()) {
             var optSel = select.selectAll("option").data(options);
             optSel.exit().remove();
-            optSel.enter().append("option");
             optSel
+              .enter()
+              .append("option")
+              .merge(optSel)
               .attr("value", function (d) {
                 return d.value;
               })
