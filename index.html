@@ -404,52 +404,64 @@
     }
 
     // render image toggles near the 2d viewer when multiple images exist
-    function renderViewer2dToggles() {
-      var container = d3.select("#viewer2d-toggles");
-      if (container.empty()) return;
+      function renderViewer2dToggles() {
+        var container = d3.select("#viewer2d-toggles");
+        if (container.empty()) return;
 
-      var totalImgs = Math.max(
-        imageLinkKeys.length || 0,
-        Object.keys(_userSetting.imageLabels || {}).length,
-        1
-      );
+        var totalImgs = Math.max(
+          imageLinkKeys.length || 0,
+          Object.keys(_userSetting.imageLabels || {}).length,
+          1
+        );
 
-      if (totalImgs < 1) {
-        container.style("display", "none");
-        return;
+        if (totalImgs < 1) {
+          container.style("display", "none");
+          return;
+        }
+
+        container.style("display", "block");
+
+        var data = buildImageOptions(totalImgs);
+
+        var current =
+          currentView && currentView.indexOf("2D_") === 0 ? currentView : "2D_1";
+
+        var select = container.select("select.toggleView");
+        if (select.empty()) {
+          select = container
+            .append("select")
+            .attr("class", "form-control input-sm toggleView")
+            .style("width", "180px");
+        }
+
+        // if already has same options, just set value
+        var existingVals = select
+          .selectAll("option")
+          .data()
+          .map(function (d) {
+            return (d && d.value) || "";
+          });
+        var incomingVals = data.map(function (d) {
+          return d.value;
+        });
+        var same =
+          existingVals.length === incomingVals.length &&
+          existingVals.every(function (v, i) {
+            return v === incomingVals[i];
+          });
+
+        if (!same || select.selectAll("option").empty()) {
+          setSelectOptions(select, data, current);
+        } else if (current) {
+          select.property("value", current);
+        }
+
+        enforceSelectLabelText(select);
+
+        select.on("change", function () {
+          toggleView.call(this);
+        });
       }
-
-      container.style("display", "block");
-
-      var data = d3.range(totalImgs).map(function (i) {
-        var idx = i + 1;
-        return {
-          value: "2D_" + idx,
-          label: imageOptionLabel(
-            { value: "2D_" + idx },
-            idx === 1 && totalImgs < 2 ? "2D" : "#" + idx
-          ),
-        };
-      });
-
-      var current =
-        currentView && currentView.indexOf("2D_") === 0 ? currentView : "2D_1";
-
-      var select = container.select("select.toggleView");
-      if (select.empty()) {
-        select = container
-          .append("select")
-          .attr("class", "form-control input-sm toggleView")
-          .style("width", "180px");
-      }
-
-      setSelectOptions(select, data, current);
-      enforceSelectLabelText(select);
-
-      select.on("change", function () {
-        toggleView.call(this);
-      });
-    }
 
     // Find the actual dimension key on the chart using the original name first, then a normalized match.
     function resolveDimKey(dimName, chart) {
@@ -1921,6 +1933,19 @@
         return fb;
       }
 
+      function buildImageOptions(totalImgs) {
+        var opts = [];
+        for (var i = 1; i <= totalImgs; i++) {
+          var key = "2D_" + i;
+          var fallback = i === 1 && totalImgs < 2 ? "2D" : "#" + i;
+          opts.push({
+            value: key,
+            label: valueToLabel(key, fallback),
+          });
+        }
+        return opts;
+      }
+
       function imageOptionLabel(option, fallback) {
         if (
           option &&
@@ -2049,35 +2074,16 @@
         if (!selectInit.empty() && selectInit.selectAll("option").empty()) {
           var totalInit = Math.max(
             imageLinkKeys.length || 0,
-            Object.keys(_userSetting.imageLabels || {}).length
+            Object.keys(_userSetting.imageLabels || {}).length,
+            1
           );
-          var initOptions = [];
-          for (var i = 1; i <= totalInit; i++) {
-            var key = "2D_" + i;
-            var fallback = i === 1 && totalInit < 2 ? "2D" : "#" + i;
-            initOptions.push({
-              value: key,
-              label: imageOptionLabel({ value: key }, fallback),
-            });
-          }
-          if (initOptions.length > 0) {
-            selectInit
-              .selectAll("option")
-              .data(initOptions)
-              .enter()
-              .append("option")
-              .attr("value", function (d) {
-                return d.value;
-              })
-              .text(function (d) {
-                return imageOptionLabel(d);
-              });
-            selectInit.property(
-              "value",
-              getActiveThumbView() || initOptions[0].value
-            );
-            enforceSelectLabelText(selectInit);
-          }
+          var initOptions = buildImageOptions(totalInit);
+          setSelectOptions(
+            selectInit,
+            initOptions,
+            getActiveThumbView() || initOptions[0].value
+          );
+          enforceSelectLabelText(selectInit);
         }
 
         return form;
@@ -2086,20 +2092,12 @@
       function updateImageRadioLabels(imgCount) {
         var hasSecondImg = imgCount > 1;
         var hasThirdImg = imgCount > 2;
-        var defaultLabel1 = hasSecondImg ? "#1" : "2D";
+        var defaultLabel1 = hasSecondImg || hasThirdImg ? "#1" : "2D";
         var defaultLabel2 = "#2";
         var defaultLabel3 = "#3";
-
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
-
-        d3.select("#IMG2Label").classed("hidden", !hasSecondImg);
-        if (hasSecondImg) {
-          $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
-        }
-        d3.select("#IMG3Label").classed("hidden", !hasThirdImg);
-        if (hasThirdImg) {
-          $("#IMG3LabelText").text(getImageLabel("IMG_3", defaultLabel3));
-        }
+        $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
+        $("#IMG3LabelText").text(getImageLabel("IMG_3", defaultLabel3));
 
         // thumbnails toggle (only when multiple image columns)
         var thumbForm = ensureThumbControls();
@@ -2112,15 +2110,7 @@
           var showThumbs = thumbShouldShow(totalImgs > 1);
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
 
-          var options = [];
-          for (var i = 1; i <= totalImgs; i++) {
-            var key = "2D_" + i;
-            var fallback = i === 1 && totalImgs < 2 ? "2D" : "#" + i;
-            options.push({
-              value: key,
-              label: imageOptionLabel({ value: key }, fallback),
-            });
-          }
+          var options = buildImageOptions(totalImgs);
 
           var select = thumbForm.select("select.thumbToggleView");
           if (!select.empty()) {
@@ -2138,15 +2128,7 @@
             Object.keys(_userSetting.imageLabels || {}).length,
             1
           );
-          var mainOptions = [];
-          for (var m = 1; m <= mainCount; m++) {
-            var mKey = "2D_" + m;
-            var mFallback = m === 1 && mainCount < 2 ? "2D" : "#" + m;
-            mainOptions.push({
-              value: mKey,
-              label: imageOptionLabel({ value: mKey }, mFallback),
-            });
-          }
+          var mainOptions = buildImageOptions(mainCount);
           setSelectOptions(mainSelect, mainOptions, currentView || "2D_1");
           enforceSelectLabelText(mainSelect);
         }
