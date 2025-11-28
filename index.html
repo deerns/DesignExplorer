@@ -1923,10 +1923,8 @@
             ? "2D"
             : "#" + idx;
         var lbl = getImageLabel("IMG_" + idx, fb);
-        if (typeof lbl === "string") {
-          var trimmed = lbl.trim();
-          if (trimmed.length > 0) return trimmed;
-        }
+        if (typeof lbl === "string") return lbl;
+        if (lbl && typeof lbl.toString === "function") return lbl.toString();
         return fb;
       }
 
