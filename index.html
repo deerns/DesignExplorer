@@ -1902,6 +1902,13 @@
       }
 
       function imageOptionLabel(option, fallback) {
+        if (
+          option &&
+          typeof option.label === "string" &&
+          option.label.trim().length > 0
+        ) {
+          return option.label.trim();
+        }
         var viewKey = option && option.value ? String(option.value) : "";
         var match = viewKey.match(/^2D_(\d+)/);
         var idx = match ? match[1] : "1";
