@@ -83,7 +83,9 @@
         margin-right: 10px;
       }
 
-      /* legacy: removed dropdown styling for thumb toggles */
+      #thumbViewControls select.thumbToggleView {
+        margin: 0;
+      }
 
       /* Settings modal alignment */
       #dataSetting .list-group-item.form-inline {
@@ -412,37 +414,39 @@
           1
         );
 
-        container.style("display", totalImgs > 1 ? "block" : "none");
-        container.selectAll("*").remove();
-
         if (totalImgs < 2) {
+          container.style("display", "none");
           return;
         }
+
+        container.style("display", "block");
+        container.selectAll("*").remove();
 
         var data = buildImageOptions(totalImgs);
         var current =
           currentView && currentView.indexOf("2D_") === 0 ? currentView : "2D_1";
 
-        var group = container
-          .append("div")
-          .attr("class", "viewer2d-toggle-group")
-          .style("display", "inline-flex")
-          .style("align-items", "center")
-          .style("gap", "10px");
+        var select = container
+          .append("select")
+          .attr("class", "form-control input-sm toggleView")
+          .style("width", "180px");
 
-        data.forEach(function (d) {
-          var label = group.append("label").style("margin", "0");
-          label
-            .append("input")
-            .attr("type", "radio")
-            .attr("class", "toggleView viewerToggle")
-            .attr("name", "viewer2dToggle")
-            .attr("value", d.value)
-            .property("checked", d.value === current);
-          label.append("span").text(d.label);
+        select
+          .selectAll("option")
+          .data(data)
+          .enter()
+          .append("option")
+          .attr("value", function (d) {
+            return d.value;
+          })
+          .text(function (d) {
+            return d.label;
+          });
+
+        select.property("value", current);
+        select.on("change", function () {
+          toggleView.call(this);
         });
-
-        d3.selectAll("input.viewerToggle").on("change", toggleView);
       }
 
     // Find the actual dimension key on the chart using the original name first, then a normalized match.
@@ -2142,14 +2146,7 @@
             lbl.append("span").text(opt.label);
           });
 
-          thumbForm.selectAll("input.thumbToggleView").on("change", function () {
-            var val = this.value;
-            // sync main viewer radios
-            d3.selectAll("input.viewerToggle").property("checked", function () {
-              return this.value === val;
-            });
-            toggleThumbView.call(this);
-          });
+          thumbForm.selectAll("input.thumbToggleView").on("change", toggleThumbView);
         }
 
         renderViewer2dToggles();
@@ -3845,7 +3842,7 @@
         "change",
         toggleView
       );
-      // radios now; keep legacy binding to avoid errors on missing selects
+      d3.selectAll("select.thumbToggleView").on("change", toggleThumbView);
       d3.select("#viewer2d-mainimg").on("click", cycle2DImage);
 
       function getCanonicalImageKey(toggleValue) {
