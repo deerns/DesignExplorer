@@ -389,6 +389,23 @@
         .toLowerCase();
     }
 
+    function ensureAllDimensionsCache() {
+      if (typeof window === "undefined") return {};
+      if (!graph || typeof graph.dimensions !== "function") {
+        return window.__allDimensions || {};
+      }
+
+      var current = graph.dimensions() || {};
+      window.__allDimensions = window.__allDimensions || {};
+      Object.keys(current).forEach(function (k) {
+        if (!window.__allDimensions[k]) {
+          window.__allDimensions[k] = current[k];
+        }
+      });
+
+      return window.__allDimensions;
+    }
+
     function normalizeDimHiddenValue(value) {
       if (value === true || value === 1) return true;
       if (typeof value === "string") {
@@ -488,12 +505,9 @@
         return enabled ? "legend" : "legend disabled";
       });
 
-      var baseDims =
-        (typeof window !== "undefined" && window.__allDimensions) ||
-        graph.dimensions() ||
-        {};
-      if (typeof window !== "undefined" && !window.__allDimensions) {
-        window.__allDimensions = baseDims;
+      var baseDims = ensureAllDimensionsCache();
+      if (!baseDims || Object.keys(baseDims).length === 0) {
+        baseDims = graph.dimensions() || {};
       }
 
       var validDimensions = validDimensionKeys(baseDims, enabledNames);
@@ -507,6 +521,17 @@
           graph.highlight(graph.highlighted());
         }
         updateLabels();
+        // keep slider data/state in sync after dimension visibility updates
+        if (typeof updateSlidersTickValues === "function") {
+          updateSlidersTickValues();
+        }
+        if (
+          typeof updateSlidersValue === "function" &&
+          graph.highlight &&
+          graph.highlight().length > 0
+        ) {
+          updateSlidersValue(graph.highlight()[0]);
+        }
       }
     }
 
@@ -2722,6 +2747,9 @@
           .interactive()
           .reorderable();
 
+        // cache the full dimension set once, so hidden dims can be restored later
+        ensureAllDimensionsCache();
+
         // keep labels in sync whenever parcoords renders (initial draw, resize, reorder)
         graph.on("render", function () {
           syncGraphDimensionTitles();
@@ -3257,12 +3285,9 @@
               return d.name;
             });
 
-          var baseDims =
-            (typeof window !== "undefined" && window.__allDimensions) ||
-            graph.dimensions() ||
-            {};
-          if (typeof window !== "undefined" && !window.__allDimensions) {
-            window.__allDimensions = baseDims;
+          var baseDims = ensureAllDimensionsCache();
+          if (!baseDims || Object.keys(baseDims).length === 0) {
+            baseDims = graph.dimensions() || {};
           }
 
           var validDimensions = validDimensionKeys(baseDims, activeDimensions);
@@ -4363,10 +4388,10 @@
         }
 
         // collect dimensions from full set so hidden dims still appear in settings
-        var baseDimsForSettings =
-          (typeof window !== "undefined" && window.__allDimensions) ||
-          graph.dimensions() ||
-          {};
+        var baseDimsForSettings = ensureAllDimensionsCache();
+        if (!baseDimsForSettings || Object.keys(baseDimsForSettings).length === 0) {
+          baseDimsForSettings = graph.dimensions() || {};
+        }
 
         d3.keys(baseDimsForSettings).forEach(function (d) {
           var dimInfo = baseDimsForSettings[d];

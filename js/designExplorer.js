@@ -72,6 +72,9 @@ function overwriteInitialGlobalValues() {
   image2LinkKeys = [];
   imageLinkKeys = [];
   imageKeyAliases = {};
+  if (typeof window !== "undefined") {
+    window.__allDimensions = {};
+  }
 
   _userSetting = {
     studyInfo: {
