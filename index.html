@@ -483,6 +483,14 @@
         var dimName = d && d.name ? d.name : "";
         return isDimHiddenBySetting(dimName) ? "none" : "block";
       });
+
+      if (
+        _userSetting &&
+        _userSetting.labelSize &&
+        typeof applyLabelFontSize === "function"
+      ) {
+        applyLabelFontSize(_userSetting.labelSize);
+      }
     }
 
     function syncHiddenSettingCheckboxes() {

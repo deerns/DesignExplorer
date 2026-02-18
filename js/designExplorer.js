@@ -322,7 +322,10 @@ function applyLabelFontSize(size) {
   }
 
   try {
-    d3.selectAll(".label").style("font-size", resolved);
+    // keep both axis labels and slider labels in sync with custom size
+    d3
+      .selectAll(".label, #inputSliders .inputSliderLabel")
+      .style("font-size", resolved);
   } catch (err) {
     console.warn("Could not apply label font size", err);
   }
