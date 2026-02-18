@@ -4319,7 +4319,15 @@
 
         d3.select("#showSetting").style("display", "flex");
 
-        var dimKeys = d3.keys(graph.dimensions());
+        var currentGraph =
+          chart && typeof chart.dimensions === "function"
+            ? chart
+            : graph && typeof graph.dimensions === "function"
+            ? graph
+            : null;
+        var dimKeys = currentGraph
+          ? d3.keys(currentGraph.dimensions() || {})
+          : d3.keys(cleanedKeys4pc || {});
         var dimSettingListDiv = d3.select("#dimSettingList");
         _userSetting = _userSetting || {};
         _userSetting.studyInfo = _userSetting.studyInfo || {};
@@ -4468,7 +4476,7 @@
         // collect dimensions from full set so hidden dims still appear in settings
         var baseDimsForSettings = ensureAllDimensionsCache();
         if (!baseDimsForSettings || Object.keys(baseDimsForSettings).length === 0) {
-          baseDimsForSettings = graph.dimensions() || {};
+          baseDimsForSettings = currentGraph ? currentGraph.dimensions() || {} : {};
         }
 
         d3.keys(baseDimsForSettings).forEach(function (d) {
@@ -4504,7 +4512,7 @@
         });
 
         if (settingDimKeys.length === 0) {
-          var graphDims = graph.dimensions() || {};
+          var graphDims = currentGraph ? currentGraph.dimensions() || {} : {};
           settingDimKeys = d3.keys(graphDims).filter(function (d) {
             var dimInfo = graphDims[d];
             return dimInfo && dimInfo.type != "string";
@@ -4523,6 +4531,11 @@
             .filter(function (n) {
               return !!n;
             });
+        }
+        if (settingDimKeys.length === 0 && Array.isArray(dimKeys)) {
+          settingDimKeys = dimKeys.filter(function (d) {
+            return d && d !== "Rating" && d !== "Description";
+          });
         }
         var seenSettingDim = {};
         settingDimKeys = settingDimKeys.filter(function (d) {
