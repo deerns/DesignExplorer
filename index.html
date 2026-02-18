@@ -2578,6 +2578,7 @@
 
         // keep labels in sync whenever parcoords renders (initial draw, resize, reorder)
         graph.on("render", function () {
+          syncGraphDimensionTitles();
           updateLabels();
           refreshGraphLabelsWithRetry(0);
         });
@@ -4989,6 +4990,16 @@
         updateImageRadioLabels(Math.max(imgCount, labelCount));
       }
 
+      function syncGraphDimensionTitles() {
+        if (!graph || typeof graph.dimensions !== "function") return;
+        var dims = graph.dimensions() || {};
+
+        Object.keys(dims).forEach(function (key) {
+          if (!dims[key]) return;
+          dims[key].title = getDimLabel(key);
+        });
+      }
+
       function setDimLabels(dimLabels) {
         dimLabels = dimLabels || {};
 
@@ -5013,6 +5024,7 @@
         });
 
         _userSetting.dimLabelsNormalized = normalizedMap;
+        syncGraphDimensionTitles();
 
         // Update slider labels if they exist
         d3.selectAll("#inputSliders .inputSlider .inputSliderLabel").text(
