@@ -4548,11 +4548,11 @@
         var hasThirdImg = imgCount > 2;
         d3.select("#img2LabelRow").style(
           "display",
-          hasSecondImg ? "block" : "none"
+          hasSecondImg ? "flex" : "none"
         );
         d3.select("#img3LabelRow").style(
           "display",
-          hasThirdImg ? "block" : "none"
+          hasThirdImg ? "flex" : "none"
         );
 
         function isDimHiddenInNewSetting(dimName) {
