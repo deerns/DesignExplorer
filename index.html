@@ -423,6 +423,61 @@
         .toLowerCase();
     }
 
+    function normalizeDimHiddenStrictKey(key) {
+      var raw = key;
+      if (raw && typeof raw === "object") {
+        raw =
+          raw.name ||
+          raw.key ||
+          raw.dim ||
+          raw.dimension ||
+          (typeof raw.toString === "function" ? raw.toString() : "");
+      }
+      return (raw || "")
+        .toString()
+        .trim()
+        .replace(/[_\.]/g, " ")
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+    }
+
+    function collectKnownDimensionNames() {
+      var names = [];
+      if (typeof slidersInfo !== "undefined" && Array.isArray(slidersInfo)) {
+        slidersInfo.forEach(function (s) {
+          if (s && s.name) names.push(s.name);
+        });
+      }
+      if (typeof dimensions !== "undefined" && Array.isArray(dimensions)) {
+        dimensions.forEach(function (d) {
+          if (d && d.name) names.push(d.name);
+        });
+      }
+      if (graph && typeof graph.dimensions === "function") {
+        names = names.concat(Object.keys(graph.dimensions() || {}));
+      }
+      if (typeof window !== "undefined" && window.__allDimensions) {
+        names = names.concat(Object.keys(window.__allDimensions || {}));
+      }
+
+      var seen = {};
+      return names.filter(function (n) {
+        var key = (n || "").toString().trim();
+        if (!key || seen[key]) return false;
+        seen[key] = true;
+        return true;
+      });
+    }
+
+    function isLooseDimMatchUnambiguous(dimName) {
+      var target = normalizeDimKey(dimName);
+      if (!target) return false;
+      var matches = collectKnownDimensionNames().filter(function (n) {
+        return normalizeDimKey(n) === target;
+      });
+      return matches.length <= 1;
+    }
+
     function ensureAllDimensionsCache() {
       if (typeof window === "undefined") return {};
       if (!graph || typeof graph.dimensions !== "function") {
@@ -467,14 +522,30 @@
       var key = (dimName || "").toString().trim();
       if (!key) return false;
       if (normalizeDimHiddenValue(map[key])) return true;
-      return normalized[normalizeDimKey(key)] === true;
+
+      var strictTarget = normalizeDimHiddenStrictKey(key);
+      var hasStrictMatch = d3.keys(map).some(function (mk) {
+        if (!normalizeDimHiddenValue(map[mk])) return false;
+        return normalizeDimHiddenStrictKey(mk) === strictTarget;
+      });
+      if (hasStrictMatch) return true;
+
+      var looseTarget = normalizeDimKey(key);
+      if (normalized[looseTarget] !== true) return false;
+
+      // only allow loose fallback when target maps to one known dimension
+      return isLooseDimMatchUnambiguous(key);
     }
 
     function clearDimHiddenEntry(dimName, dimHiddenMap) {
       var map = dimHiddenMap || _userSetting.dimHidden || {};
-      var target = normalizeDimKey(dimName);
+      var targetLoose = normalizeDimKey(dimName);
+      var targetStrict = normalizeDimHiddenStrictKey(dimName);
+      var canUseLoose = isLooseDimMatchUnambiguous(dimName);
       d3.keys(map).forEach(function (key) {
-        if (normalizeDimKey(key) === target) {
+        var strictMatch = normalizeDimHiddenStrictKey(key) === targetStrict;
+        var looseMatch = canUseLoose && normalizeDimKey(key) === targetLoose;
+        if (strictMatch || looseMatch) {
           delete map[key];
         }
       });
