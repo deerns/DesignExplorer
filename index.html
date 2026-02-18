@@ -87,13 +87,6 @@
         margin: 0;
       }
 
-      /* extra spacing after first main image label */
-      #IMG1LabelText,
-      #IMG2LabelText,
-      #IMG3LabelText {
-        margin-right: 8px;
-      }
-
       /* Settings modal alignment */
       #dataSetting .list-group-item.form-inline {
         display: flex;
@@ -1291,7 +1284,7 @@
                         />
                       </li>
                       <li class="list-group-item form-inline" id="img1LabelRow">
-                        <span class="setting-label">2D #1 Label:</span>
+                        <span class="setting-label">Label Image #1:</span>
                         <input
                           id="img1LabelInput"
                           class="form-control input-sm"
@@ -1299,7 +1292,7 @@
                         />
                       </li>
                       <li class="list-group-item form-inline" id="img2LabelRow">
-                        <span class="setting-label">2D #2 Label:</span>
+                        <span class="setting-label">Label Image #2:</span>
                         <input
                           id="img2LabelInput"
                           class="form-control input-sm"
@@ -1307,7 +1300,7 @@
                         />
                       </li>
                       <li class="list-group-item form-inline" id="img3LabelRow">
-                        <span class="setting-label">2D #3 Label:</span>
+                        <span class="setting-label">Label Image #3:</span>
                         <input
                           id="img3LabelInput"
                           class="form-control input-sm"
@@ -1905,7 +1898,7 @@
             .style("margin-left", "auto")
             .style("display", "inline-flex")
             .style("align-items", "center")
-            .style("gap", "10px");
+            .style("gap", "8px");
 
           var label1 = form.append("label").attr("id", "thumbIMG1Label");
           label1
