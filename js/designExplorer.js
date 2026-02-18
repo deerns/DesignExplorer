@@ -82,7 +82,6 @@ function overwriteInitialGlobalValues() {
     dimTicks: {},
     dimMark: {},
     dimLabels: {},
-    dimHidden: {},
     imageLabels: {},
     labelSize: "",
   };
