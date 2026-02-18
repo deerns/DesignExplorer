@@ -432,9 +432,8 @@
       var current = graph.dimensions() || {};
       window.__allDimensions = window.__allDimensions || {};
       Object.keys(current).forEach(function (k) {
-        if (!window.__allDimensions[k]) {
-          window.__allDimensions[k] = current[k];
-        }
+        // always refresh cache with latest dimension objects (tick/scale updates)
+        window.__allDimensions[k] = current[k];
       });
 
       return window.__allDimensions;
@@ -561,9 +560,14 @@
       });
       updateLegendCheckboxVisuals();
 
-      var baseDims = ensureAllDimensionsCache();
+      var cachedDims = ensureAllDimensionsCache() || {};
+      var currentDims = graph.dimensions() || {};
+      var baseDims = Object.assign({}, cachedDims);
+      Object.keys(currentDims).forEach(function (k) {
+        baseDims[k] = currentDims[k];
+      });
       if (!baseDims || Object.keys(baseDims).length === 0) {
-        baseDims = graph.dimensions() || {};
+        baseDims = currentDims;
       }
 
       var validDimensions = validDimensionKeys(baseDims, enabledNames);
@@ -574,7 +578,21 @@
           console.warn("Skipping invalid dimensions during visibility update", err);
           return;
         }
+        if (
+          _userSetting &&
+          _userSetting.dimTicks &&
+          Object.keys(_userSetting.dimTicks).length > 0
+        ) {
+          setAllTicks(graph, _userSetting.dimTicks);
+        }
         graph.updateAxes();
+        if (
+          _userSetting &&
+          _userSetting.dimMark &&
+          Object.keys(_userSetting.dimMark).length > 0
+        ) {
+          setAllTargetMarks(graph, _userSetting.dimMark);
+        }
         if (pcIsColoredBy && validDimensions.indexOf(pcIsColoredBy) === -1) {
           update_colors(validDimensions[0]);
         }
