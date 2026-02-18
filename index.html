@@ -5628,15 +5628,35 @@
         if (markValue == "ToBeRemoved") {
           delete _userSetting.dimMark[dim];
         } else {
+          if (!chart || typeof chart.dimensions !== "function") return;
+          var chartDims = chart.dimensions() || {};
+          if (!chartDims[dim] || !chartDims[dim].yscale) return;
+
           var canvasHeight = d3
             .select("#graph canvas")
             .style("height")
             .replace("px", "");
+          canvasHeight = parseFloat(canvasHeight);
+          if (!isFinite(canvasHeight) || canvasHeight <= 0) return;
 
-          domain = chart.dimensions()[dim].yscale.domain();
-          yHeight = d3.scale.linear().domain(domain).range([canvasHeight, 0])(
-            markValue
+          var domain = normalizeNumericDomainPair(
+            chartDims[dim].yscale.domain()
           );
+          var numericMark = toFiniteScaleNumber(markValue);
+          if (!domain || !isFinite(numericMark)) {
+            console.warn("Skipping invalid target mark for dimension:", dim);
+            return;
+          }
+
+          var yHeight = d3
+            .scale
+            .linear()
+            .domain(domain)
+            .range([canvasHeight, 0])(numericMark);
+          if (!isFinite(yHeight)) {
+            console.warn("Skipping target mark with invalid y position:", dim);
+            return;
+          }
 
           //add mark
           var dim = d3
