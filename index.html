@@ -4574,14 +4574,15 @@
                 .find(".panel-collapse.in")
                 .not($target)
                 .collapse("hide");
-              if ($target.hasClass("in")) {
-                $target.collapse("hide");
-              } else {
+              // Keep one panel open: clicking the already-open panel does nothing.
+              if (!$target.hasClass("in")) {
                 $target.collapse("show");
               }
             } else {
-              $settingAccordion.find(".panel-collapse.in").removeClass("in");
-              $target.addClass("in");
+              if (!$target.hasClass("in")) {
+                $settingAccordion.find(".panel-collapse.in").removeClass("in");
+                $target.addClass("in");
+              }
             }
           })
           .on(
@@ -4600,14 +4601,14 @@
         var $studyPanel = $("#settingStudyInfo");
         if ($allPanels.length > 0) {
           if (typeof $allPanels.collapse === "function") {
-            $allPanels.collapse("hide");
+            $allPanels.not($studyPanel).collapse("hide");
             if ($studyPanel.length) {
               $studyPanel.collapse("show");
             } else {
               $($allPanels.get(0)).collapse("show");
             }
           } else {
-            $allPanels.removeClass("in");
+            $allPanels.not($studyPanel).removeClass("in");
             if ($studyPanel.length) {
               $studyPanel.addClass("in");
             } else {
