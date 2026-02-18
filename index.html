@@ -4548,9 +4548,10 @@
             };
           });
 
-        // Make the whole heading area clickable (not only the anchor text).
-        $("#dimSettingList")
-          .off("click.panelHeadingToggle")
+        // Keep accordion behavior strict: only one settings panel can be open.
+        var $settingAccordion = $("#dimSettingList");
+        $settingAccordion
+          .off("click.panelHeadingToggle shown.bs.collapse.panelAccordion")
           .on("click.panelHeadingToggle", ".panel-heading", function (e) {
             if (
               $(e.target).closest(
@@ -4559,12 +4560,40 @@
             ) {
               return;
             }
+
             var $link = $(this).find("a[data-toggle='collapse']").first();
-            if ($link.length) {
-              e.preventDefault();
-              $link.trigger("click");
+            if (!$link.length) return;
+            e.preventDefault();
+
+            var targetSel = $link.attr("href");
+            var $target = targetSel ? $(targetSel) : $();
+            if (!$target.length) return;
+
+            if (typeof $target.collapse === "function") {
+              $settingAccordion
+                .find(".panel-collapse.in")
+                .not($target)
+                .collapse("hide");
+              if ($target.hasClass("in")) {
+                $target.collapse("hide");
+              } else {
+                $target.collapse("show");
+              }
+            } else {
+              $settingAccordion.find(".panel-collapse.in").removeClass("in");
+              $target.addClass("in");
             }
-          });
+          })
+          .on(
+            "shown.bs.collapse.panelAccordion",
+            ".panel-collapse",
+            function () {
+              $settingAccordion
+                .find(".panel-collapse.in")
+                .not(this)
+                .collapse("hide");
+            }
+          );
 
         // Always open the first settings panel when the dialog opens.
         var $allPanels = $("#dimSettingList .panel-collapse");
