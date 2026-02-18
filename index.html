@@ -206,6 +206,10 @@
       #dimSettingList .panel-heading {
         cursor: pointer;
       }
+      /* keep legend disabled boxes visible as empty checkboxes */
+      #legend rect.disabled {
+        fill: #ffffff !important;
+      }
     </style>
 
     <!-- Parallel Coordinates -->
@@ -555,6 +559,7 @@
         var enabled = d ? d.enabled : false;
         return enabled ? "legend" : "legend disabled";
       });
+      updateLegendCheckboxVisuals();
 
       var baseDims = ensureAllDimensionsCache();
       if (!baseDims || Object.keys(baseDims).length === 0) {
@@ -2919,6 +2924,24 @@
 
     <!-- draw legend -->
     <script type="text/javascript">
+      function updateLegendCheckboxVisuals() {
+        d3.selectAll("#legend svg g").each(function (d) {
+          var group = d3.select(this);
+          var enabled = d && d.enabled === true;
+
+          group
+            .select("rect")
+            .style("fill", "#ffffff")
+            .style("stroke", enabled ? "#033899" : "#b8b8b8")
+            .style("stroke-width", 1.5);
+
+          group
+            .select("text.legend-check")
+            .style("display", enabled ? null : "none")
+            .style("fill", "#033899");
+        });
+      }
+
       function drawLegend() {
         // add text
         //d3.select("#legend-heading").text("LEGEND");
@@ -2975,19 +2998,35 @@
           .attr("width", legendSquareSize)
           .attr("height", legendSquareSize)
           .attr("class", "legend")
-          .style("fill", "grey")
-          .style("stroke", "black")
-          .style("stroke-width", 1)
+          .style("fill", "#ffffff")
+          .style("stroke", "#033899")
+          .style("stroke-width", 1.5)
           .style("cursor", "pointer");
 
         legend
           .append("text")
+          .attr("class", "legend-check")
+          .attr("x", legendSquareSize / 2)
+          .attr("y", legendSquareSize / 2)
+          .attr("dy", ".36em")
+          .attr("text-anchor", "middle")
+          .style("pointer-events", "none")
+          .style("font-size", Math.max(legendSquareSize * 0.8, 10) + "px")
+          .style("fill", "#033899")
+          .text("✓");
+
+        legend
+          .append("text")
+          .attr("class", "legend-label")
           .attr("x", legendSquareSize + 6)
           .attr("y", legendSquareSize / 2)
           .attr("dy", ".35em")
+          .style("pointer-events", "none")
           .text(function (d) {
             return getDimLabel(d.name);
           });
+
+        updateLegendCheckboxVisuals();
       }
     </script>
 
@@ -3374,6 +3413,7 @@
           );
           updateSliderVisibilityFromSettings();
           syncHiddenSettingCheckboxes();
+          updateLegendCheckboxVisuals();
 
           updateLabels();
           // re-apply custom labels to sliders/scatter after legend toggles
@@ -3392,6 +3432,7 @@
           }
           return d.enabled ? "legend" : "legend disabled";
         });
+        updateLegendCheckboxVisuals();
 
         d3.select("#pcFullScreen-toggle").on("click", function () {
           isLeftChartFullScreenToggled = !isLeftChartFullScreenToggled;
@@ -4275,6 +4316,7 @@
               }
               return d.enabled ? "legend" : "legend disabled";
             });
+            updateLegendCheckboxVisuals();
 
             // add Rating to dimensions
             graph.dimensions(
@@ -5599,7 +5641,7 @@
         });
 
         // Update legend labels
-        d3.selectAll("#legend text").text(function (d) {
+        d3.selectAll("#legend text.legend-label").text(function (d) {
           return d && d.name ? getDimLabel(d.name) : d;
         });
 
