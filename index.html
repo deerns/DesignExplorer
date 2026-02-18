@@ -4504,14 +4504,36 @@
         });
 
         if (settingDimKeys.length === 0) {
-          settingDimKeys = d3.keys(graph.dimensions() || {}).filter(function (d) {
-            var dimInfo = (graph.dimensions() || {})[d];
+          var graphDims = graph.dimensions() || {};
+          settingDimKeys = d3.keys(graphDims).filter(function (d) {
+            var dimInfo = graphDims[d];
             return dimInfo && dimInfo.type != "string";
           });
         }
+        if (settingDimKeys.length === 0 && cleanedKeys4pc) {
+          settingDimKeys = d3.keys(cleanedKeys4pc).filter(function (d) {
+            return d !== "Rating" && d !== "Description";
+          });
+        }
+        if (settingDimKeys.length === 0 && Array.isArray(slidersInfo)) {
+          settingDimKeys = slidersInfo
+            .map(function (s) {
+              return s && s.name ? s.name : null;
+            })
+            .filter(function (n) {
+              return !!n;
+            });
+        }
+        var seenSettingDim = {};
+        settingDimKeys = settingDimKeys.filter(function (d) {
+          var key = (d || "").toString();
+          if (!key || seenSettingDim[key]) return false;
+          seenSettingDim[key] = true;
+          return true;
+        });
 
-        //remove current
-        dimSettingListDiv.selectAll(".panel-default").remove();
+        //remove current dynamic panels
+        dimSettingListDiv.selectAll(".dynamic-dim-panel").remove();
 
         //Add this study/project info
         dimSettingListDiv
@@ -4636,11 +4658,11 @@
         }
 
         var selectList = dimSettingListDiv
-          .selectAll("#dimSettingList")
+          .selectAll("div.dynamic-dim-panel")
           .data(settingDimKeys)
           .enter()
           .append("div")
-          .attr("class", "panel panel-default");
+          .attr("class", "panel panel-default dynamic-dim-panel");
 
         var panelHeading = selectList
           .append("div")
