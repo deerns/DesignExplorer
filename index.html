@@ -311,9 +311,11 @@
             dimTicks: {},
             dimMark: {},
             dimLabels: {},
+            dimHidden: {},
             imageLabels: {},
             labelSize: "",
           };
+    _userSetting.dimHidden = _userSetting.dimHidden || {};
     var imageLinkKeys = [];
     var imageKeyAliases = {};
 
@@ -380,6 +382,135 @@
         .replace(/^in:/i, "")
         .replace(/^out:/i, "")
         .toLowerCase();
+    }
+
+    function normalizeDimHiddenValue(value) {
+      if (value === true || value === 1) return true;
+      if (typeof value === "string") {
+        var v = value.trim().toLowerCase();
+        return v === "true" || v === "1" || v === "yes";
+      }
+      return false;
+    }
+
+    function buildDimHiddenNormalizedMap(dimHidden) {
+      var normalized = {};
+      d3.keys(dimHidden || {}).forEach(function (k) {
+        if (!normalizeDimHiddenValue(dimHidden[k])) return;
+        normalized[normalizeDimKey(k)] = true;
+      });
+      return normalized;
+    }
+
+    function isDimHiddenBySetting(dimName, dimHiddenMap, normalizedMap) {
+      var map = dimHiddenMap || _userSetting.dimHidden || {};
+      var normMap =
+        normalizedMap ||
+        _userSetting.dimHiddenNormalized ||
+        buildDimHiddenNormalizedMap(map);
+
+      var key = (dimName || "").toString().trim();
+      if (!key) return false;
+      if (normalizeDimHiddenValue(map[key])) return true;
+      return normMap[normalizeDimKey(key)] === true;
+    }
+
+    function clearDimHiddenEntry(dimName, dimHiddenMap) {
+      var map = dimHiddenMap || _userSetting.dimHidden || {};
+      var target = normalizeDimKey(dimName);
+      d3.keys(map).forEach(function (k) {
+        if (normalizeDimKey(k) === target) {
+          delete map[k];
+        }
+      });
+      return map;
+    }
+
+    function updateSliderVisibilityFromSettings() {
+      d3.selectAll("#inputSliders .inputSlider").style("display", function (d) {
+        var dimName = d && d.name ? d.name : "";
+        return isDimHiddenBySetting(dimName) ? "none" : "block";
+      });
+    }
+
+    function setDimHidden(dimHidden) {
+      var cleaned = {};
+      d3.keys(dimHidden || {}).forEach(function (k) {
+        if (normalizeDimHiddenValue(dimHidden[k])) {
+          cleaned[k] = true;
+        }
+      });
+
+      _userSetting.dimHidden = cleaned;
+      _userSetting.dimHiddenNormalized = buildDimHiddenNormalizedMap(cleaned);
+
+      updateSliderVisibilityFromSettings();
+
+      if (!graph || typeof graph.dimensions !== "function") return;
+      if (typeof dimensions === "undefined" || !Array.isArray(dimensions))
+        return;
+
+      dimensions.forEach(function (dim) {
+        var fixedOff =
+          dim.name === "Rating" || String(dim.name) === "Description";
+        dim.enabled = !fixedOff && !isDimHiddenBySetting(dim.name);
+      });
+
+      d3.selectAll("rect.legend").attr("class", function (d) {
+        var fixedOff =
+          d && (d.name === "Rating" || String(d.name) === "Description");
+        var enabled = !fixedOff && !isDimHiddenBySetting(d ? d.name : "");
+        if (d) d.enabled = enabled;
+        return enabled ? "legend" : "legend disabled";
+      });
+
+      var baseDims =
+        (typeof window !== "undefined" && window.__allDimensions) ||
+        graph.dimensions() ||
+        {};
+      if (typeof window !== "undefined" && !window.__allDimensions) {
+        window.__allDimensions = baseDims;
+      }
+
+      var activeDimensions = dimensions
+        .filter(function (d) {
+          return d.enabled;
+        })
+        .map(function (d) {
+          return d.name;
+        });
+
+      var validDimensions = validDimensionKeys(baseDims, activeDimensions);
+      if (validDimensions.length === 0) {
+        var fallback = validDimensionKeys(baseDims, Object.keys(baseDims));
+        if (fallback.length > 0) {
+          clearDimHiddenEntry(fallback[0], _userSetting.dimHidden);
+          _userSetting.dimHiddenNormalized = buildDimHiddenNormalizedMap(
+            _userSetting.dimHidden
+          );
+          dimensions.forEach(function (dim) {
+            dim.enabled = dim.name === fallback[0];
+          });
+          d3.selectAll("rect.legend").attr("class", function (d) {
+            var enabled = d && d.name === fallback[0];
+            if (d) d.enabled = enabled;
+            return enabled ? "legend" : "legend disabled";
+          });
+          validDimensions = [fallback[0]];
+        }
+      }
+
+      if (validDimensions.length > 0) {
+        graph.dimensions(toDimensionObject(validDimensions, baseDims));
+        graph.updateAxes();
+        if (pcIsColoredBy && validDimensions.indexOf(pcIsColoredBy) === -1) {
+          update_colors(validDimensions[0]);
+        }
+        if (graph.highlighted().length !== 0) {
+          graph.highlight(graph.highlighted());
+        }
+        updateLabels();
+      }
     }
 
     // render image toggles near the 2d viewer when multiple images exist
@@ -3150,6 +3281,18 @@
 
           if (graph.highlighted().length !== 0)
             graph.highlight(graph.highlighted());
+
+          _userSetting.dimHidden = _userSetting.dimHidden || {};
+          if (enabled) {
+            clearDimHiddenEntry(name, _userSetting.dimHidden);
+          } else {
+            _userSetting.dimHidden[name] = true;
+          }
+          _userSetting.dimHiddenNormalized = buildDimHiddenNormalizedMap(
+            _userSetting.dimHidden
+          );
+          updateSliderVisibilityFromSettings();
+
           updateLabels();
           // re-apply custom labels to sliders/scatter after legend toggles
           if (_userSetting && _userSetting.dimLabels) {
@@ -3456,6 +3599,8 @@
             },
           });
         });
+
+        updateSliderVisibilityFromSettings();
       }
 
       function updateSlidersTickValues(unbrushedData) {
@@ -4140,6 +4285,7 @@
           dimTicks: {},
           dimMark: {},
           dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
+          dimHidden: Object.assign({}, _userSetting.dimHidden || {}),
           imageLabels: Object.assign({}, _userSetting.imageLabels || {}),
           labelSize: _userSetting.labelSize || "",
         };
@@ -4349,6 +4495,14 @@
           hasThirdImg ? "block" : "none"
         );
 
+        function isDimHiddenInNewSetting(dimName) {
+          return isDimHiddenBySetting(
+            dimName,
+            newUserSetting.dimHidden || {},
+            buildDimHiddenNormalizedMap(newUserSetting.dimHidden || {})
+          );
+        }
+
         var selectList = dimSettingListDiv
           .selectAll("#dimSettingList")
           .data(d3.keys(dimScales))
@@ -4385,6 +4539,28 @@
           .attr("class", "panel-body")
           .append("ul")
           .attr("class", "list-group");
+
+        panelBodyContent
+          .append("li")
+          .attr("class", "list-group-item form-inline")
+          .call(function (li) {
+            li.append("span")
+              .attr("class", "setting-label")
+              .text("Hidden On Main:");
+          })
+          .append("input")
+          .attr("type", "checkbox")
+          .property("checked", function (d) {
+            return isDimHiddenInNewSetting(d);
+          })
+          .on("change", function (d) {
+            newUserSetting.dimHidden = newUserSetting.dimHidden || {};
+            if (this.checked) {
+              newUserSetting.dimHidden[d] = true;
+            } else {
+              clearDimHiddenEntry(d, newUserSetting.dimHidden);
+            }
+          });
 
         // Slider label setting
         panelBodyContent
@@ -4849,6 +5025,7 @@
         var isThereNewDimScales = Object.keys(userSetting.dimScales).length > 0;
         var userDimTicks = userSetting.dimTicks || {};
         var userDimLabels = userSetting.dimLabels || {};
+        var userDimHidden = userSetting.dimHidden || {};
         var userImageLabels = userSetting.imageLabels || {};
         var userLabelSize = userSetting.labelSize;
         var isThereNewDimTicks = Object.keys(userDimTicks).length > 0;
@@ -4889,6 +5066,8 @@
           }
         }
 
+        setDimHidden(userDimHidden);
+
         if (hasLabelSize && typeof applyLabelFontSize === "function") {
           applyLabelFontSize(userLabelSize);
         }
@@ -4911,6 +5090,7 @@
         // extra pass to ensure axis/slider labels reflect latest dimLabels after Set
         setTimeout(function () {
           setDimLabels(_userSetting.dimLabels || {});
+          setDimHidden(_userSetting.dimHidden || {});
           if (graph) {
             updateLabels();
             refreshGraphLabelsWithRetry(0);
@@ -5307,6 +5487,12 @@
         Object.assign(globalUserSetting.studyInfo, newUserSetting.studyInfo);
         globalUserSetting.dimLabels = globalUserSetting.dimLabels || {};
         Object.assign(globalUserSetting.dimLabels, newUserSetting.dimLabels);
+        globalUserSetting.dimHidden = {};
+        d3.keys(newUserSetting.dimHidden || {}).forEach(function (k) {
+          if (normalizeDimHiddenValue(newUserSetting.dimHidden[k])) {
+            globalUserSetting.dimHidden[k] = true;
+          }
+        });
         globalUserSetting.imageLabels = globalUserSetting.imageLabels || {};
         Object.assign(
           globalUserSetting.imageLabels,
@@ -5393,6 +5579,11 @@
             {},
             _userSetting.dimMark || {},
             d.dimMark || {}
+          );
+          mergedSetting.dimHidden = Object.assign(
+            {},
+            _userSetting.dimHidden || {},
+            d.dimHidden || {}
           );
           mergedSetting.imageLabels = Object.assign(
             {},
