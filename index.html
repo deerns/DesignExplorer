@@ -551,7 +551,7 @@
 
       syncHiddenSettingCheckboxes();
 
-      d3.selectAll("rect.legend").attr("class", function (d) {
+      d3.selectAll("#legend rect").attr("class", function (d) {
         var enabled = d ? d.enabled : false;
         return enabled ? "legend" : "legend disabled";
       });
@@ -3318,12 +3318,12 @@
         }
 
         //events for legend click
-        d3.selectAll("rect.legend").on("click", function (d) {
+        d3.selectAll("#legend rect").on("click", function (d) {
           var rect = d3.select(this);
           var name = d.name;
           var enabled = true;
 
-          if (rect.attr("class") === "legend disabled") {
+          if (rect.classed("disabled")) {
             rect.attr("class", "legend");
           } else {
             rect.attr("class", "legend disabled");
@@ -3383,11 +3383,14 @@
         });
 
         //turn off rating rectangle
-        d3.selectAll("rect.legend").attr("class", function (d) {
-          if (d.name == "Rating" || d.name == "Description") {
+        d3.selectAll("#legend rect").attr("class", function (d) {
+          var fixedOff = d.name == "Rating" || d.name == "Description";
+          if (fixedOff) {
             d.enabled = false;
-            return "legend disabled";
+          } else if (typeof d.enabled !== "boolean") {
+            d.enabled = true;
           }
+          return d.enabled ? "legend" : "legend disabled";
         });
 
         d3.select("#pcFullScreen-toggle").on("click", function () {
@@ -4264,11 +4267,13 @@
           // 'value' is the value selected
           if (firstRating === true) {
             //turn on rating rectangle
-            d3.selectAll("rect.legend").attr("class", function (d) {
+            d3.selectAll("#legend rect").attr("class", function (d) {
               if (d.name == "Rating") {
                 d.enabled = true;
-                return "legend";
+              } else if (typeof d.enabled !== "boolean") {
+                d.enabled = true;
               }
+              return d.enabled ? "legend" : "legend disabled";
             });
 
             // add Rating to dimensions
