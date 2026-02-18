@@ -4597,25 +4597,41 @@
           );
 
         // Always open Study Information first when the dialog opens.
-        var $allPanels = $("#dimSettingList .panel-collapse");
-        var $studyPanel = $("#settingStudyInfo");
-        if ($allPanels.length > 0) {
+        function ensureStudyInfoOpenFirst() {
+          var $accordion = $("#dimSettingList");
+          var $allPanels = $accordion.find(".panel-collapse");
+          if (!$allPanels.length) return;
+
+          var $studyPanel = $("#settingStudyInfo");
+          if (!$studyPanel.length) {
+            $studyPanel = $($allPanels.get(0));
+          }
+
           if (typeof $allPanels.collapse === "function") {
+            // hard reset classes first to avoid stale states after loading new data.csv
+            $allPanels.not($studyPanel).removeClass("in").attr("aria-expanded", "false");
             $allPanels.not($studyPanel).collapse("hide");
-            if ($studyPanel.length) {
-              $studyPanel.collapse("show");
-            } else {
-              $($allPanels.get(0)).collapse("show");
-            }
+            $studyPanel.addClass("in").attr("aria-expanded", "true");
+            $studyPanel.collapse("show");
           } else {
-            $allPanels.not($studyPanel).removeClass("in");
-            if ($studyPanel.length) {
-              $studyPanel.addClass("in");
-            } else {
-              $($allPanels.get(0)).addClass("in");
-            }
+            $allPanels.removeClass("in").attr("aria-expanded", "false");
+            $studyPanel.addClass("in").attr("aria-expanded", "true");
+          }
+
+          // keep heading state aligned with the open panel
+          $accordion
+            .find(".panel-title a[data-toggle='collapse']")
+            .attr("aria-expanded", "false");
+          var studyId = $studyPanel.attr("id");
+          if (studyId) {
+            $accordion
+              .find(".panel-title a[href='#" + studyId + "']")
+              .attr("aria-expanded", "true");
           }
         }
+
+        ensureStudyInfoOpenFirst();
+        setTimeout(ensureStudyInfoOpenFirst, 80);
 
         function updateImageLabelsFromInputs() {
           var img1Val = ($("#img1LabelInput").val() || "").trim();
