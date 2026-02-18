@@ -1537,17 +1537,13 @@
       var isRightChartFullScreenToggled = false;
 
       // side bar for sliders
-      $("#menu-toggle").off("click").prop("disabled", true); //click(function (e) {
-      //    //e.preventDefault();  //SIDEBAR TOGGLE OFF
-      //
-      //    //$("#wrapper").toggleClass("toggled");
-      //    isToggled = !isToggled;
-      //    d3.select("#wrapper")
-      //      .classed("toggled", isToggled)
-      //      .transition()
-      //     .duration(300); //length of toggle animation
-      //    //.each("end", resizeRadarChart())
-      //  });
+      $("#menu-toggle").off("click").prop("disabled", false).click(function (e) {
+        isToggled = !isToggled;
+        d3.select("#wrapper")
+          .classed("toggled", isToggled)
+          .transition()
+          .duration(300); //length of toggle animation
+      });
 
       $("#scatter-menu-toggle, .scatter-matrix-control").click(function (e) {
         isScatterToggled = !isScatterToggled;
