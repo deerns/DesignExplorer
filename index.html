@@ -138,6 +138,16 @@
       #dataSetting .list-group-item.form-inline .target-remove-btn {
         margin-left: auto;
       }
+      #showSetting {
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 20px;
+        padding-bottom: 20px;
+        overflow-y: auto;
+      }
+      #dataSetting {
+        box-sizing: border-box;
+      }
       #dataSetting .list-group-item.form-inline.password-row {
         flex-wrap: nowrap;
       }
@@ -4311,6 +4321,14 @@
 
         var dimKeys = d3.keys(graph.dimensions());
         var dimSettingListDiv = d3.select("#dimSettingList");
+        _userSetting = _userSetting || {};
+        _userSetting.studyInfo = _userSetting.studyInfo || {};
+        _userSetting.dimScales = _userSetting.dimScales || {};
+        _userSetting.dimTicks = _userSetting.dimTicks || {};
+        _userSetting.dimMark = _userSetting.dimMark || {};
+        _userSetting.dimLabels = _userSetting.dimLabels || {};
+        _userSetting.dimHidden = _userSetting.dimHidden || {};
+        _userSetting.imageLabels = _userSetting.imageLabels || {};
         var currentStudyInfo =
           _userSetting.studyInfo && typeof _userSetting.studyInfo === "object"
             ? _userSetting.studyInfo
@@ -4377,6 +4395,7 @@
         // }
 
         var dimScales = {}; //for current value
+        var settingDimKeys = [];
         // var userDimScale = {};
 
         var dimTicks = {}; //for current value
@@ -4455,15 +4474,16 @@
         d3.keys(baseDimsForSettings).forEach(function (d) {
           var dimInfo = baseDimsForSettings[d];
           if (!dimInfo || dimInfo.type == "string") return;
+          settingDimKeys.push(d);
 
           var domain =
             findUserScaleForDim(d) ||
             (dimInfo.yscale && typeof dimInfo.yscale.domain === "function"
               ? dimInfo.yscale.domain()
               : undefined);
-          if (!domain) return;
-
-          dimScales[d] = domain;
+          if (domain && domain.length >= 2) {
+            dimScales[d] = domain;
+          }
 
           var dimId = "#dim_" + string_as_unicode_escape(d);
           var renderedTickCount = d3.select(dimId).selectAll(".tick").size();
@@ -4482,6 +4502,13 @@
           }
           dimTicks[d] = tickCount;
         });
+
+        if (settingDimKeys.length === 0) {
+          settingDimKeys = d3.keys(graph.dimensions() || {}).filter(function (d) {
+            var dimInfo = (graph.dimensions() || {})[d];
+            return dimInfo && dimInfo.type != "string";
+          });
+        }
 
         //remove current
         dimSettingListDiv.selectAll(".panel-default").remove();
@@ -4610,7 +4637,7 @@
 
         var selectList = dimSettingListDiv
           .selectAll("#dimSettingList")
-          .data(d3.keys(dimScales))
+          .data(settingDimKeys)
           .enter()
           .append("div")
           .attr("class", "panel panel-default");
@@ -4734,14 +4761,16 @@
           .append("input")
           .attr("class", "form-control input-sm")
           .attr("placeholder", function (d) {
-            return "From: " + dimScales[d][0];
+            var scale = dimScales[d] || findUserScaleForDim(d) || ["", ""];
+            return "From: " + (scale[0] !== undefined ? scale[0] : "");
           })
           .attr("type", "text")
           .on("change", function (d) {
             var value = $(this).val();
+            var scale = dimScales[d] || findUserScaleForDim(d) || [0, 0];
             newUserSetting.dimScales[d] = OnScaleChanged(
               { min: value },
-              dimScales[d],
+              scale,
               newUserSetting.dimScales[d]
             );
           });
@@ -4751,14 +4780,16 @@
           .append("input")
           .attr("class", "form-control input-sm")
           .attr("placeholder", function (d) {
-            return "TO: " + dimScales[d][1];
+            var scale = dimScales[d] || findUserScaleForDim(d) || ["", ""];
+            return "TO: " + (scale[1] !== undefined ? scale[1] : "");
           })
           .attr("type", "text")
           .on("change", function (d) {
             var value = $(this).val();
+            var scale = dimScales[d] || findUserScaleForDim(d) || [0, 0];
             newUserSetting.dimScales[d] = OnScaleChanged(
               { max: value },
-              dimScales[d],
+              scale,
               newUserSetting.dimScales[d]
             );
           });
