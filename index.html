@@ -1423,7 +1423,7 @@
           <div
             class="col-sm-12 col-centered"
             id="dataSetting"
-            style="width: 700px; height: 600px"
+            style="width: 700px; height: 900px; max-height: 90vh; overflow-y: auto"
           >
             <button class="btn btn-default btn-sm pull-right popupWindowClose">
               <span class="glyphicon glyphicon-remove"></span>
@@ -4311,18 +4311,63 @@
 
         var dimKeys = d3.keys(graph.dimensions());
         var dimSettingListDiv = d3.select("#dimSettingList");
+        var currentStudyInfo =
+          _userSetting.studyInfo && typeof _userSetting.studyInfo === "object"
+            ? _userSetting.studyInfo
+            : {};
+        var navStudyName = (d3.select("#navbar-studyInfo h4").text() || "")
+          .toString()
+          .trim();
+        var navStudyDate = (d3.select("#navbar-studyInfo h6").text() || "")
+          .toString()
+          .trim();
+        var effectiveStudyName = (
+          currentStudyInfo.name !== undefined && currentStudyInfo.name !== null
+            ? currentStudyInfo.name
+            : ""
+        )
+          .toString()
+          .trim();
+        var effectiveStudyDate = (
+          currentStudyInfo.date !== undefined && currentStudyInfo.date !== null
+            ? currentStudyInfo.date
+            : ""
+        )
+          .toString()
+          .trim();
+
+        if (!effectiveStudyName && navStudyName) {
+          effectiveStudyName = navStudyName;
+        }
+        if (!effectiveStudyDate && navStudyDate) {
+          effectiveStudyDate = navStudyDate;
+        }
+
+        var effectiveImageLabels = Object.assign({}, _userSetting.imageLabels || {});
+        var img1Current = ($("#IMG1LabelText").text() || "").trim();
+        var img2Current = ($("#IMG2LabelText").text() || "").trim();
+        var img3Current = ($("#IMG3LabelText").text() || "").trim();
+        if (!effectiveImageLabels["IMG_1"] && img1Current && img1Current !== "2D" && img1Current !== "#1") {
+          effectiveImageLabels["IMG_1"] = img1Current;
+        }
+        if (!effectiveImageLabels["IMG_2"] && img2Current && img2Current !== "#2") {
+          effectiveImageLabels["IMG_2"] = img2Current;
+        }
+        if (!effectiveImageLabels["IMG_3"] && img3Current && img3Current !== "#3") {
+          effectiveImageLabels["IMG_3"] = img3Current;
+        }
 
         var newUserSetting = {
           studyInfo: {
-            name: _userSetting.studyInfo.name,
-            date: _userSetting.studyInfo.date,
+            name: effectiveStudyName,
+            date: effectiveStudyDate,
           },
           dimScales: Object.assign({}, _userSetting.dimScales || {}),
           dimTicks: {},
           dimMark: {},
           dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
           dimHidden: Object.assign({}, _userSetting.dimHidden || {}),
-          imageLabels: Object.assign({}, _userSetting.imageLabels || {}),
+          imageLabels: effectiveImageLabels,
           labelSize: _userSetting.labelSize || "",
         };
 
