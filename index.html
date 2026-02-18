@@ -4548,90 +4548,70 @@
             };
           });
 
-        // Keep accordion behavior strict: only one settings panel can be open.
+        // Strict accordion for settings: one open panel, no auto re-toggle.
         var $settingAccordion = $("#dimSettingList");
-        $settingAccordion
-          .off("click.panelHeadingToggle shown.bs.collapse.panelAccordion")
-          .on("click.panelHeadingToggle", ".panel-heading", function (e) {
-            if (
-              $(e.target).closest(
-                "a, input, button, select, textarea, label"
-              ).length
-            ) {
-              return;
-            }
 
-            var $link = $(this).find("a[data-toggle='collapse']").first();
-            if (!$link.length) return;
-            e.preventDefault();
+        function openSettingPanel(targetSel, force) {
+          var $target = targetSel
+            ? $settingAccordion.find(targetSel).first()
+            : $();
+          if (!$target.length) return;
 
-            var targetSel = $link.attr("href");
-            var $target = targetSel ? $(targetSel) : $();
-            if (!$target.length) return;
+          if (!force && $target.hasClass("in")) return;
 
-            if (typeof $target.collapse === "function") {
-              $settingAccordion
-                .find(".panel-collapse.in")
-                .not($target)
-                .collapse("hide");
-              // Keep one panel open: clicking the already-open panel does nothing.
-              if (!$target.hasClass("in")) {
-                $target.collapse("show");
-              }
-            } else {
-              if (!$target.hasClass("in")) {
-                $settingAccordion.find(".panel-collapse.in").removeClass("in");
-                $target.addClass("in");
-              }
-            }
-          })
-          .on(
-            "shown.bs.collapse.panelAccordion",
-            ".panel-collapse",
-            function () {
-              $settingAccordion
-                .find(".panel-collapse.in")
-                .not(this)
-                .collapse("hide");
-            }
-          );
+          $settingAccordion
+            .find(".panel-collapse.in")
+            .removeClass("in")
+            .attr("aria-expanded", "false");
 
-        // Always open Study Information first when the dialog opens.
-        function ensureStudyInfoOpenFirst() {
-          var $accordion = $("#dimSettingList");
-          var $allPanels = $accordion.find(".panel-collapse");
-          if (!$allPanels.length) return;
+          $target.addClass("in").attr("aria-expanded", "true");
 
-          var $studyPanel = $("#settingStudyInfo");
-          if (!$studyPanel.length) {
-            $studyPanel = $($allPanels.get(0));
-          }
-
-          if (typeof $allPanels.collapse === "function") {
-            // hard reset classes first to avoid stale states after loading new data.csv
-            $allPanels.not($studyPanel).removeClass("in").attr("aria-expanded", "false");
-            $allPanels.not($studyPanel).collapse("hide");
-            $studyPanel.addClass("in").attr("aria-expanded", "true");
-            $studyPanel.collapse("show");
-          } else {
-            $allPanels.removeClass("in").attr("aria-expanded", "false");
-            $studyPanel.addClass("in").attr("aria-expanded", "true");
-          }
-
-          // keep heading state aligned with the open panel
-          $accordion
+          $settingAccordion
             .find(".panel-title a[data-toggle='collapse']")
             .attr("aria-expanded", "false");
-          var studyId = $studyPanel.attr("id");
-          if (studyId) {
-            $accordion
-              .find(".panel-title a[href='#" + studyId + "']")
+
+          var targetId = $target.attr("id");
+          if (targetId) {
+            $settingAccordion
+              .find(".panel-title a[href='#" + targetId + "']")
               .attr("aria-expanded", "true");
           }
         }
 
-        ensureStudyInfoOpenFirst();
-        setTimeout(ensureStudyInfoOpenFirst, 80);
+        $settingAccordion
+          .off("click.panelHeadingToggle")
+          .on(
+            "click.panelHeadingToggle",
+            ".panel-heading, .panel-title a[data-toggle='collapse']",
+            function (e) {
+              if ($(e.target).closest("input, button, select, textarea").length) {
+                return;
+              }
+
+              var $link = $(this).is("a[data-toggle='collapse']")
+                ? $(this)
+                : $(this).find("a[data-toggle='collapse']").first();
+              if (!$link.length) return;
+
+              e.preventDefault();
+              e.stopPropagation();
+              openSettingPanel($link.attr("href"), false);
+            }
+          );
+
+        // Always open Study Information first when the dialog opens.
+        var $allPanels = $settingAccordion.find(".panel-collapse");
+        if ($allPanels.length > 0) {
+          var $studyPanel = $("#settingStudyInfo");
+          if ($studyPanel.length) {
+            openSettingPanel("#settingStudyInfo", true);
+          } else {
+            var firstId = $($allPanels.get(0)).attr("id");
+            if (firstId) {
+              openSettingPanel("#" + firstId, true);
+            }
+          }
+        }
 
         function updateImageLabelsFromInputs() {
           var img1Val = ($("#img1LabelInput").val() || "").trim();
