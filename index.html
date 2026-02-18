@@ -2879,16 +2879,42 @@
       }
 
       function drawParallelCoordinates() {
-        // remove Rating for on page load
-        var iniDimensions = d3
-          .keys(cleanedKeys4pc)
-          .filter(function (d) {
-            return d != "Rating" && d != "Description";
-          })
-          .reduce(function (acc, cur) {
-            acc[cur] = {};
-            return acc;
-          }, {});
+        // Build only safe numeric dimensions to prevent NaN axis transforms.
+        var rawPcKeys = d3.keys(cleanedKeys4pc).filter(function (d) {
+          return d != "Rating" && d != "Description";
+        });
+        var iniDimensions = {};
+
+        rawPcKeys.forEach(function (key) {
+          var finiteVals = (cleanedData || [])
+            .map(function (row) {
+              return toFiniteScaleNumber(row[key]);
+            })
+            .filter(function (v) {
+              return isFinite(v);
+            });
+
+          if (finiteVals.length < 2) return;
+
+          var ext = d3.extent(finiteVals);
+          if (!ext || !isFinite(ext[0]) || !isFinite(ext[1])) return;
+
+          // Avoid zero-span scales which can trigger invalid tick transforms.
+          if (ext[0] === ext[1]) {
+            var delta = ext[0] === 0 ? 1 : Math.abs(ext[0]) * 0.01;
+            ext[1] = ext[0] + (delta === 0 ? 1 : delta);
+          }
+
+          iniDimensions[key] = {
+            type: "number",
+            yscale: d3.scale.linear().domain(ext),
+          };
+        });
+
+        if (Object.keys(iniDimensions).length === 0) {
+          console.warn("No valid numeric dimensions found for parallel coordinates.");
+          return;
+        }
 
         // set the height for graph div - this is critical otherwise
         // parallel coordinates graph will be drawn by height of 0px
