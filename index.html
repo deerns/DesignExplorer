@@ -4479,10 +4479,23 @@
           baseDimsForSettings = currentGraph ? currentGraph.dimensions() || {} : {};
         }
 
+        // start from slider names so the submenu list always matches the left slider set
+        if (Array.isArray(slidersInfo) && slidersInfo.length > 0) {
+          settingDimKeys = slidersInfo
+            .map(function (s) {
+              return s && s.name ? s.name : null;
+            })
+            .filter(function (n) {
+              return !!n;
+            });
+        }
+
         d3.keys(baseDimsForSettings).forEach(function (d) {
           var dimInfo = baseDimsForSettings[d];
-          if (!dimInfo || dimInfo.type == "string") return;
-          settingDimKeys.push(d);
+          if (!dimInfo) return;
+          if (settingDimKeys.indexOf(d) === -1) {
+            settingDimKeys.push(d);
+          }
 
           var domain =
             findUserScaleForDim(d) ||
@@ -4514,8 +4527,7 @@
         if (settingDimKeys.length === 0) {
           var graphDims = currentGraph ? currentGraph.dimensions() || {} : {};
           settingDimKeys = d3.keys(graphDims).filter(function (d) {
-            var dimInfo = graphDims[d];
-            return dimInfo && dimInfo.type != "string";
+            return !!d;
           });
         }
         if (settingDimKeys.length === 0 && cleanedKeys4pc) {
@@ -4541,6 +4553,7 @@
         settingDimKeys = settingDimKeys.filter(function (d) {
           var key = (d || "").toString();
           if (!key || seenSettingDim[key]) return false;
+          if (key === "Rating" || key === "Description") return false;
           seenSettingDim[key] = true;
           return true;
         });
