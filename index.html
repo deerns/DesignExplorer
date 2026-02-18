@@ -4444,13 +4444,13 @@
         //Add this study/project info
         dimSettingListDiv
           .select("#studyNameInput")
-          .attr("value", newUserSetting.studyInfo.name)
+          .property("value", newUserSetting.studyInfo.name)
           .on("change", function (d) {
             newUserSetting.studyInfo.name = $(this).val();
           });
         dimSettingListDiv
           .select("#studyDateInput")
-          .attr("value", newUserSetting.studyInfo.date)
+          .property("value", newUserSetting.studyInfo.date)
           .on("change", function (d) {
             newUserSetting.studyInfo.date = $(this).val();
           });
@@ -5087,7 +5087,9 @@
       }
 
       function setSettings(chart, userSetting) {
-        var isThereNewStudyInfo = Object.keys(userSetting.studyInfo).length > 0;
+        var isThereNewStudyInfo =
+          userSetting.studyInfo &&
+          Object.keys(userSetting.studyInfo).length > 0;
         var isThereNewDimScales = Object.keys(userSetting.dimScales).length > 0;
         var userDimTicks = userSetting.dimTicks || {};
         var userDimLabels = userSetting.dimLabels || {};
@@ -5165,13 +5167,24 @@
       }
 
       function setStudyInfo(studyInfoData) {
+        studyInfoData = studyInfoData || {};
+        var studyName =
+          studyInfoData.name !== undefined && studyInfoData.name !== null
+            ? studyInfoData.name
+            : "";
+        var studyDate =
+          studyInfoData.date !== undefined && studyInfoData.date !== null
+            ? studyInfoData.date
+            : "";
+
         var studyInfo = d3.select("#navbar-studyInfo");
-        studyInfo.select("h4").text(studyInfoData.name);
-        studyInfo.select("h6").text(studyInfoData.date);
+        studyInfo.select("h4").text(studyName);
+        studyInfo.select("h6").text(studyDate);
 
         //update the global _userSetting
-        _userSetting.studyInfo.name = studyInfoData.name;
-        _userSetting.studyInfo.date = studyInfoData.date;
+        _userSetting.studyInfo = _userSetting.studyInfo || {};
+        _userSetting.studyInfo.name = studyName;
+        _userSetting.studyInfo.date = studyDate;
       }
 
       function setAllScales(chart, scales) {
@@ -5595,6 +5608,12 @@
         var jsonFileLink = "";
         var isExplicitPath = settingFilePath !== undefined;
 
+        function asPlainObject(value) {
+          return value && typeof value === "object" && !Array.isArray(value)
+            ? value
+            : {};
+        }
+
         if (isExplicitPath) {
           jsonFileLink = settingFilePath;
         } else {
@@ -5624,37 +5643,71 @@
             return;
           }
 
+          var loadedStudyInfo = asPlainObject(d.studyInfo);
+          if (Object.keys(loadedStudyInfo).length === 0) {
+            loadedStudyInfo = {};
+            if (d.studyName !== undefined || d.name !== undefined) {
+              loadedStudyInfo.name =
+                d.studyName !== undefined ? d.studyName : d.name;
+            }
+            if (d.studyDate !== undefined || d.date !== undefined) {
+              loadedStudyInfo.date =
+                d.studyDate !== undefined ? d.studyDate : d.date;
+            }
+          }
+
+          var loadedDimLabels = asPlainObject(d.dimLabels);
+          if (Object.keys(loadedDimLabels).length === 0) {
+            loadedDimLabels = asPlainObject(
+              d.labels || d.dimensionLabels || d.dimLabel
+            );
+          }
+
+          var loadedDimScales = asPlainObject(d.dimScales);
+          var loadedDimTicks = asPlainObject(d.dimTicks);
+          var loadedDimMark = asPlainObject(d.dimMark);
+          var loadedDimHidden = asPlainObject(d.dimHidden);
+          if (Object.keys(loadedDimHidden).length === 0) {
+            loadedDimHidden = asPlainObject(d.hiddenDims || d.hiddenDimensions);
+          }
+          var loadedImageLabels = asPlainObject(d.imageLabels);
+
           // Merge with current settings to keep optional fields
           var mergedSetting = Object.assign({}, _userSetting, d);
+          mergedSetting.studyInfo = Object.assign(
+            {},
+            _userSetting.studyInfo || {},
+            loadedStudyInfo || {}
+          );
           mergedSetting.dimLabels = Object.assign(
             {},
             _userSetting.dimLabels || {},
-            d.dimLabels || {}
+            loadedDimLabels || {}
           );
           mergedSetting.dimScales = Object.assign(
             {},
             _userSetting.dimScales || {},
-            d.dimScales || {}
+            loadedDimScales || {}
           );
           mergedSetting.dimTicks = Object.assign(
             {},
             _userSetting.dimTicks || {},
-            d.dimTicks || {}
+            loadedDimTicks || {}
           );
           mergedSetting.dimMark = Object.assign(
             {},
             _userSetting.dimMark || {},
-            d.dimMark || {}
+            loadedDimMark || {}
           );
           mergedSetting.dimHidden = Object.assign(
             {},
             _userSetting.dimHidden || {},
-            d.dimHidden || {}
+            loadedDimHidden || {}
           );
           mergedSetting.imageLabels = Object.assign(
             {},
             _userSetting.imageLabels || {},
-            d.imageLabels || {}
+            loadedImageLabels || {}
           );
           mergedSetting.labelSize =
             d.labelSize !== undefined && d.labelSize !== null
@@ -5663,6 +5716,7 @@
 
           // update the global _userSetting
           _userSetting = mergedSetting;
+          setStudyInfo(_userSetting.studyInfo || {});
           // ensure image labels are available before applying settings
           setImageLabels(_userSetting.imageLabels);
           setDimLabels(mergedSetting.dimLabels);
@@ -5723,6 +5777,7 @@
             }, 200);
             // final delayed pass to catch any late renderers
             setTimeout(function () {
+              setStudyInfo(_userSetting.studyInfo || {});
               setDimLabels(_userSetting.dimLabels);
               if (graph) {
                 updateLabels();
