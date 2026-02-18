@@ -455,6 +455,16 @@
       });
     }
 
+    function syncHiddenSettingCheckboxes() {
+      d3.selectAll("#dimSettingList .dim-hidden-toggle").property(
+        "checked",
+        function (d) {
+          var dimName = d && d.name ? d.name : d;
+          return isDimHiddenBySetting(dimName);
+        }
+      );
+    }
+
     function setDimHidden(dimHidden) {
       var cleaned = {};
       d3.keys(dimHidden || {}).forEach(function (key) {
@@ -467,6 +477,7 @@
       _userSetting.dimHiddenNormalized = buildDimHiddenNormalizedMap(cleaned);
 
       updateSliderVisibilityFromSettings();
+      syncHiddenSettingCheckboxes();
 
       if (!graph || typeof graph.dimensions !== "function") return;
       if (typeof dimensions === "undefined" || !Array.isArray(dimensions))
@@ -499,6 +510,8 @@
           enabledNames = [firstAvailable.name];
         }
       }
+
+      syncHiddenSettingCheckboxes();
 
       d3.selectAll("rect.legend").attr("class", function (d) {
         var enabled = d ? d.enabled : false;
@@ -3314,6 +3327,7 @@
             _userSetting.dimHidden
           );
           updateSliderVisibilityFromSettings();
+          syncHiddenSettingCheckboxes();
 
           updateLabels();
           // re-apply custom labels to sliders/scatter after legend toggles
@@ -4596,6 +4610,7 @@
           })
           .append("input")
           .attr("type", "checkbox")
+          .attr("class", "dim-hidden-toggle")
           .property("checked", function (d) {
             return isDimHiddenInNewSetting(d);
           })
@@ -4606,6 +4621,11 @@
             } else {
               clearDimHiddenEntry(d, newUserSetting.dimHidden);
             }
+            setDimHidden(newUserSetting.dimHidden);
+            newUserSetting.dimHidden = Object.assign(
+              {},
+              _userSetting.dimHidden || {}
+            );
           });
 
         // Slider label setting
