@@ -2900,9 +2900,21 @@
         //d3.select("#legend-heading").text("LEGEND");
 
         // get width and height for legend area
-        var legendWidth = d3.select("#legend").style("width").replace("px", "");
-        var legendHeight =
-          d3.select("#sidebar-wrapper").style("height").replace("px", "") / 3;
+        var legendNode = d3.select("#legend").node();
+        var sidebarNode = d3.select("#sidebar-wrapper").node();
+        var legendWidth = parseFloat(d3.select("#legend").style("width"));
+        var sidebarHeight = parseFloat(
+          d3.select("#sidebar-wrapper").style("height")
+        );
+
+        if (!isFinite(legendWidth) || legendWidth <= 0) {
+          legendWidth = legendNode ? legendNode.clientWidth : 220;
+        }
+        if (!isFinite(sidebarHeight) || sidebarHeight <= 0) {
+          sidebarHeight = sidebarNode ? sidebarNode.clientHeight : 600;
+        }
+
+        var legendHeight = Math.max(sidebarHeight / 3, 120);
 
         // legend boxes are diminsions of the graph
         //console.log(Object.keys(graph.dimensions()));
@@ -4341,12 +4353,16 @@
           _userSetting.studyInfo && typeof _userSetting.studyInfo === "object"
             ? _userSetting.studyInfo
             : {};
-        var navStudyName = (d3.select("#navbar-studyInfo h4").text() || "")
-          .toString()
-          .trim();
-        var navStudyDate = (d3.select("#navbar-studyInfo h6").text() || "")
-          .toString()
-          .trim();
+        var navStudyNameNode = d3.select("#navbar-studyInfo h4").node();
+        var navStudyDateNode = d3.select("#navbar-studyInfo h6").node();
+        var navStudyName =
+          navStudyNameNode && navStudyNameNode.textContent
+            ? navStudyNameNode.textContent.toString().trim()
+            : "";
+        var navStudyDate =
+          navStudyDateNode && navStudyDateNode.textContent
+            ? navStudyDateNode.textContent.toString().trim()
+            : "";
         var effectiveStudyName = (
           currentStudyInfo.name !== undefined && currentStudyInfo.name !== null
             ? currentStudyInfo.name
