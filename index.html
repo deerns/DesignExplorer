@@ -4595,15 +4595,24 @@
             }
           );
 
-        // Always open the first settings panel when the dialog opens.
+        // Always open Study Information first when the dialog opens.
         var $allPanels = $("#dimSettingList .panel-collapse");
+        var $studyPanel = $("#settingStudyInfo");
         if ($allPanels.length > 0) {
           if (typeof $allPanels.collapse === "function") {
             $allPanels.collapse("hide");
-            $($allPanels.get(0)).collapse("show");
+            if ($studyPanel.length) {
+              $studyPanel.collapse("show");
+            } else {
+              $($allPanels.get(0)).collapse("show");
+            }
           } else {
             $allPanels.removeClass("in");
-            $($allPanels.get(0)).addClass("in");
+            if ($studyPanel.length) {
+              $studyPanel.addClass("in");
+            } else {
+              $($allPanels.get(0)).addClass("in");
+            }
           }
         }
 
