@@ -164,6 +164,12 @@
       #dimSettingList .panel-primary > .panel-heading a {
         color: #ffffff;
       }
+      #dimSettingList .panel-title a {
+        display: block;
+      }
+      #dimSettingList .panel-heading {
+        cursor: pointer;
+      }
     </style>
 
     <!-- Parallel Coordinates -->
@@ -4541,6 +4547,36 @@
               prefix: "",
             };
           });
+
+        // Make the whole heading area clickable (not only the anchor text).
+        $("#dimSettingList")
+          .off("click.panelHeadingToggle")
+          .on("click.panelHeadingToggle", ".panel-heading", function (e) {
+            if (
+              $(e.target).closest(
+                "a, input, button, select, textarea, label"
+              ).length
+            ) {
+              return;
+            }
+            var $link = $(this).find("a[data-toggle='collapse']").first();
+            if ($link.length) {
+              e.preventDefault();
+              $link.trigger("click");
+            }
+          });
+
+        // Always open the first settings panel when the dialog opens.
+        var $allPanels = $("#dimSettingList .panel-collapse");
+        if ($allPanels.length > 0) {
+          if (typeof $allPanels.collapse === "function") {
+            $allPanels.collapse("hide");
+            $($allPanels.get(0)).collapse("show");
+          } else {
+            $allPanels.removeClass("in");
+            $($allPanels.get(0)).addClass("in");
+          }
+        }
 
         function updateImageLabelsFromInputs() {
           var img1Val = ($("#img1LabelInput").val() || "").trim();
