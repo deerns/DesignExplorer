@@ -5476,10 +5476,11 @@
         if (!chart || typeof chart.dimensions !== "function") return;
         targetMark = targetMark || {};
 
-        d3.keys(targetMark).forEach(function (d) {
-          //update the global _userSetting
-          _userSetting.dimMark[d] = targetMark[d];
-        });
+        // sync global marks to the provided set for this apply cycle
+        _userSetting.dimMark = Object.assign({}, targetMark);
+
+        // clear all rendered marks before re-drawing the current set
+        d3.selectAll("#graph .axis .mark").remove();
 
         //set marks based on global _userSetting
         d3.keys(_userSetting.dimMark).forEach(function (d) {
@@ -5492,9 +5493,19 @@
         if (!dimMark || dimMark.value === undefined || dimMark.value === null)
           return;
 
-        var targetKey = resolveDimKey(dim, chart);
+        // For target marks we use strict key matching to avoid cross-slider mapping.
         var dims = chart.dimensions() || {};
-        var targetDim = dims[targetKey];
+        var requestedKey = (dim || "").toString().trim();
+        if (!requestedKey) return;
+        var targetKey = Object.prototype.hasOwnProperty.call(dims, requestedKey)
+          ? requestedKey
+          : null;
+        if (!targetKey) {
+          targetKey = Object.keys(dims).find(function (k) {
+            return (k || "").toString().trim().toLowerCase() === requestedKey.toLowerCase();
+          });
+        }
+        var targetDim = targetKey ? dims[targetKey] : null;
         if (!targetDim || !targetDim.yscale) return;
 
         var markValue = dimMark.value;
