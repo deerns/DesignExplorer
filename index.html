@@ -158,6 +158,23 @@
       #dataSetting .list-group-item.form-inline .target-remove-btn {
         margin-left: auto;
       }
+      #dataSetting .list-group-item.form-inline.dual-toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        flex-wrap: nowrap;
+      }
+      #dataSetting .list-group-item.form-inline.dual-toggle-row .toggle-option {
+        flex: 1 1 50%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #dataSetting .list-group-item.form-inline.dual-toggle-row .toggle-option.reverse-option {
+        justify-content: center;
+        border-left: 1px solid #dddddd;
+        padding-left: 16px;
+      }
       #showSetting {
         align-items: flex-start;
         justify-content: center;
@@ -4979,14 +4996,19 @@
           .append("ul")
           .attr("class", "list-group");
 
-        panelBodyContent
+        var dualToggleRow = panelBodyContent
           .append("li")
-          .attr("class", "list-group-item form-inline")
-          .call(function (li) {
-            li.append("span")
-              .attr("class", "setting-label")
-              .text("Hidden From DE:");
-          })
+          .attr("class", "list-group-item form-inline dual-toggle-row");
+
+        var hiddenOption = dualToggleRow
+          .append("div")
+          .attr("class", "toggle-option hidden-option");
+        hiddenOption
+          .append("span")
+          .attr("class", "setting-label")
+          .style("min-width", "auto")
+          .text("Hidden From DE:");
+        hiddenOption
           .append("input")
           .attr("type", "checkbox")
           .attr("class", "dim-hidden-toggle")
@@ -5007,14 +5029,15 @@
             );
           });
 
-        panelBodyContent
-          .append("li")
-          .attr("class", "list-group-item form-inline")
-          .call(function (li) {
-            li.append("span")
-              .attr("class", "setting-label")
-              .text("Reverse Axis:");
-          })
+        var reverseOption = dualToggleRow
+          .append("div")
+          .attr("class", "toggle-option reverse-option");
+        reverseOption
+          .append("span")
+          .attr("class", "setting-label")
+          .style("min-width", "auto")
+          .text("Reverse Axis:");
+        reverseOption
           .append("input")
           .attr("type", "checkbox")
           .attr("class", "dim-reversed-toggle")
