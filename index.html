@@ -5471,6 +5471,9 @@
       }
 
       function setAllTargetMarks(chart, targetMark) {
+        if (!chart || typeof chart.dimensions !== "function") return;
+        targetMark = targetMark || {};
+
         d3.keys(targetMark).forEach(function (d) {
           //update the global _userSetting
           _userSetting.dimMark[d] = targetMark[d];
@@ -5483,14 +5486,23 @@
       }
 
       function setMarkOnDim(chart, dim, dimMark) {
-        markValue = dimMark.value;
-        markPrefix = "";
+        if (!chart || typeof chart.dimensions !== "function") return;
+        if (!dimMark || dimMark.value === undefined || dimMark.value === null)
+          return;
+
+        var targetKey = resolveDimKey(dim, chart);
+        var dims = chart.dimensions() || {};
+        var targetDim = dims[targetKey];
+        if (!targetDim || !targetDim.yscale) return;
+
+        var markValue = dimMark.value;
+        var markPrefix = "";
 
         if (dimMark.prefix !== undefined) {
           markPrefix = dimMark.prefix;
         }
 
-        dimID = "dim_" + string_as_unicode_escape(dim);
+        var dimID = "dim_" + string_as_unicode_escape(targetKey);
         //remove the current first
         d3.select("#" + dimID)
           .select(".axis .mark")
@@ -5498,26 +5510,28 @@
 
         if (markValue == "ToBeRemoved") {
           delete _userSetting.dimMark[dim];
+          delete _userSetting.dimMark[targetKey];
         } else {
-          var canvasHeight = d3
-            .select("#graph canvas")
-            .style("height")
-            .replace("px", "");
+          var canvasHeightText = d3.select("#graph canvas").style("height") || "";
+          var canvasHeight = parseFloat(canvasHeightText);
+          if (!isFinite(canvasHeight) || canvasHeight <= 0) {
+            canvasHeight = 0;
+          }
 
-          domain = chart.dimensions()[dim].yscale.domain();
-          yHeight = d3.scale.linear().domain(domain).range([canvasHeight, 0])(
+          var domain = targetDim.yscale.domain();
+          var yHeight = d3.scale.linear().domain(domain).range([canvasHeight, 0])(
             markValue
           );
 
           //add mark
-          var dim = d3
+          var dimSelection = d3
             .select("#" + dimID)
             .select(".axis")
             .append("g")
             .attr("class", "tick mark")
             .attr("transform", "translate(0," + yHeight + ")");
-          dim.append("line").attr("x2", "-8").attr("x1", "8");
-          dim
+          dimSelection.append("line").attr("x2", "-8").attr("x1", "8");
+          dimSelection
             .append("text")
             .attr("x", "-9")
             .attr("y", "0")
