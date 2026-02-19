@@ -198,14 +198,17 @@
         margin-left: 10px;
       }
       #labelSizeRow input[type="range"] {
-        flex: 1 1 60%;
-        min-width: 120px;
+        flex: 1 1 auto;
+        min-width: 140px;
       }
       #labelSizeRow {
-        gap: 12px;
+        gap: 15px;
+        flex-wrap: nowrap;
       }
       #labelSizeValue {
         text-align: right;
+        min-width: 60px;
+        flex: 0 0 60px;
       }
 
       /* match settings panel primary color to project blue */
@@ -1549,29 +1552,16 @@
                           type="text"
                         />
                       </li>
-                      <li
-                        class="list-group-item form-inline"
-                        id="labelSizeRow"
-                        style="
-                          display: flex;
-                          align-items: center;
-                          gap: 10px;
-                          flex-wrap: wrap;
-                        "
-                      >
-                        <span style="min-width: 110px">Label Font Size:</span>
+                      <li class="list-group-item form-inline" id="labelSizeRow">
+                        <span class="setting-label">Label Font Size:</span>
                         <input
                           id="labelSizeSlider"
                           type="range"
                           min="50"
                           max="200"
                           step="1"
-                          style="flex: 1 1 150px"
                         />
-                        <span
-                          id="labelSizeValue"
-                          style="min-width: 60px"
-                        ></span>
+                        <span id="labelSizeValue"></span>
                       </li>
                       <li class="list-group-item form-inline double-input-row password-row">
                         <span class="setting-label">Password:</span>
