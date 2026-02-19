@@ -123,7 +123,8 @@
         margin: 0;
         flex: 0 0 auto;
       }
-      #dataSetting .list-group-item.form-inline .dim-hidden-toggle {
+      #dataSetting .list-group-item.form-inline .dim-hidden-toggle,
+      #dataSetting .list-group-item.form-inline .dim-reversed-toggle {
         margin-left: 0;
         transform: translateX(5px);
       }
@@ -380,6 +381,7 @@
             dimMark: {},
             dimLabels: {},
             dimHidden: {},
+            dimReversed: {},
             imageLabels: {},
             labelSize: "",
           };
@@ -508,6 +510,102 @@
         }
       });
       return map;
+    }
+
+    function buildDimReversedNormalizedMap(dimReversed) {
+      var normalized = {};
+      d3.keys(dimReversed || {}).forEach(function (key) {
+        if (!normalizeDimHiddenValue(dimReversed[key])) return;
+        normalized[normalizeDimKey(key)] = true;
+      });
+      return normalized;
+    }
+
+    function isDimReversedBySetting(dimName, dimReversedMap, normalizedMap) {
+      var map = dimReversedMap || _userSetting.dimReversed || {};
+      var normalized =
+        normalizedMap ||
+        _userSetting.dimReversedNormalized ||
+        buildDimReversedNormalizedMap(map);
+
+      var key = (dimName || "").toString().trim();
+      if (!key) return false;
+      if (normalizeDimHiddenValue(map[key])) return true;
+      return normalized[normalizeDimKey(key)] === true;
+    }
+
+    function clearDimReversedEntry(dimName, dimReversedMap) {
+      var map = dimReversedMap || _userSetting.dimReversed || {};
+      var target = normalizeDimKey(dimName);
+      d3.keys(map).forEach(function (key) {
+        if (normalizeDimKey(key) === target) {
+          delete map[key];
+        }
+      });
+      return map;
+    }
+
+    function isDomainDescending(domain) {
+      if (!domain || domain.length < 2) return false;
+      var first = Number(domain[0]);
+      var last = Number(domain[domain.length - 1]);
+      if (isFinite(first) && isFinite(last)) {
+        return first > last;
+      }
+      return String(domain[0]) > String(domain[domain.length - 1]);
+    }
+
+    function setDimReversed(chart, dimReversed) {
+      var cleaned = {};
+      d3.keys(dimReversed || {}).forEach(function (key) {
+        if (normalizeDimHiddenValue(dimReversed[key])) {
+          cleaned[key] = true;
+        }
+      });
+
+      _userSetting.dimReversed = cleaned;
+      _userSetting.dimReversedNormalized = buildDimReversedNormalizedMap(cleaned);
+
+      d3.selectAll("#dimSettingList .dim-reversed-toggle").property(
+        "checked",
+        function (d) {
+          var dimName = d && d.name ? d.name : d;
+          return isDimReversedBySetting(dimName);
+        }
+      );
+
+      if (!chart || typeof chart.dimensions !== "function") return;
+
+      var dims = chart.dimensions() || {};
+      var changed = false;
+
+      Object.keys(dims).forEach(function (key) {
+        var dim = dims[key];
+        if (!dim || !dim.yscale || typeof dim.yscale.domain !== "function")
+          return;
+
+        var domain = dim.yscale.domain();
+        if (!domain || domain.length < 2) return;
+
+        var shouldBeReversed = isDimReversedBySetting(key);
+        var isReversedNow = isDomainDescending(domain);
+        if (shouldBeReversed !== isReversedNow) {
+          var flippedDomain = domain.slice().reverse();
+          dim.yscale.domain(flippedDomain);
+          if (typeof chart.yscaleDomains === "function") {
+            var yDomains = chart.yscaleDomains() || {};
+            yDomains[key] = flippedDomain;
+            chart.yscaleDomains(yDomains);
+          } else if (chart.yscaleDomains) {
+            chart.yscaleDomains[key] = flippedDomain;
+          }
+          changed = true;
+        }
+      });
+
+      if (changed && typeof chart.updateAxes === "function") {
+        chart.updateAxes();
+      }
     }
 
     function updateSliderVisibilityFromSettings() {
@@ -4436,6 +4534,7 @@
         _userSetting.dimMark = _userSetting.dimMark || {};
         _userSetting.dimLabels = _userSetting.dimLabels || {};
         _userSetting.dimHidden = _userSetting.dimHidden || {};
+        _userSetting.dimReversed = _userSetting.dimReversed || {};
         _userSetting.imageLabels = _userSetting.imageLabels || {};
         var currentStudyInfo =
           _userSetting.studyInfo && typeof _userSetting.studyInfo === "object"
@@ -4497,6 +4596,7 @@
           dimMark: {},
           dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
           dimHidden: Object.assign({}, _userSetting.dimHidden || {}),
+          dimReversed: Object.assign({}, _userSetting.dimReversed || {}),
           imageLabels: effectiveImageLabels,
           labelSize: _userSetting.labelSize || "",
         };
@@ -4787,6 +4887,14 @@
           );
         }
 
+        function isDimReversedInNewSetting(dimName) {
+          return isDimReversedBySetting(
+            dimName,
+            newUserSetting.dimReversed || {},
+            buildDimReversedNormalizedMap(newUserSetting.dimReversed || {})
+          );
+        }
+
         var selectList = dimSettingListDiv
           .selectAll("div.dynamic-dim-panel")
           .data(settingDimKeys)
@@ -4849,6 +4957,34 @@
             newUserSetting.dimHidden = Object.assign(
               {},
               _userSetting.dimHidden || {}
+            );
+          });
+
+        panelBodyContent
+          .append("li")
+          .attr("class", "list-group-item form-inline")
+          .call(function (li) {
+            li.append("span")
+              .attr("class", "setting-label")
+              .text("Reverse Axis:");
+          })
+          .append("input")
+          .attr("type", "checkbox")
+          .attr("class", "dim-reversed-toggle")
+          .property("checked", function (d) {
+            return isDimReversedInNewSetting(d);
+          })
+          .on("change", function (d) {
+            newUserSetting.dimReversed = newUserSetting.dimReversed || {};
+            if (this.checked) {
+              newUserSetting.dimReversed[d] = true;
+            } else {
+              clearDimReversedEntry(d, newUserSetting.dimReversed);
+            }
+            setDimReversed(graph, newUserSetting.dimReversed);
+            newUserSetting.dimReversed = Object.assign(
+              {},
+              _userSetting.dimReversed || {}
             );
           });
 
@@ -5332,6 +5468,7 @@
         var userDimTicks = userSetting.dimTicks || {};
         var userDimLabels = userSetting.dimLabels || {};
         var userDimHidden = userSetting.dimHidden || {};
+        var userDimReversed = userSetting.dimReversed || {};
         var userImageLabels = userSetting.imageLabels || {};
         var userLabelSize = userSetting.labelSize;
         var isThereNewDimTicks = Object.keys(userDimTicks).length > 0;
@@ -5363,6 +5500,7 @@
         }
 
         //set target mark must be after graph.updateAxes();
+        setDimReversed(chart, userDimReversed);
         setAllTargetMarks(chart, userSetting.dimMark);
 
         if (isThereNewDimLabels || userDimLabels) {
@@ -5373,6 +5511,7 @@
         }
 
         setDimHidden(userDimHidden);
+        setDimReversed(chart, _userSetting.dimReversed || {});
         setAllTargetMarks(chart, _userSetting.dimMark || {});
 
         if (hasLabelSize && typeof applyLabelFontSize === "function") {
@@ -5398,6 +5537,7 @@
         setTimeout(function () {
           setDimLabels(_userSetting.dimLabels || {});
           setDimHidden(_userSetting.dimHidden || {});
+          setDimReversed(chart, _userSetting.dimReversed || {});
           setAllTargetMarks(chart, _userSetting.dimMark || {});
           if (graph) {
             updateLabels();
@@ -5829,6 +5969,12 @@
             globalUserSetting.dimHidden[k] = true;
           }
         });
+        globalUserSetting.dimReversed = {};
+        d3.keys(newUserSetting.dimReversed || {}).forEach(function (k) {
+          if (normalizeDimHiddenValue(newUserSetting.dimReversed[k])) {
+            globalUserSetting.dimReversed[k] = true;
+          }
+        });
         globalUserSetting.imageLabels = globalUserSetting.imageLabels || {};
         Object.assign(
           globalUserSetting.imageLabels,
@@ -5924,8 +6070,12 @@
           var loadedDimTicks = asPlainObject(d.dimTicks);
           var loadedDimMark = asPlainObject(d.dimMark);
           var loadedDimHidden = asPlainObject(d.dimHidden);
+          var loadedDimReversed = asPlainObject(d.dimReversed);
           if (Object.keys(loadedDimHidden).length === 0) {
             loadedDimHidden = asPlainObject(d.hiddenDims || d.hiddenDimensions);
+          }
+          if (Object.keys(loadedDimReversed).length === 0) {
+            loadedDimReversed = asPlainObject(d.reversedDims || d.dimFlip);
           }
           var loadedImageLabels = asPlainObject(d.imageLabels);
 
@@ -5960,6 +6110,11 @@
             {},
             _userSetting.dimHidden || {},
             loadedDimHidden || {}
+          );
+          mergedSetting.dimReversed = Object.assign(
+            {},
+            _userSetting.dimReversed || {},
+            loadedDimReversed || {}
           );
           mergedSetting.imageLabels = Object.assign(
             {},
