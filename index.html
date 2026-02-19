@@ -5701,8 +5701,12 @@
           markPrefix = dimMark.prefix;
         }
 
-        var dimID = "dim_" + string_as_unicode_escape(targetKey);
-        var axisSelection = d3.select("#" + dimID).select(".axis");
+        var axisSelection = d3.select("#graph")
+          .selectAll(".dimension")
+          .filter(function (d) {
+            return (d || "").toString() === targetKey;
+          })
+          .select(".axis");
         if (axisSelection.empty()) return;
 
         //remove the current first
