@@ -555,7 +555,7 @@
       return String(domain[0]) > String(domain[domain.length - 1]);
     }
 
-    function setDimReversed(chart, dimReversed) {
+    function setDimReversed(chart, dimReversed, skipAxisUpdate) {
       var cleaned = {};
       d3.keys(dimReversed || {}).forEach(function (key) {
         if (normalizeDimHiddenValue(dimReversed[key])) {
@@ -603,9 +603,10 @@
         }
       });
 
-      if (changed && typeof chart.updateAxes === "function") {
+      if (!skipAxisUpdate && changed && typeof chart.updateAxes === "function") {
         chart.updateAxes();
       }
+      return changed;
     }
 
     function syncDimReversedFromGraph(chart) {
@@ -5524,6 +5525,7 @@
           userLabelSize !== undefined &&
           userLabelSize !== null &&
           String(userLabelSize).trim().length > 0;
+        var reversedChanged = false;
 
         if (isThereNewStudyInfo) {
           setStudyInfo(userSetting.studyInfo);
@@ -5546,7 +5548,8 @@
         }
 
         //set target mark must be after graph.updateAxes();
-        setDimReversed(chart, userDimReversed);
+        reversedChanged =
+          setDimReversed(chart, userDimReversed, true) || reversedChanged;
         setAllTargetMarks(chart, userSetting.dimMark);
 
         if (isThereNewDimLabels || userDimLabels) {
@@ -5557,7 +5560,12 @@
         }
 
         setDimHidden(userDimHidden);
-        setDimReversed(chart, _userSetting.dimReversed || {});
+        reversedChanged =
+          setDimReversed(chart, _userSetting.dimReversed || {}, true) ||
+          reversedChanged;
+        if (reversedChanged && graph && typeof graph.updateAxes === "function") {
+          graph.updateAxes();
+        }
         setAllTargetMarks(chart, _userSetting.dimMark || {});
 
         if (hasLabelSize && typeof applyLabelFontSize === "function") {
@@ -5583,7 +5591,7 @@
         setTimeout(function () {
           setDimLabels(_userSetting.dimLabels || {});
           setDimHidden(_userSetting.dimHidden || {});
-          setDimReversed(chart, _userSetting.dimReversed || {});
+          setDimReversed(chart, _userSetting.dimReversed || {}, true);
           setAllTargetMarks(chart, _userSetting.dimMark || {});
           if (graph) {
             updateLabels();
