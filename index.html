@@ -5373,6 +5373,7 @@
         }
 
         setDimHidden(userDimHidden);
+        setAllTargetMarks(chart, _userSetting.dimMark || {});
 
         if (hasLabelSize && typeof applyLabelFontSize === "function") {
           applyLabelFontSize(userLabelSize);
@@ -5397,6 +5398,7 @@
         setTimeout(function () {
           setDimLabels(_userSetting.dimLabels || {});
           setDimHidden(_userSetting.dimHidden || {});
+          setAllTargetMarks(chart, _userSetting.dimMark || {});
           if (graph) {
             updateLabels();
             refreshGraphLabelsWithRetry(0);
