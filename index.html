@@ -608,6 +608,36 @@
       }
     }
 
+    function syncDimReversedFromGraph(chart) {
+      var activeChart =
+        chart && typeof chart.dimensions === "function" ? chart : graph;
+      if (!activeChart || typeof activeChart.dimensions !== "function") return;
+
+      var dims = activeChart.dimensions() || {};
+      var reversed = {};
+      Object.keys(dims).forEach(function (key) {
+        var dim = dims[key];
+        if (!dim || !dim.yscale || typeof dim.yscale.domain !== "function")
+          return;
+        var domain = dim.yscale.domain();
+        if (!domain || domain.length < 2) return;
+        if (isDomainDescending(domain)) {
+          reversed[key] = true;
+        }
+      });
+
+      _userSetting.dimReversed = reversed;
+      _userSetting.dimReversedNormalized = buildDimReversedNormalizedMap(reversed);
+
+      d3.selectAll("#dimSettingList .dim-reversed-toggle").property(
+        "checked",
+        function (d) {
+          var dimName = d && d.name ? d.name : d;
+          return isDimReversedBySetting(dimName);
+        }
+      );
+    }
+
     function updateSliderVisibilityFromSettings() {
       d3.selectAll("#inputSliders .inputSlider").style("display", function (d) {
         var dimName = d && d.name ? d.name : "";
@@ -2924,6 +2954,21 @@
           refreshGraphLabelsWithRetry(0);
         });
 
+        // Keep dimReversed setting in sync with native axis double-click flips.
+        d3.select("#graph").on("dblclick.dimReverseSync", function () {
+          var e = d3.event;
+          var target = e && e.target ? e.target : null;
+          if (!target) return;
+          var className =
+            target.className && typeof target.className.baseVal === "string"
+              ? target.className.baseVal
+              : target.className || "";
+          if (String(className).indexOf("label") === -1) return;
+          setTimeout(function () {
+            syncDimReversedFromGraph(graph);
+          }, 0);
+        });
+
         updateLabels();
 
         // If dimLabels were loaded before the graph existed, re-apply them now
@@ -4523,6 +4568,7 @@
             : graph && typeof graph.dimensions === "function"
             ? graph
             : null;
+        syncDimReversedFromGraph(currentGraph);
         var dimKeys = currentGraph
           ? d3.keys(currentGraph.dimensions() || {})
           : d3.keys(cleanedKeys4pc || {});
