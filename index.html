@@ -568,12 +568,7 @@
 
       var validDimensions = validDimensionKeys(baseDims, enabledNames);
       if (validDimensions.length > 0) {
-        try {
-          graph.dimensions(toDimensionObject(validDimensions, baseDims));
-        } catch (err) {
-          console.warn("Skipping invalid dimensions during visibility update", err);
-          return;
-        }
+        graph.dimensions(toDimensionObject(validDimensions, baseDims));
         graph.updateAxes();
         if (pcIsColoredBy && validDimensions.indexOf(pcIsColoredBy) === -1) {
           update_colors(validDimensions[0]);
@@ -2086,37 +2081,13 @@
       function hasValidDomain(dim) {
         if (!dim || !dim.yscale || typeof dim.yscale.domain !== "function")
           return false;
-        return normalizeNumericDomainPair(dim.yscale.domain()) !== null;
-      }
-
-      function toFiniteScaleNumber(value) {
-        if (value === undefined || value === null || value === "") return NaN;
-        if (typeof value === "number") return isFinite(value) ? value : NaN;
-        if (value instanceof Date) {
-          var t = value.getTime();
-          return isFinite(t) ? t : NaN;
-        }
-        var raw = String(value).trim();
-        if (!raw) return NaN;
-        var asNumber = Number(raw.replace(/,/g, ""));
-        if (isFinite(asNumber)) return asNumber;
-        var asDate = Date.parse(raw);
-        return isFinite(asDate) ? asDate : NaN;
-      }
-
-      function normalizeNumericDomainPair(domain) {
-        if (!Array.isArray(domain) || domain.length < 2) return null;
-        var a = toFiniteScaleNumber(domain[0]);
-        var b = toFiniteScaleNumber(domain[1]);
-        if (!isFinite(a) || !isFinite(b)) return null;
-
-        // Avoid zero-span domains that can produce invalid transforms.
-        if (a === b) {
-          var delta = a === 0 ? 1 : Math.abs(a) * 0.01;
-          b = a + (delta === 0 ? 1 : delta);
-        }
-
-        return [a, b];
+        var dom = dim.yscale.domain();
+        if (!dom || !dom.length) return false;
+        return dom.every(function (v) {
+          if (v === undefined || v === null || v === "") return false;
+          var num = Number(v);
+          return isFinite(num) || typeof v === "string";
+        });
       }
 
       function validDimensionKeys(baseDims, keys) {
@@ -5434,24 +5405,22 @@
           var targetKey = resolveDimKey(d, chart);
 
           if (!chart.dimensions()[targetKey]) return;
-          var normalizedScale = normalizeNumericDomainPair(scales[d]);
-          if (!normalizedScale) return;
 
           // update scales
-          chart.dimensions()[targetKey].yscale.domain(normalizedScale);
+          chart.dimensions()[targetKey].yscale.domain(scales[d]);
 
           // persist domains if the parcoords instance exposes yscaleDomains
           if (typeof chart.yscaleDomains === "function") {
             var domains = chart.yscaleDomains() || {};
-            domains[targetKey] = normalizedScale;
+            domains[targetKey] = scales[d];
             chart.yscaleDomains(domains);
           } else if (chart.yscaleDomains) {
-            chart.yscaleDomains[targetKey] = normalizedScale;
+            chart.yscaleDomains[targetKey] = scales[d];
           }
 
           //update the global _userSetting
-          _userSetting.dimScales[d] = normalizedScale;
-          _userSetting.dimScales[targetKey] = normalizedScale;
+          _userSetting.dimScales[d] = scales[d];
+          _userSetting.dimScales[targetKey] = scales[d];
         });
       }
 
