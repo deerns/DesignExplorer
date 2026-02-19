@@ -165,6 +165,110 @@ rect.disabled {
     /* overwrite default navbar size */
 }
 
+#PcChartWrapper .btn-group .btn.btn-xs,
+#rightTopButtonGroup .btn.btn-xs {
+    height: 22px;
+    padding: 1px 5px;
+    line-height: 1.5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#PcChartWrapper .btn-group .btn.btn-xs .glyphicon,
+#rightTopButtonGroup .btn.btn-xs .glyphicon {
+    line-height: 1;
+    vertical-align: middle;
+    top: 0;
+}
+
+#rightTopButtonGroup {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+#rightTopButtonGroup > .btn,
+#rightTopButtonGroup > a.btn {
+    flex: 0 0 auto;
+}
+
+#rightTopButtonGroup #copyRightButton {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto !important;
+}
+
+#myStudyID {
+    display: inline-block;
+    max-width: calc(100% - 80px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.inputSliderLabel {
+    display: block;
+    margin-bottom: 4px;
+}
+
+#copy-link.btn.btn-xs {
+    height: 24px;
+    padding: 1px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+#copy-link.btn.btn-xs .glyphicon {
+    line-height: 1;
+    top: 0;
+}
+
+.sorting #reverseSortOrder.btn.btn-xs {
+    height: 24px;
+    padding: 1px 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.sorting select.btn.btn-xs {
+    height: 24px;
+    padding: 1px 6px;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+.sorting #reverseSortOrder .glyphicon {
+    line-height: 1;
+}
+
+#vis .btn.btn-xs,
+.viewer2d .btn.btn-xs {
+    height: 24px;
+    padding: 1px 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+#vis .btn.btn-xs .glyphicon,
+.viewer2d .btn.btn-xs .glyphicon {
+    line-height: 1;
+    top: 0;
+}
+
+.btn .glyphicon-new-window {
+    margin-left: 4px;
+}
+
 .Spectacles_Footer {
     visibility: hidden;
 }

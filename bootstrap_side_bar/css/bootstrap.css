@@ -6563,4 +6563,18 @@ button.close {
     display: none !important;
   }
 }
+
+
+
+
+.viewer2d { display: flex; flex-direction: column; gap: 8px; }
+.viewer2d-main { position: relative; display: flex; align-items: center; justify-content: center; }
+.viewer2d-main img { max-width: 100%; max-height: 70vh; }
+.nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.85); border: 0; font-size: 24px; padding: 6px 10px; cursor: pointer; }
+#imgPrev { left: 8px; }
+#imgNext { right: 8px; }
+.thumbs { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0; }
+.thumbs img { height: 64px; cursor: pointer; opacity: 0.7; border: 2px solid transparent; }
+.thumbs img.active { opacity: 1; border-color: #333; }
+
 /*# sourceMappingURL=bootstrap.css.map */

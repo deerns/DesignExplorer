@@ -1,6 +1,9 @@
 // http://bl.ocks.org/3687826
 d3.divgrid = function(config) {
   var columns = [];
+  var headerFormatter = function (d) {
+    return d;
+  };
 
   var dg = function(selection) {
     if (columns.length == 0) columns = d3.keys(selection.data()[0][0]);
@@ -20,7 +23,7 @@ d3.divgrid = function(config) {
       .classed("cell", true)
 
     selection.selectAll(".header .cell")
-      .text(function(d) { return d; });
+      .text(function(d) { return headerFormatter(d); });
 
     header.exit().remove();
 
@@ -52,6 +55,12 @@ d3.divgrid = function(config) {
   dg.columns = function(_) {
     if (!arguments.length) return columns;
     columns = _;
+    return this;
+  };
+
+  dg.headerFormatter = function(_) {
+    if (!arguments.length) return headerFormatter;
+    headerFormatter = _;
     return this;
   };
 
