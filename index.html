@@ -198,12 +198,17 @@
         margin-left: 10px;
       }
       #labelSizeRow input[type="range"] {
-        flex: 1 1 auto;
-        min-width: 140px;
+        width: 100%;
+        display: block;
+        margin: 0;
       }
       #labelSizeRow {
         gap: 15px;
         flex-wrap: nowrap;
+      }
+      #labelSizeRow .label-size-field {
+        flex: 1 1 auto;
+        min-width: 120px;
       }
       #labelSizeValue {
         text-align: right;
@@ -1554,13 +1559,15 @@
                       </li>
                       <li class="list-group-item form-inline" id="labelSizeRow">
                         <span class="setting-label">Label Font Size:</span>
-                        <input
-                          id="labelSizeSlider"
-                          type="range"
-                          min="50"
-                          max="200"
-                          step="1"
-                        />
+                        <div class="label-size-field">
+                          <input
+                            id="labelSizeSlider"
+                            type="range"
+                            min="50"
+                            max="200"
+                            step="1"
+                          />
+                        </div>
                         <span id="labelSizeValue"></span>
                       </li>
                       <li class="list-group-item form-inline double-input-row password-row">
