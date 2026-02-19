@@ -1017,7 +1017,6 @@ d3.parcoords = function (config) {
         if (typeof animationTime === 'undefined') {
             animationTime = __.animationTime;
         }
-        var useTransition = isFinite(animationTime) && animationTime > 0;
 
         var g_data = pc.svg.selectAll(".dimension").data(pc.getOrderedDimensionKeys());
         //console.log(g_data);
@@ -1049,57 +1048,35 @@ d3.parcoords = function (config) {
 
         // Update
         g_data.attr("opacity", 0);
-        if (useTransition) {
-            g_data.select(".axis")
-                .transition()
-                .duration(animationTime)
-                .each(function (d) {
-                    d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]));
-                });
-            g_data.select(".label")
-                .transition()
-                .duration(animationTime)
-                .text(dimensionLabels)
-                .attr("transform", "translate(0,-5) rotate(" + __.dimensionTitleRotation + ")");
-        } else {
-            g_data.select(".axis")
-                .each(function (d) {
-                    d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]));
-                });
-            g_data.select(".label")
-                .text(dimensionLabels)
-                .attr("transform", "translate(0,-5) rotate(" + __.dimensionTitleRotation + ")");
-        }
+        g_data.select(".axis")
+            .transition()
+            .duration(animationTime)
+            .each(function (d) {
+                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]));
+            });
+        g_data.select(".label")
+            .transition()
+            .duration(animationTime)
+            .text(dimensionLabels)
+            .attr("transform", "translate(0,-5) rotate(" + __.dimensionTitleRotation + ")");
 
         // Exit
         g_data.exit().remove();
 
         g = pc.svg.selectAll(".dimension");
-        if (useTransition) {
-            g.transition().duration(animationTime)
-                .attr("transform", function (p) {
-                    return "translate(" + position(p) + ")";
-                })
-                .style("opacity", 1);
+        g.transition().duration(animationTime)
+            .attr("transform", function (p) {
+                return "translate(" + position(p) + ")";
+            })
+            .style("opacity", 1);
 
-            pc.svg.selectAll(".axis")
-                .transition()
-                .duration(animationTime)
-                .each(function (d) {
-                    //console.log(pc.applyAxisConfig(axis, __.dimensions[d]));
-                    d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]));
-                });
-        } else {
-            g.attr("transform", function (p) {
-                    return "translate(" + position(p) + ")";
-                })
-                .style("opacity", 1);
-
-            pc.svg.selectAll(".axis")
-                .each(function (d) {
-                    d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]));
-                });
-        }
+        pc.svg.selectAll(".axis")
+            .transition()
+            .duration(animationTime)
+            .each(function (d) {
+                //console.log(pc.applyAxisConfig(axis, __.dimensions[d]));
+                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]));
+            });
 
         if (flags.brushable) pc.brushable();
         if (flags.reorderable) pc.reorderable();

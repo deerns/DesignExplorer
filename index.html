@@ -656,7 +656,7 @@
         ) {
           setAllTicks(graph, _userSetting.dimTicks);
         }
-        graph.updateAxes(0);
+        graph.updateAxes();
         if (
           _userSetting &&
           _userSetting.dimMark &&
@@ -3491,7 +3491,7 @@
             .render()
             .interactive()
             .reorderable();
-          graph.updateAxes(0);
+          graph.updateAxes();
           //updateRadarChart();                   //-----TODO:here needs a switch for different charts-------
           updateScatterChart();
           updateLayoutOnDeselect();
@@ -4467,7 +4467,7 @@
               toDimensionObject(Object.keys(cleanedKeys4pc), graph.dimensions())
             );
             graph.scale("Rating", [0, 5]);
-            graph.updateAxes(0);
+            graph.updateAxes();
             firstRating = false;
           }
 
@@ -5483,7 +5483,7 @@
 
         if (isThereNewDimScales || isThereNewDimTicks) {
           //only redraw the graph if any defined
-          graph.updateAxes(0);
+          graph.updateAxes();
 
           //chart.reRender();
           update_colors(pcIsColoredBy);
