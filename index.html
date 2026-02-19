@@ -5306,16 +5306,6 @@
           }
         });
 
-        // Click on gray backdrop applies settings (same as Apply button)
-        d3.select("#showSetting").on("click.applyOnBackdrop", function () {
-          var e = d3.event;
-          if (!e || e.target !== this) return;
-          var btn = d3.select("#dataSetting #setUserSetting").node();
-          if (btn && typeof btn.click === "function") {
-            btn.click();
-          }
-        });
-
         d3.select("#dataSetting  #saveUserSetting").on("click", function (d) {
           d3.selectAll(".slider-label-input").each(function (dimName) {
             var value = (d3.select(this).property("value") || "").trim();
