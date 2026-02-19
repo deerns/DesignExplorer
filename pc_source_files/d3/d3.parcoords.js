@@ -231,18 +231,12 @@ d3.parcoords = function (config) {
     }
     /** adjusts an axis' default range [h()+1, 1] if a NullValueSeparator is set */
     function getRange() {
-        var base = h() + 1;
-        if (!isFinite(base)) {
-            // Prevent invalid axis transforms when container height is temporarily unavailable.
-            base = 1;
-        }
-
         if (__.nullValueSeparator == "bottom") {
-            return [base - __.nullValueSeparatorPadding.bottom - __.nullValueSeparatorPadding.top, 1];
+            return [h() + 1 - __.nullValueSeparatorPadding.bottom - __.nullValueSeparatorPadding.top, 1];
         } else if (__.nullValueSeparator == "top") {
-            return [base, 1 + __.nullValueSeparatorPadding.bottom + __.nullValueSeparatorPadding.top];
+            return [h() + 1, 1 + __.nullValueSeparatorPadding.bottom + __.nullValueSeparatorPadding.top];
         }
-        return [base, 1];
+        return [h() + 1, 1];
     }
 
     pc.autoscale = function () {
@@ -250,43 +244,13 @@ d3.parcoords = function (config) {
         var defaultScales = {
             "date": function (k) {
                 var counts = {};
-                var rawDomain = [];
-                var dateValues = [];
-
-                __.data.forEach(function (d) {
-                    var raw = d[k];
-                    if (raw !== undefined && raw !== null && raw !== "") {
-                        if (counts[raw] === undefined) {
-                            counts[raw] = 1;
-                            rawDomain.push(raw);
-                        } else {
-                            counts[raw] = counts[raw] + 1;
-                        }
-                    }
-
-                    var timeValue = null;
-                    if (raw instanceof Date) {
-                        timeValue = raw.getTime();
-                    } else if (raw !== undefined && raw !== null && raw !== "") {
-                        var parsed = Date.parse(raw);
-                        if (isFinite(parsed)) timeValue = parsed;
-                    }
-                    if (isFinite(timeValue)) {
-                        dateValues.push(timeValue);
-                    }
+                var extent = d3.extent(__.data, function (d) {
+                    counts[d[k]] ++;
+                    return d[k] ? d[k].getTime() : null;
                 });
-
-                var extent = d3.extent(dateValues);
 
                 var tickKeys = Object.keys(counts);
                 __.yscaleTicks[k] = {name:k, namewithnospace:k, originalTickValues:tickKeys, tickValues:tickKeys};
-
-                if (!extent || !isFinite(extent[0]) || !isFinite(extent[1])) {
-                    __.dimensions[k].type = "string";
-                    return d3.scale.ordinal()
-                        .domain(rawDomain.length ? rawDomain : [""])
-                        .rangePoints(getRange());
-                }
 
                 // special case if single value
                 if (extent[0] === extent[1]) {
@@ -296,65 +260,26 @@ d3.parcoords = function (config) {
                 }
                 
                 if (__.yscaleDomains[k] !== undefined) {
-                    var userDateDomain = __.yscaleDomains[k];
-                    if (userDateDomain && userDateDomain.length >= 2) {
-                        var d0 = userDateDomain[0] instanceof Date ? userDateDomain[0].getTime() : Date.parse(userDateDomain[0]);
-                        var d1 = userDateDomain[1] instanceof Date ? userDateDomain[1].getTime() : Date.parse(userDateDomain[1]);
-                        if (isFinite(d0) && isFinite(d1)) {
-                            extent = [d0, d1];
-                        }
-                    }
+                    extent = __.yscaleDomains[k];
                 }
 
                 return d3.time.scale()
-                    .domain([new Date(extent[0]), new Date(extent[1])])
+                    .domain(extent)
                     .range(getRange());
             },
             "number": function (k) {
                 var counts = {};
-                var numericValues = [];
-                var rawDomain = [];
 
-                __.data.forEach(function (d) {
-                    var raw = d[k];
-                    if (raw !== undefined && raw !== null && raw !== "") {
-                        if (counts[raw] === undefined) {
-                            counts[raw] = 1;
-                            rawDomain.push(raw);
-                        } else {
-                            counts[raw] = counts[raw] + 1;
-                        }
-                    }
-
-                    var num = +raw;
-                    if (isFinite(num)) {
-                        numericValues.push(num);
-                    }
+                var extent = d3.extent(__.data, function (d) {
+                    counts[d[k]] ++;
+                    return +d[k];
                 });
 
                 var tickKeys = Object.keys(counts);
                 __.yscaleTicks[k] = {name:k, namewithnospace:k, originalTickValues:tickKeys, tickValues:tickKeys};
 
-                var extent = d3.extent(numericValues);
-
                 if (k == "Rating") {
                     extent = [0, 5];
-                }
-
-                // Respect user domain only when it's a valid numeric pair
-                if (__.yscaleDomains[k] !== undefined) { //yscalDomains is set by user or flipped
-                    var ud = __.yscaleDomains[k];
-                    if (ud && ud.length >= 2 && isFinite(+ud[0]) && isFinite(+ud[1])) {
-                        extent = [+ud[0], +ud[1]];
-                    }
-                }
-
-                // If no valid numeric extent is available, fallback to ordinal
-                if (!extent || !isFinite(extent[0]) || !isFinite(extent[1])) {
-                    __.dimensions[k].type = "string";
-                    return d3.scale.ordinal()
-                        .domain(rawDomain.length ? rawDomain : [""])
-                        .rangePoints(getRange());
                 }
 
                 // special case if single value
@@ -362,6 +287,11 @@ d3.parcoords = function (config) {
                     return d3.scale.ordinal()
                         .domain([extent[0]])
                         .rangePoints(getRange());
+                }
+
+                if (__.yscaleDomains[k] !== undefined) { //yscalDomains is set by user or flipped
+                    extent = __.yscaleDomains[k];
+                    //console.log(extent);
                 }
 
                 return d3.scale.linear()
@@ -1093,18 +1023,10 @@ d3.parcoords = function (config) {
         //console.log(dimension.tickValues);
         //console.log(dimension.tickFormat);
 
-        var ticks = dimension.tickValues;
-        if (Array.isArray(ticks) && ticks.length && dimension.yscale) {
-            ticks = ticks.filter(function (v) {
-                var y = dimension.yscale(v);
-                return isFinite(y);
-            });
-        }
-
         return axis.scale(dimension.yscale)
             .orient(dimension.orient)
             .ticks(dimension.ticks)
-            .tickValues((Array.isArray(ticks) && ticks.length) ? ticks : null)
+            .tickValues(dimension.tickValues)
             .innerTickSize(dimension.innerTickSize)
             .outerTickSize(dimension.outerTickSize)
             .tickPadding(dimension.tickPadding)
