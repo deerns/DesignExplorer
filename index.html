@@ -5505,30 +5505,22 @@
         }
 
         var dimID = "dim_" + string_as_unicode_escape(targetKey);
+        var axisSelection = d3.select("#" + dimID).select(".axis");
+        if (axisSelection.empty()) return;
+
         //remove the current first
-        d3.select("#" + dimID)
-          .select(".axis .mark")
-          .remove();
+        axisSelection.select(".mark").remove();
 
         if (markValue == "ToBeRemoved") {
           delete _userSetting.dimMark[dim];
           delete _userSetting.dimMark[targetKey];
         } else {
-          var canvasHeightText = d3.select("#graph canvas").style("height") || "";
-          var canvasHeight = parseFloat(canvasHeightText);
-          if (!isFinite(canvasHeight) || canvasHeight <= 0) {
-            canvasHeight = 0;
-          }
-
-          var domain = targetDim.yscale.domain();
-          var yHeight = d3.scale.linear().domain(domain).range([canvasHeight, 0])(
-            markValue
-          );
+          // Use the dimension y-scale directly; avoids dependence on CSS canvas height.
+          var yHeight = targetDim.yscale(markValue);
+          if (!isFinite(yHeight)) return;
 
           //add mark
-          var dimSelection = d3
-            .select("#" + dimID)
-            .select(".axis")
+          var dimSelection = axisSelection
             .append("g")
             .attr("class", "tick mark")
             .attr("transform", "translate(0," + yHeight + ")");
