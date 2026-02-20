@@ -320,6 +320,8 @@
         height: 100% !important;
         min-width: 0 !important;
         object-fit: contain;
+        background-image: none !important;
+        background-color: #ffffff !important;
       }
 
       #viewer2d .viewer2d-main.compare-active.compare-has-images #viewer2d-mainimg,
@@ -2118,9 +2120,11 @@
         d3.select("#thumbnails-btm_container").classed("onRight", true);
 
         // push the image to zoomed viewer2d area
-        d3.select("#viewer2d-mainimg")
-          .attr("src", pickImageForView(selectedDatum, getActiveThumbView()))
-          .attr("title", getTitle(selectedDatum));
+        setViewerImage(
+          "#viewer2d-mainimg",
+          pickImageForView(selectedDatum, getActiveThumbView()),
+          getTitle(selectedDatum)
+        );
         updateViewer2dCompareState(selectedDatum);
 
         updateIterationData(selectedImage.data());
@@ -4413,9 +4417,11 @@
             currentView && currentView.indexOf("2D_") === 0
               ? currentView
               : "2D_1";
-          d3.select("#viewer2d-mainimg")
-            .attr("src", pickImageForView(selectedData, current2dView))
-            .attr("title", getTitle(selectedData));
+          setViewerImage(
+            "#viewer2d-mainimg",
+            pickImageForView(selectedData, current2dView),
+            getTitle(selectedData)
+          );
           updateViewer2dCompareState(selectedData);
 
           if (currentView == "3D") loadNew3DModel();
@@ -4509,6 +4515,33 @@
         return null;
       }
 
+      function getLeafPlaceholderUrl() {
+        return "img/Deerns_Leaf.jpg";
+      }
+
+      function isLeafPlaceholderUrl(url) {
+        var normalized = (url || "").toString().toLowerCase();
+        return normalized.indexOf("deerns_leaf") >= 0;
+      }
+
+      function resolveViewerImageUrl(url) {
+        var cleanUrl = (url || "").toString().trim();
+        return cleanUrl.length > 0 ? cleanUrl : getLeafPlaceholderUrl();
+      }
+
+      function setViewerImage(selector, url, title) {
+        var finalUrl = resolveViewerImageUrl(url);
+        var isPlaceholder = isLeafPlaceholderUrl(finalUrl);
+        d3.select(selector)
+          .attr("src", finalUrl)
+          .attr("title", title || "")
+          .classed("no-image-placeholder", isPlaceholder);
+        return {
+          src: finalUrl,
+          isPlaceholder: isPlaceholder,
+        };
+      }
+
       function updatePinnedSliderMarkers() {
         drawPinnedReferenceLineInPc();
       }
@@ -4541,29 +4574,37 @@
         var splitActive = !!pinnedComparisonData && !!selected && in2dMode;
         var currentUrl = "";
         var pinnedUrl = "";
+        var currentImageState = null;
+        var pinnedImageState = null;
 
         d3.select(".viewer2d-main").classed("compare-active", splitActive);
         d3.select(".compare-pane-pinned").classed("hidden", !splitActive);
 
         if (selected && in2dMode) {
           currentUrl = pickImageForView(selected, activeViewKey) || "";
-          d3.select("#viewer2d-mainimg")
-            .attr("src", currentUrl || "")
-            .attr("title", getTitle(selected));
+          currentImageState = setViewerImage(
+            "#viewer2d-mainimg",
+            currentUrl,
+            getTitle(selected)
+          );
         }
 
         if (splitActive) {
           pinnedUrl = pickImageForView(pinnedComparisonData, activeViewKey) || "";
-          d3.select("#viewer2d-pinnedimg")
-            .attr("src", pinnedUrl || "")
-            .attr("title", getTitle(pinnedComparisonData));
+          pinnedImageState = setViewerImage(
+            "#viewer2d-pinnedimg",
+            pinnedUrl,
+            getTitle(pinnedComparisonData)
+          );
         } else {
           d3.select("#viewer2d-pinnedimg").attr("src", "").attr("title", "");
         }
 
         d3.select(".viewer2d-main").classed(
           "compare-has-images",
-          splitActive && (currentUrl.length > 0 || pinnedUrl.length > 0)
+          splitActive &&
+            ((currentImageState && !currentImageState.isPlaceholder) ||
+              (pinnedImageState && !pinnedImageState.isPlaceholder))
         );
 
         updatePinnedSliderMarkers();
@@ -4792,11 +4833,7 @@
 
         if (selected) {
           var url = pickImageForView(selected, viewValue);
-          if (url) {
-            d3.select("#viewer2d-mainimg")
-              .attr("src", url)
-              .attr("title", getTitle(selected));
-          }
+          setViewerImage("#viewer2d-mainimg", url, getTitle(selected));
         }
 
         if (graph && typeof updateImageGrid === "function") {
@@ -4828,11 +4865,7 @@
 
           if (selected) {
             var url = pickImageForView(selected, viewKey);
-            if (url) {
-              d3.select("#viewer2d-mainimg")
-                .attr("src", url)
-                .attr("title", getTitle(selected));
-            }
+            setViewerImage("#viewer2d-mainimg", url, getTitle(selected));
           }
           currentView = viewValue; // keep the active 2D toggle
 
