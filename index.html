@@ -75,6 +75,14 @@
         margin: 0;
       }
 
+      #vis form.compareActions {
+        margin: 2px 0 0;
+      }
+
+      #pinCompareToggle {
+        white-space: nowrap;
+      }
+
       /* give thumb toggles the same readable spacing as main toggles */
       #thumbViewControls label {
         display: inline-flex;
@@ -255,6 +263,64 @@
       /* keep legend disabled boxes visible as empty checkboxes */
       #legend rect.disabled {
         fill: #ffffff !important;
+      }
+
+      #viewer2d .viewer2d-main {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        gap: 0;
+        height: 100%;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane {
+        position: relative;
+        flex: 1 1 100%;
+        min-width: 0;
+      }
+
+      #viewer2d .viewer2d-main.compare-active .compare-pane {
+        flex-basis: 50%;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-pinned {
+        border-right: 2px solid #d0021b;
+      }
+
+      #viewer2d .viewer2d-main:not(.compare-active) .compare-pane-current .compare-badge {
+        display: none;
+      }
+
+      #viewer2d .viewer2d-main .compare-badge {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        z-index: 3;
+        background: rgba(255, 255, 255, 0.9);
+        color: #333333;
+        font-size: 11px;
+        line-height: 1;
+        padding: 4px 7px;
+        border-radius: 10px;
+      }
+
+      #viewer2d-mainimg,
+      #viewer2d-pinnedimg {
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        object-fit: contain;
+      }
+
+      #inputSliders .irs .pinned-slider-marker {
+        position: absolute;
+        top: 2px;
+        bottom: 2px;
+        width: 2px;
+        background: #d0021b;
+        z-index: 5;
+        pointer-events: none;
+        display: none;
       }
     </style>
 
@@ -1348,6 +1414,15 @@
                   <input class="star" type="radio" name="rating" value="4" />
                   <input class="star" type="radio" name="rating" value="5" />
                 </form>
+                <form class="compareActions">
+                  <button
+                    type="button"
+                    class="btn btn-default btn-xs hidden"
+                    id="pinCompareToggle"
+                  >
+                    Vastzetten om te vergelijken
+                  </button>
+                </form>
                 <form class="dropdown imgSwitch"></form>
               </div>
               <div
@@ -1360,11 +1435,21 @@
               <div id="viewer2d" class="viewer2d">
                 <div id="viewer2d-toggles"></div>
                 <div class="viewer2d-main">
-                  <!--<button id="imgPrev" class="nav-btn" title="Vorige">‹</button>-->
-                  <img id="viewer2d-mainimg" src="" alt="2D view" />
-                  <button id="imgNext" class="nav-btn" title="Volgende">
-                    ›
-                  </button>
+                  <div class="compare-pane compare-pane-current">
+                    <span class="compare-badge">Huidig</span>
+                    <img id="viewer2d-mainimg" src="" alt="2D view" />
+                    <button id="imgNext" class="nav-btn" title="Volgende">
+                      ›
+                    </button>
+                  </div>
+                  <div class="compare-pane compare-pane-pinned hidden">
+                    <span class="compare-badge">Vastgezet</span>
+                    <img
+                      id="viewer2d-pinnedimg"
+                      src=""
+                      alt="Vastgezette 2D view"
+                    />
+                  </div>
                 </div>
                 <div id="viewer2d-thumbs" class="thumbs"></div>
               </div>
@@ -1929,6 +2014,7 @@
           .classed("toggled", isToggled)
           .transition()
           .duration(300); //length of toggle animation
+        setTimeout(updatePinnedSliderMarkers, 320);
       });
 
       $("#scatter-menu-toggle, .scatter-matrix-control").click(function (e) {
@@ -1986,6 +2072,7 @@
       // update layout on select
       function updateLayoutOnSelect() {
         var selectedImage = d3.select(this);
+        var selectedDatum = selectedImage.datum();
 
         // highlight the line graph
         graph.highlight(selectedImage.data());
@@ -2004,14 +2091,10 @@
         d3.select("#thumbnails-btm_container").classed("onRight", true);
 
         // push the image to zoomed viewer2d area
-        d3.select("#viewer2d")
-          .select("img")
-          .data(selectedImage.data())
-          .attr("src", function () {
-            var viewKey = getActiveThumbView();
-            return pickImageForView(selectedImage.datum(), viewKey);
-          })
-          .attr("title", getTitle);
+        d3.select("#viewer2d-mainimg")
+          .attr("src", pickImageForView(selectedDatum, getActiveThumbView()))
+          .attr("title", getTitle(selectedDatum));
+        updateViewer2dCompareState(selectedDatum);
 
         updateIterationData(selectedImage.data());
 
@@ -2106,6 +2189,8 @@
 
         d3.select("#IterationData").style("display", "none");
 
+        pinnedComparisonData = null;
+
         // unhighlight the line graph
         graph.unhighlight();
 
@@ -2122,6 +2207,7 @@
         isAnyItemSelected = false;
 
         updateThumbVisibility();
+        updateViewer2dCompareState(null);
       }
 
       // hide/show parallel coordinates
@@ -3681,6 +3767,7 @@
     <script>
       function loadDataToDesignExplorer(data) {
         overwriteInitialGlobalValues();
+        pinnedComparisonData = null;
 
         // analyze data and separate them as input/output and general data
         analyzeInputData(data);
@@ -3722,6 +3809,7 @@
 
         // set up events between graphs
         setupEvents();
+        updateViewer2dCompareState(null);
 
         //lazy load
         // $(function() {
@@ -3905,6 +3993,7 @@
         });
 
         updateSliderVisibilityFromSettings();
+        updatePinnedSliderMarkers();
       }
 
       function updateSlidersTickValues(unbrushedData) {
@@ -3971,6 +4060,7 @@
           // update current values
           updateSlidersValue(graph.highlighted()[0]);
         }
+        updatePinnedSliderMarkers();
       }
 
       function disableAllSliders() {
@@ -4023,6 +4113,7 @@
               from: info.tickValues.indexOf(value), //update the value
             });
         });
+        updatePinnedSliderMarkers();
       }
 
       function updateSliderValue(changedSliderName, newValue) {
@@ -4053,15 +4144,14 @@
           updateIterationData([selectedData]);
 
           // push the image to zoomed area
-          d3.select("#viewer2d")
-            .select("img")
-            .attr("src", function () {
-              var viewKey =
-                currentView && currentView.indexOf("2D_") === 0
-                  ? currentView
-                  : "2D_1";
-              return pickImageForView(selectedData, viewKey);
-            });
+          var current2dView =
+            currentView && currentView.indexOf("2D_") === 0
+              ? currentView
+              : "2D_1";
+          d3.select("#viewer2d-mainimg")
+            .attr("src", pickImageForView(selectedData, current2dView))
+            .attr("title", getTitle(selectedData));
+          updateViewer2dCompareState(selectedData);
 
           if (currentView == "3D") loadNew3DModel();
 
@@ -4122,6 +4212,180 @@
       var initit3DViewer = true;
       var fullscreen = false;
       var va3cViewer;
+      var pinnedComparisonData = null;
+
+      function getSelectedDatum() {
+        if (!graph) return null;
+        if (typeof graph.highlight === "function") {
+          var highlighted = graph.highlight();
+          if (highlighted && highlighted.length > 0) {
+            return highlighted[0];
+          }
+        }
+        if (typeof graph.highlighted === "function") {
+          var alt = graph.highlighted();
+          if (alt && alt.length > 0) {
+            return alt[0];
+          }
+        }
+        return null;
+      }
+
+      function findSliderValueIndex(values, targetValue) {
+        if (!values || values.length === 0) return -1;
+        var targetText = String(targetValue);
+        for (var i = 0; i < values.length; i++) {
+          if (String(values[i]) === targetText) {
+            return i;
+          }
+        }
+
+        var targetNum = Number(targetValue);
+        if (!isFinite(targetNum)) return -1;
+
+        var bestIdx = -1;
+        var bestDistance = Infinity;
+        for (var j = 0; j < values.length; j++) {
+          var valNum = Number(values[j]);
+          if (!isFinite(valNum)) continue;
+          var distance = Math.abs(valNum - targetNum);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestIdx = j;
+          }
+        }
+        return bestIdx;
+      }
+
+      function updatePinnedSliderMarkers() {
+        if (!Array.isArray(slidersInfo)) return;
+
+        slidersInfo.forEach(function (info) {
+          var input = $("#" + info.namewithnospace);
+          if (!input.length) return;
+
+          var irs = input.next(".irs");
+          if (!irs.length) return;
+
+          var marker = irs.find(".pinned-slider-marker");
+          if (!marker.length) {
+            marker = $('<span class="pinned-slider-marker"></span>').appendTo(
+              irs
+            );
+          }
+
+          if (!pinnedComparisonData) {
+            marker.hide();
+            return;
+          }
+
+          var values =
+            (info.tickValues && info.tickValues.length
+              ? info.tickValues
+              : info.originalTickValues) || [];
+          if (!values.length) {
+            marker.hide();
+            return;
+          }
+
+          var pinnedValue = pinnedComparisonData[info.name];
+          if (
+            pinnedValue === undefined ||
+            pinnedValue === null ||
+            pinnedValue === ""
+          ) {
+            marker.hide();
+            return;
+          }
+
+          var idx = findSliderValueIndex(values, pinnedValue);
+          if (idx < 0) {
+            marker.hide();
+            return;
+          }
+
+          var line = irs.find(".irs-line");
+          if (!line.length || line.outerWidth() <= 0) {
+            marker.hide();
+            return;
+          }
+
+          var ratio = values.length <= 1 ? 0 : idx / (values.length - 1);
+          var left = line.position().left + ratio * line.outerWidth();
+
+          marker.css("left", left + "px").show();
+        });
+      }
+
+      function updatePinCompareButton() {
+        var button = d3.select("#pinCompareToggle");
+        if (button.empty()) return;
+
+        var selectionCount = 0;
+        if (graph && typeof graph.highlight === "function") {
+          var highlighted = graph.highlight();
+          selectionCount = highlighted && highlighted.length ? highlighted.length : 0;
+        } else if (graph && typeof graph.highlighted === "function") {
+          var altHighlighted = graph.highlighted();
+          selectionCount =
+            altHighlighted && altHighlighted.length ? altHighlighted.length : 0;
+        }
+        var hasSelection = selectionCount === 1;
+        button.classed("hidden", !hasSelection);
+        if (!hasSelection) return;
+
+        button
+          .classed("btn-default", !pinnedComparisonData)
+          .classed("btn-primary", !!pinnedComparisonData)
+          .text(
+            pinnedComparisonData
+              ? "Vergelijking losmaken"
+              : "Vastzetten om te vergelijken"
+          );
+      }
+
+      function updateViewer2dCompareState(selectedDatum) {
+        var selected =
+          arguments.length > 0 ? selectedDatum : getSelectedDatum();
+        var is2dView = currentView && currentView.indexOf("2D_") === 0;
+        var activeViewKey = is2dView ? currentView : getActiveThumbView();
+        var splitActive = !!pinnedComparisonData && !!selected && is2dView;
+
+        d3.select(".viewer2d-main").classed("compare-active", splitActive);
+        d3.select(".compare-pane-pinned").classed("hidden", !splitActive);
+
+        if (selected && is2dView) {
+          var currentUrl = pickImageForView(selected, activeViewKey);
+          d3.select("#viewer2d-mainimg")
+            .attr("src", currentUrl || "")
+            .attr("title", getTitle(selected));
+        }
+
+        if (splitActive) {
+          var pinnedUrl = pickImageForView(pinnedComparisonData, activeViewKey);
+          d3.select("#viewer2d-pinnedimg")
+            .attr("src", pinnedUrl || "")
+            .attr("title", getTitle(pinnedComparisonData));
+        } else {
+          d3.select("#viewer2d-pinnedimg").attr("src", "").attr("title", "");
+        }
+
+        updatePinnedSliderMarkers();
+        updatePinCompareButton();
+      }
+
+      function togglePinnedComparison() {
+        var selected = getSelectedDatum();
+        if (!selected) return;
+
+        if (pinnedComparisonData) {
+          pinnedComparisonData = null;
+        } else {
+          pinnedComparisonData = Object.assign({}, selected);
+        }
+
+        updateViewer2dCompareState(selected);
+      }
 
       // Initiate 3D viewer
       function initiate3DViewer() {
@@ -4185,6 +4449,9 @@
       d3.selectAll("input.toggleView").on("change", toggleView);
       d3.selectAll("input.thumbToggleView").on("change", toggleThumbView);
       d3.select("#viewer2d-mainimg").on("click", cycle2DImage);
+      d3.select("#imgNext").on("click", cycle2DImage);
+      d3.select("#pinCompareToggle").on("click", togglePinnedComparison);
+      updatePinCompareButton();
 
       function getCanonicalImageKey(toggleValue) {
         if (!toggleValue || typeof toggleValue !== "string") return null;
@@ -4309,7 +4576,9 @@
         if (selected) {
           var url = pickImageForView(selected, viewValue);
           if (url) {
-            d3.select("#viewer2d img").attr("src", url).attr("title", getTitle);
+            d3.select("#viewer2d-mainimg")
+              .attr("src", url)
+              .attr("title", getTitle(selected));
           }
         }
 
@@ -4318,10 +4587,16 @@
             graph.brushed && graph.brushed() ? graph.brushed() : graph.data();
           updateImageGrid(dataForGrid, false);
         }
+
+        updateViewer2dCompareState(selected);
       }
 
       function toggleView() {
         var viewValue = this.value;
+        var selected =
+          graph && graph.highlight && graph.highlight().length
+            ? graph.highlight()[0]
+            : null;
 
         if (viewValue.indexOf("2D_") === 0) {
           var viewKey = viewValue;
@@ -4334,16 +4609,12 @@
             }
           );
 
-          var selected =
-            graph && graph.highlight && graph.highlight().length
-              ? graph.highlight()[0]
-              : null;
           if (selected) {
             var url = pickImageForView(selected, viewKey);
             if (url) {
-              d3.select("#viewer2d img")
+              d3.select("#viewer2d-mainimg")
                 .attr("src", url)
-                .attr("title", getTitle);
+                .attr("title", getTitle(selected));
             }
           }
           currentView = viewValue; // onthoud welke 2D toggle actief is
@@ -4380,6 +4651,8 @@
         if (va3cViewer !== undefined) {
           va3cViewer.viewerDiv.resize();
         }
+
+        updateViewer2dCompareState(selected);
       }
 
       function cycle2DImage() {
@@ -4473,6 +4746,8 @@
         } else {
           va3cViewer.viewerDiv.resize();
         }
+
+        setTimeout(updatePinnedSliderMarkers, 0);
       }
     </script>
 
