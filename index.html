@@ -3659,10 +3659,13 @@
 
           var diff = currentNum - pinnedNum;
           if (Math.abs(diff) < 1e-10) return "0";
-          if (Math.abs(diff - Math.round(diff)) < 1e-10) {
-            return String(Math.round(diff));
-          }
-          return diff.toFixed(3).replace(/\.?0+$/, "");
+
+          var formatted =
+            Math.abs(diff - Math.round(diff)) < 1e-10
+              ? String(Math.round(diff))
+              : diff.toFixed(3).replace(/\.?0+$/, "");
+
+          return diff > 0 ? "+" + formatted : formatted;
         }
 
         function getParamClass(key) {
