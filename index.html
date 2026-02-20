@@ -341,6 +341,14 @@
         font-size: 12px;
       }
 
+      #IterationData .attr-compare-table td.attr-param.attr-input {
+        color: black;
+      }
+
+      #IterationData .attr-compare-table td.attr-param.attr-output {
+        color: steelblue;
+      }
+
       #graph #pinnedReferenceCanvas {
         position: absolute;
         pointer-events: none;
@@ -3608,6 +3616,14 @@
         var pinnedData = pinnedComparisonData || null;
         var keyOrder = [];
         var keySet = {};
+        var inputLabels =
+          Array.isArray(inputData) && inputData.length > 0
+            ? d3.keys(inputData[0])
+            : [];
+        var outputLabels =
+          Array.isArray(outputData) && outputData.length > 0
+            ? d3.keys(outputData[0])
+            : [];
 
         function addKey(key) {
           var rawKey = (key || "").toString();
@@ -3649,6 +3665,13 @@
           return diff.toFixed(3).replace(/\.?0+$/, "");
         }
 
+        function getParamClass(key) {
+          var k = (key || "").toString().trim();
+          if (outputLabels.indexOf(k) !== -1) return "attr-output";
+          if (inputLabels.indexOf(k) !== -1) return "attr-input";
+          return "attr-input";
+        }
+
         var headerHtml = pinnedData
           ? "<tr><th>Parameter</th><th>Pinned</th><th>Current</th><th>Diff</th></tr>"
           : "<tr><th>Parameter</th><th>Value</th></tr>";
@@ -3665,9 +3688,12 @@
                 ? ""
                 : pinnedData[key];
             var diffVal = formatDiffValue(currentVal, pinnedVal);
+            var paramClass = getParamClass(key);
 
             return pinnedData
-              ? "<tr><td><strong>" +
+              ? "<tr><td class='attr-param " +
+                  paramClass +
+                  "'><strong>" +
                   label +
                   "</strong></td><td>" +
                   pinnedVal +
@@ -3676,7 +3702,9 @@
                   "</td><td>" +
                   diffVal +
                   "</td></tr>"
-              : "<tr><td><strong>" +
+              : "<tr><td class='attr-param " +
+                  paramClass +
+                  "'><strong>" +
                   label +
                   "</strong></td><td>" +
                   currentVal +
