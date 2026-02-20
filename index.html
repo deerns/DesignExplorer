@@ -350,6 +350,14 @@
       #graph > svg {
         z-index: 3;
       }
+
+      .scatter-matrix-container circle.pinned {
+        fill: #ffa300 !important;
+        fill-opacity: 1 !important;
+        stroke: #d98600;
+        stroke-width: 1.5px;
+        r: 4;
+      }
     </style>
 
     <!-- Parallel Coordinates -->
@@ -1981,6 +1989,7 @@
         );
 
         scatterChart = sm;
+        updatePinnedScatterDot();
 
         //return sm;
       }
@@ -2007,6 +2016,20 @@
         data.forEach(function (d) {
           d3.selectAll("#" + getCircleID(d)).attr("visibility", "shown");
         });
+
+        updatePinnedScatterDot();
+      }
+
+      function updatePinnedScatterDot() {
+        d3.selectAll(".cell circle").classed("pinned", false);
+        if (!pinnedComparisonData) return;
+
+        var pinnedId = getCircleID(pinnedComparisonData);
+        if (!pinnedId) return;
+
+        d3.selectAll("#" + pinnedId)
+          .classed("pinned", true)
+          .attr("visibility", "shown");
       }
 
       function highlightScatterDot() {
@@ -2020,10 +2043,12 @@
             d3.selectAll("#" + getCircleID(d)).classed("highlighted", true);
           });
         }
+        updatePinnedScatterDot();
       }
 
       function unlighlightScatter() {
         d3.selectAll(".cell circle").classed("highlighted", false);
+        updatePinnedScatterDot();
       }
     </script>
 
@@ -3366,6 +3391,7 @@
         d3.selectAll(".cell circle").style("fill", function (d) {
           return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
         });
+        updatePinnedScatterDot();
       }
     </script>
 
@@ -4609,6 +4635,7 @@
 
         updatePinnedSliderMarkers();
         updatePinCompareButton();
+        updatePinnedScatterDot();
 
         if (selected) {
           updateIterationData([selected]);
