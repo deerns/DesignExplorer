@@ -94,10 +94,15 @@
       #thumbViewControls input.thumbToggleView {
         margin: 0;
       }
-            /* keep main image labels spaced like thumb controls */
+      /* keep main image labels spaced like thumb controls */
       #IMG1Label,
       #IMG2Label,
       #IMG3Label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #threeDLabel {
         display: inline-flex;
         align-items: center;
         gap: 8px;
@@ -277,6 +282,7 @@
         position: relative;
         flex: 1 1 100%;
         min-width: 0;
+        overflow: hidden;
       }
 
       #viewer2d .viewer2d-main.compare-active .compare-pane {
@@ -324,10 +330,101 @@
         background-color: #ffffff !important;
       }
 
+      #viewer2d .viewer2d-main .compare-pane-current #viewer2d-multi {
+        display: none;
+        width: 100%;
+        height: 100%;
+        gap: 8px;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-current.multi-active #viewer2d-mainimg {
+        display: none;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-current.multi-active #viewer2d-multi {
+        display: grid;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-current.multi-active #imgNext {
+        display: none;
+      }
+
+      #viewer2d .viewer2d-main.compare-active #imgNext {
+        display: none;
+      }
+
+      #viewer2d .viewer2d-gallery-item {
+        position: relative;
+        min-width: 0;
+        height: 100%;
+      }
+
+      #viewer2d .viewer2d-gallery-item .viewer2d-gallery-label {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        z-index: 3;
+        background: rgba(255, 255, 255, 0.92);
+        color: #333333;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1;
+        padding: 3px 6px;
+        border-radius: 10px;
+      }
+
+      #viewer2d .viewer2d-gallery-item img {
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        object-fit: contain;
+        background-image: none !important;
+        background-color: #ffffff !important;
+      }
+
       #viewer2d .viewer2d-main.compare-active.compare-has-images #viewer2d-mainimg,
       #viewer2d .viewer2d-main.compare-active.compare-has-images #viewer2d-pinnedimg {
         background-image: none !important;
         background-color: #ffffff !important;
+      }
+
+      #thumbnails-btm_container.onRight {
+        overflow: visible !important;
+        transform: translateX(calc(100% - 34px));
+        transition: transform 0.25s ease;
+      }
+
+      #thumbnails-btm_container.onRight:hover,
+      #thumbnails-btm_container.onRight:focus-within {
+        transform: translateX(0);
+      }
+
+      #thumbnailsPullTab {
+        position: absolute;
+        left: -34px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 34px;
+        height: 120px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid #cccccc;
+        border-right: 0;
+        border-radius: 8px 0 0 8px;
+        color: #444444;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        z-index: 3;
+      }
+
+      #thumbnails-btm_container.onRight #thumbnailsPullTab {
+        display: inline-flex;
       }
 
       #IterationData .attr-compare-table {
@@ -1369,10 +1466,9 @@
                 <form>
                   <label id="IMG1Label"
                     ><input
-                      type="radio"
+                      type="checkbox"
                       class="toggleView"
                       data-debug-group="vis-main"
-                      name="visMode"
                       value="2D_1"
                       id="IMG_1"
                       checked
@@ -1384,10 +1480,9 @@
 
                   <label id="IMG2Label"
                     ><input
-                      type="radio"
+                      type="checkbox"
                       class="toggleView"
                       data-debug-group="vis-main"
-                      name="visMode"
                       value="2D_2"
                       id="IMG_2"
                     />
@@ -1395,10 +1490,9 @@
                   >
                   <label id="IMG3Label"
                     ><input
-                      type="radio"
+                      type="checkbox"
                       class="toggleView"
                       data-debug-group="vis-main"
-                      name="visMode"
                       value="2D_3"
                       id="IMG_3"
                     />
@@ -1409,7 +1503,7 @@
                       type="radio"
                       class="toggleView"
                       data-debug-group="vis-main"
-                      name="visMode"
+                      name="visMode3D"
                       value="3D"
                       id="threeDRadio"
                     />
@@ -1482,6 +1576,7 @@
                   <div class="compare-pane compare-pane-current">
                     <span class="compare-badge">Current</span>
                     <img id="viewer2d-mainimg" src="" alt="2D view" />
+                    <div id="viewer2d-multi"></div>
                     <button id="imgNext" class="nav-btn" title="Next">
                       ›
                     </button>
@@ -1501,6 +1596,7 @@
 
             <!--Here starts the thumbnails-btm_container-->
             <div class="col-lg-12" id="thumbnails-btm_container">
+              <div id="thumbnailsPullTab" title="Show thumbnails">Thumbnails</div>
               <div class="col-lg-12 sorting"></div>
               <div class="col-lg-12" id="thumbnails-btm"></div>
             </div>
@@ -2150,7 +2246,9 @@
         d3.select("#zoomedArea").style("height", thumbnailsHeight + "px");
 
         // move btm thumbnail to right
-        d3.select("#thumbnails-btm_container").classed("onRight", true);
+        d3.select("#thumbnails-btm_container")
+          .classed("onRight", true)
+          .classed("drawer-open", false);
 
         // push the image to zoomed viewer2d area
         setViewerImage(
@@ -2246,6 +2344,7 @@
           // .attr("class","col-lg-12")
           // .select("#thumbnails-btm")
           .classed("onRight", false);
+        d3.select("#thumbnails-btm_container").classed("drawer-open", false);
 
         // // hide side thumbnail
         // d3.select("#thumbnails-side_container")
@@ -2490,10 +2589,26 @@
         d3.select("#IMG2Label").classed("hidden", !hasSecondImg);
         if (hasSecondImg) {
           $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
+        } else {
+          d3.select("#IMG_2").property("checked", false);
         }
         d3.select("#IMG3Label").classed("hidden", !hasThirdImg);
         if (hasThirdImg) {
           $("#IMG3LabelText").text(getImageLabel("IMG_3", defaultLabel3));
+        } else {
+          d3.select("#IMG_3").property("checked", false);
+        }
+
+        if (!d3.select("#IMG_1").property("checked")) {
+          var anyChecked = false;
+          d3.selectAll("input.toggleView").filter(function () {
+            return this.value && this.value.indexOf("2D_") === 0;
+          }).each(function () {
+            if (this.checked) anyChecked = true;
+          });
+          if (!anyChecked) {
+            d3.select("#IMG_1").property("checked", true);
+          }
         }
 
         // thumbnails toggle (only when multiple image columns)
@@ -4092,7 +4207,12 @@
         activeSelectedData = null;
         currentView = "2D_1";
         currentThumbView = "2D_1";
-        d3.select("input.toggleView[value='2D_1']").property("checked", true);
+        d3.selectAll("input.toggleView").filter(function () {
+          return this.value && this.value.indexOf("2D_") === 0;
+        }).property("checked", function () {
+          return this.value === "2D_1";
+        });
+        d3.select("#threeDRadio").property("checked", false);
 
         // analyze data and separate them as input/output and general data
         analyzeInputData(data);
@@ -4621,29 +4741,102 @@
           );
       }
 
+      function renderViewer2dMultiImages(selected, viewKeys) {
+        var gallery = d3.select("#viewer2d-multi");
+        var currentPane = d3.select(".compare-pane-current");
+        var shouldShow = !!selected && Array.isArray(viewKeys) && viewKeys.length > 1;
+
+        currentPane.classed("multi-active", shouldShow);
+        if (!shouldShow) {
+          gallery.selectAll("*").remove();
+          return {
+            hasNonPlaceholder: false,
+          };
+        }
+
+        gallery.style(
+          "grid-template-columns",
+          "repeat(" + viewKeys.length + ", minmax(0, 1fr))"
+        );
+
+        var items = gallery
+          .selectAll(".viewer2d-gallery-item")
+          .data(viewKeys, function (d) {
+            return d;
+          });
+
+        items.exit().remove();
+
+        var entered = items
+          .enter()
+          .append("div")
+          .attr("class", "viewer2d-gallery-item");
+        entered.append("span").attr("class", "viewer2d-gallery-label");
+        entered.append("img");
+
+        var merged = gallery.selectAll(".viewer2d-gallery-item");
+        var hasNonPlaceholder = false;
+        merged.select(".viewer2d-gallery-label").text(function (viewKey) {
+          var canonical = getCanonicalImageKey(viewKey) || "IMG_1";
+          var fallbackIdx =
+            parseInt((viewKey || "").replace("2D_", ""), 10) || 1;
+          return getImageLabel(canonical, "#" + fallbackIdx);
+        });
+
+        merged.select("img").each(function (viewKey) {
+          var url = pickImageForView(selected, viewKey) || "";
+          var state = setViewerImage(this, url, getTitle(selected));
+          if (!state.isPlaceholder) {
+            hasNonPlaceholder = true;
+          }
+        });
+
+        return {
+          hasNonPlaceholder: hasNonPlaceholder,
+        };
+      }
+
       function updateViewer2dCompareState(selectedDatum) {
         var selected =
           arguments.length > 0 ? selectedDatum : getSelectedDatum();
         var in2dMode = is2dView(currentView);
+        var checkedViews = in2dMode ? getChecked2dViews(selected) : [];
         var activeViewKey = in2dMode
-          ? normalize2dView(currentView)
+          ? getPrimaryChecked2dView(selected, normalize2dView(currentView))
           : getActiveThumbView();
         var splitActive = !!pinnedComparisonData && !!selected && in2dMode;
+        var useMultiCurrent = !!selected && in2dMode && !splitActive && checkedViews.length > 1;
         var currentUrl = "";
         var pinnedUrl = "";
         var currentImageState = null;
         var pinnedImageState = null;
+        var multiState = null;
 
         d3.select(".viewer2d-main").classed("compare-active", splitActive);
         d3.select(".compare-pane-pinned").classed("hidden", !splitActive);
+        d3.select("#imgNext").classed("hidden", splitActive || useMultiCurrent);
+
+        if (in2dMode) {
+          currentView = activeViewKey;
+          currentThumbView = activeViewKey;
+          syncThumbToggleFromMain(activeViewKey);
+        }
 
         if (selected && in2dMode) {
-          currentUrl = pickImageForView(selected, activeViewKey) || "";
-          currentImageState = setViewerImage(
-            "#viewer2d-mainimg",
-            currentUrl,
-            getTitle(selected)
+          multiState = renderViewer2dMultiImages(
+            selected,
+            useMultiCurrent ? checkedViews : []
           );
+          if (!useMultiCurrent) {
+            currentUrl = pickImageForView(selected, activeViewKey) || "";
+            currentImageState = setViewerImage(
+              "#viewer2d-mainimg",
+              currentUrl,
+              getTitle(selected)
+            );
+          }
+        } else {
+          renderViewer2dMultiImages(null, []);
         }
 
         if (splitActive) {
@@ -4662,6 +4855,10 @@
           splitActive &&
             ((currentImageState && !currentImageState.isPlaceholder) ||
               (pinnedImageState && !pinnedImageState.isPlaceholder))
+        );
+        d3.select(".viewer2d-main").classed(
+          "multi-has-images",
+          !splitActive && !!multiState && !!multiState.hasNonPlaceholder
         );
 
         updatePinnedSliderMarkers();
@@ -4863,6 +5060,99 @@
         );
       }
 
+      function getRawChecked2dViews() {
+        var checked = [];
+        d3.selectAll("input.toggleView").filter(function () {
+          return this.value && this.value.indexOf("2D_") === 0;
+        }).each(function () {
+          if (this.checked) {
+            checked.push(this.value);
+          }
+        });
+        return checked;
+      }
+
+      function getChecked2dViews(selectedData) {
+        var checked = getRawChecked2dViews().filter(function (viewKey) {
+          return hasAliasForToggle(viewKey);
+        });
+
+        if (selectedData) {
+          checked = checked.filter(function (viewKey) {
+            return hasImageForToggle(viewKey, selectedData);
+          });
+        }
+
+        if (checked.length > 0) {
+          return checked;
+        }
+
+        var fallbackViews = ["2D_1", "2D_2", "2D_3"].filter(function (viewKey) {
+          return hasAliasForToggle(viewKey);
+        });
+        if (selectedData) {
+          fallbackViews = fallbackViews.filter(function (viewKey) {
+            return hasImageForToggle(viewKey, selectedData);
+          });
+        }
+        return fallbackViews.length > 0 ? [fallbackViews[0]] : ["2D_1"];
+      }
+
+      function setChecked2dViews(viewKeys) {
+        var set = {};
+        (viewKeys || []).forEach(function (viewKey) {
+          set[viewKey] = true;
+        });
+        d3.selectAll("input.toggleView").filter(function () {
+          return this.value && this.value.indexOf("2D_") === 0;
+        }).property("checked", function () {
+          return !!set[this.value];
+        });
+      }
+
+      function ensureAtLeastOneChecked2d(preferredView, selectedData) {
+        var checked = getRawChecked2dViews();
+        if (checked.length > 0) return;
+
+        var fallback =
+          preferredView && preferredView.indexOf("2D_") === 0
+            ? preferredView
+            : null;
+        if (!fallback || !hasAliasForToggle(fallback)) {
+          fallback = getChecked2dViews(selectedData)[0];
+        }
+
+        var fallbackInput = d3.select(
+          "input.toggleView[value='" + fallback + "']"
+        );
+        if (!fallbackInput.empty()) {
+          fallbackInput.property("checked", true);
+        }
+      }
+
+      function getPrimaryChecked2dView(selectedData, preferredView) {
+        var checked = getChecked2dViews(selectedData);
+        if (preferredView && checked.indexOf(preferredView) !== -1) {
+          return preferredView;
+        }
+        var thumbPreferred = getActiveThumbView();
+        if (checked.indexOf(thumbPreferred) !== -1) {
+          return thumbPreferred;
+        }
+        var currentPreferred = normalize2dView(currentView);
+        if (checked.indexOf(currentPreferred) !== -1) {
+          return currentPreferred;
+        }
+        return checked[0];
+      }
+
+      function syncThumbToggleFromMain(viewKey) {
+        if (!viewKey || viewKey.indexOf("2D_") !== 0) return;
+        d3.selectAll("input.thumbToggleView").property("checked", function () {
+          return this.value === viewKey;
+        });
+      }
+
       function toggleThumbView() {
         var viewValue = this.value;
         if (!viewValue || viewValue.indexOf("2D_") !== 0) {
@@ -4871,17 +5161,12 @@
 
         currentThumbView = viewValue;
 
-        // sync main 2D toggle if we are in a 2D mode
+        // Sync main 2D checkbox for the selected thumbnail mode.
         var mainToggle = d3.select(
           "input.toggleView[value='" + viewValue + "']"
         );
-        if (
-          !mainToggle.empty() &&
-          currentView &&
-          currentView.indexOf("3D") !== 0
-        ) {
+        if (!mainToggle.empty()) {
           mainToggle.property("checked", true);
-          currentView = viewValue;
         }
 
         var selected =
@@ -4889,10 +5174,10 @@
             ? graph.highlight()[0]
             : null;
 
-        if (selected) {
-          var url = pickImageForView(selected, viewValue);
-          setViewerImage("#viewer2d-mainimg", url, getTitle(selected));
+        if (currentView !== "3D") {
+          currentView = getPrimaryChecked2dView(selected, viewValue);
         }
+        syncThumbToggleFromMain(currentView);
 
         if (graph && typeof updateImageGrid === "function") {
           var dataForGrid =
@@ -4911,23 +5196,25 @@
             : null;
 
         if (viewValue.indexOf("2D_") === 0) {
-          var viewKey = viewValue;
-          currentThumbView = viewKey;
-          // keep thumbnail radio in sync with the main 2D selection
-          d3.selectAll("input.thumbToggleView").property(
-            "checked",
-            function () {
-              return this.value === viewKey;
+          d3.select("#threeDRadio").property("checked", false);
+
+          if (
+            this &&
+            this.type &&
+            this.type.toLowerCase() === "checkbox"
+          ) {
+            if (!this.checked) {
+              ensureAtLeastOneChecked2d(viewValue, selected);
             }
-          );
-
-          if (selected) {
-            var url = pickImageForView(selected, viewKey);
-            setViewerImage("#viewer2d-mainimg", url, getTitle(selected));
+            currentView = getPrimaryChecked2dView(selected, viewValue);
+          } else {
+            setChecked2dViews([viewValue]);
+            currentView = viewValue;
           }
-          currentView = viewValue; // keep the active 2D toggle
+          currentThumbView = currentView;
+          syncThumbToggleFromMain(currentView);
 
-          // refresh thumbnails to match the chosen 2D column
+          // Refresh thumbnails to match the chosen 2D column.
           if (graph && typeof updateImageGrid === "function") {
             var dataForGrid =
               graph.brushed && graph.brushed() ? graph.brushed() : graph.data();
@@ -4944,15 +5231,13 @@
           }
         }
 
-        var onOff = {
-          "2D_1": ["zoomed", "viewer3d"],
-          "2D_2": ["zoomed", "viewer3d"],
-          "2D_3": ["zoomed", "viewer3d"],
-          "3D": ["viewer3d", "zoomed"],
-        };
-
-        d3.select("#" + onOff[currentView][0]).attr("class", "zoomed");
-        d3.select("#" + onOff[currentView][1]).attr("class", "zoomed hidden");
+        if (currentView === "3D") {
+          d3.select("#viewer3d").attr("class", "zoomed");
+          d3.select("#zoomed").attr("class", "zoomed hidden");
+        } else {
+          d3.select("#zoomed").attr("class", "zoomed");
+          d3.select("#viewer3d").attr("class", "zoomed hidden");
+        }
 
         d3.select(".Spectacles_Footer").remove();
 
@@ -4985,12 +5270,18 @@
           return;
         }
 
-        var currentIndex = available.indexOf(currentView);
+        var checkedViews = getChecked2dViews(selected);
+        if (checkedViews.length !== 1) {
+          return;
+        }
+
+        var currentIndex = available.indexOf(checkedViews[0]);
         if (currentIndex === -1) {
           currentIndex = 0;
         }
 
         var nextValue = available[(currentIndex + 1) % available.length];
+        setChecked2dViews([nextValue]);
         var nextInput = d3.select(
           "input.toggleView[value='" + nextValue + "']"
         );
