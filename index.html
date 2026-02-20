@@ -317,6 +317,23 @@
         object-fit: contain;
       }
 
+      #viewer2d .viewer2d-main.compare-active.compare-has-images #viewer2d-mainimg,
+      #viewer2d .viewer2d-main.compare-active.compare-has-images #viewer2d-pinnedimg {
+        background-image: none !important;
+        background-color: #ffffff !important;
+      }
+
+      #IterationData .attr-compare-table {
+        margin-bottom: 0;
+      }
+
+      #IterationData .attr-compare-table th,
+      #IterationData .attr-compare-table td {
+        padding: 4px 6px;
+        vertical-align: top;
+        font-size: 12px;
+      }
+
       #graph #pinnedReferenceCanvas {
         position: absolute;
         pointer-events: none;
@@ -1312,7 +1329,7 @@
                       class="btn btn-default btn-xs"
                       id="attr-collapse-toggle"
                       aria-label="Toggle attributes"
-                      title="Verberg attributen"
+                      title="Hide attributes"
                     >
                       <span
                         class="glyphicon glyphicon-chevron-up"
@@ -1424,7 +1441,7 @@
                     class="btn btn-default btn-xs hidden"
                     id="pinCompareToggle"
                   >
-                    Vastzetten om te vergelijken
+                    Pin To Compare
                   </button>
                 </form>
                 <form class="dropdown imgSwitch"></form>
@@ -1440,18 +1457,18 @@
                 <div id="viewer2d-toggles"></div>
                 <div class="viewer2d-main">
                   <div class="compare-pane compare-pane-current">
-                    <span class="compare-badge">Huidig</span>
+                    <span class="compare-badge">Current</span>
                     <img id="viewer2d-mainimg" src="" alt="2D view" />
-                    <button id="imgNext" class="nav-btn" title="Volgende">
+                    <button id="imgNext" class="nav-btn" title="Next">
                       ›
                     </button>
                   </div>
                   <div class="compare-pane compare-pane-pinned hidden">
-                    <span class="compare-badge">Vastgezet</span>
+                    <span class="compare-badge">Pinned</span>
                     <img
                       id="viewer2d-pinnedimg"
                       src=""
-                      alt="Vastgezette 2D view"
+                      alt="Pinned 2D view"
                     />
                   </div>
                 </div>
@@ -3544,25 +3561,83 @@
       }
 
       function updateIterationData(dataObj) {
-        // get title for each image
-        var title = [];
-        var data = dataObj[0];
-        d3.keys(data).forEach(function (key) {
+        var currentData =
+          dataObj && dataObj.length
+            ? dataObj[0]
+            : dataObj || (typeof getSelectedDatum === "function" ? getSelectedDatum() : null);
+        if (!currentData) {
+          d3.select("#IterationData").style("display", "none");
+          return;
+        }
+
+        var pinnedData = pinnedComparisonData || null;
+        var keyOrder = [];
+        var keySet = {};
+
+        function addKey(key) {
+          var rawKey = (key || "").toString();
+          var lower = rawKey.toLowerCase();
           if (
-            !String(key).startsWith("img") &&
-            !String(key).startsWith("threeD") &&
-            !String(key).startsWith("scid")
+            lower.indexOf("img") === 0 ||
+            lower.indexOf("threed") === 0 ||
+            lower.indexOf("scid") === 0
           ) {
-            var info =
-              "<strong>" + getDimLabel(key) + "</strong>" + " : " + data[key];
-            title.push(info);
+            return;
           }
-        });
+          if (keySet[rawKey]) return;
+          keySet[rawKey] = true;
+          keyOrder.push(rawKey);
+        }
+
+        d3.keys(currentData).forEach(addKey);
+        if (pinnedData) {
+          d3.keys(pinnedData).forEach(addKey);
+        }
+
+        var headerHtml = pinnedData
+          ? "<tr><th>Parameter</th><th>Current</th><th>Pinned</th></tr>"
+          : "<tr><th>Parameter</th><th>Value</th></tr>";
+
+        var bodyHtml = keyOrder
+          .map(function (key) {
+            var label = getDimLabel(key);
+            var currentVal =
+              currentData[key] === undefined || currentData[key] === null
+                ? ""
+                : currentData[key];
+            var pinnedVal =
+              !pinnedData || pinnedData[key] === undefined || pinnedData[key] === null
+                ? ""
+                : pinnedData[key];
+
+            return pinnedData
+              ? "<tr><td><strong>" +
+                  label +
+                  "</strong></td><td>" +
+                  currentVal +
+                  "</td><td>" +
+                  pinnedVal +
+                  "</td></tr>"
+              : "<tr><td><strong>" +
+                  label +
+                  "</strong></td><td>" +
+                  currentVal +
+                  "</td></tr>";
+          })
+          .join("");
+
+        var tableHtml =
+          '<table class="table table-condensed table-striped attr-compare-table">' +
+          "<thead>" +
+          headerHtml +
+          "</thead><tbody>" +
+          bodyHtml +
+          "</tbody></table>";
 
         d3.select("#IterationData")
           .style("display", "block")
-          .select("p")
-          .html(title.join("<br>"));
+          .select(".panel-body")
+          .html(tableHtml);
       }
 
       $(function () {
@@ -3576,7 +3651,7 @@
             .toggleClass("glyphicon-chevron-down", !isOpen);
           $attrToggle.attr(
             "title",
-            isOpen ? "Verberg attributen" : "Toon attributen"
+            isOpen ? "Hide attributes" : "Show attributes"
           );
         }
 
@@ -4423,8 +4498,8 @@
           .classed("btn-primary", !!pinnedComparisonData)
           .text(
             pinnedComparisonData
-              ? "Vergelijking losmaken"
-              : "Vastzetten om te vergelijken"
+              ? "Unpin Comparison"
+              : "Pin To Compare"
           );
       }
 
@@ -4436,19 +4511,21 @@
           ? normalize2dView(currentView)
           : getActiveThumbView();
         var splitActive = !!pinnedComparisonData && !!selected && in2dMode;
+        var currentUrl = "";
+        var pinnedUrl = "";
 
         d3.select(".viewer2d-main").classed("compare-active", splitActive);
         d3.select(".compare-pane-pinned").classed("hidden", !splitActive);
 
         if (selected && in2dMode) {
-          var currentUrl = pickImageForView(selected, activeViewKey);
+          currentUrl = pickImageForView(selected, activeViewKey) || "";
           d3.select("#viewer2d-mainimg")
             .attr("src", currentUrl || "")
             .attr("title", getTitle(selected));
         }
 
         if (splitActive) {
-          var pinnedUrl = pickImageForView(pinnedComparisonData, activeViewKey);
+          pinnedUrl = pickImageForView(pinnedComparisonData, activeViewKey) || "";
           d3.select("#viewer2d-pinnedimg")
             .attr("src", pinnedUrl || "")
             .attr("title", getTitle(pinnedComparisonData));
@@ -4456,8 +4533,17 @@
           d3.select("#viewer2d-pinnedimg").attr("src", "").attr("title", "");
         }
 
+        d3.select(".viewer2d-main").classed(
+          "compare-has-images",
+          splitActive && (currentUrl.length > 0 || pinnedUrl.length > 0)
+        );
+
         updatePinnedSliderMarkers();
         updatePinCompareButton();
+
+        if (selected) {
+          updateIterationData([selected]);
+        }
       }
 
       function togglePinnedComparison() {
@@ -4720,7 +4806,7 @@
                 .attr("title", getTitle(selected));
             }
           }
-          currentView = viewValue; // onthoud welke 2D toggle actief is
+          currentView = viewValue; // keep the active 2D toggle
 
           // refresh thumbnails to match the chosen 2D column
           if (graph && typeof updateImageGrid === "function") {
