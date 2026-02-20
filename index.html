@@ -6372,6 +6372,80 @@
         });
       }
 
+      function getScatterVariableOrder() {
+        if (
+          typeof scatterChart !== "undefined" &&
+          scatterChart &&
+          Array.isArray(scatterChart.__numeric_variables) &&
+          scatterChart.__numeric_variables.length > 0
+        ) {
+          return scatterChart.__numeric_variables.slice();
+        }
+
+        var domOrder = [];
+        d3.selectAll(".scatter-matrix-variable-control label").each(function (d) {
+          if (d !== undefined && d !== null) {
+            domOrder.push(String(d));
+          }
+        });
+        if (domOrder.length > 0) {
+          return domOrder;
+        }
+
+        if (!graph || typeof graph.data !== "function") {
+          return [];
+        }
+        var rows = graph.data() || [];
+        if (!rows.length) return [];
+        return Object.keys(rows[0]).filter(function (k) {
+          var v = rows[0][k];
+          return v !== null && v !== "" && !isNaN(+v);
+        });
+      }
+
+      function getScatterVariableIndex(name) {
+        var key = (name || "").toString();
+        if (!key) return null;
+        var order = getScatterVariableOrder();
+        var idx = order.indexOf(key);
+        return idx >= 0 ? idx + 1 : null;
+      }
+
+      function updateScatterVariableChecklistLabels() {
+        d3.selectAll(".scatter-matrix-variable-control label").text(function (d) {
+          var key = (d || "").toString();
+          var idx = getScatterVariableIndex(key);
+          var prefix = idx !== null ? idx + ": " : "";
+          return prefix + getDimLabel(key);
+        });
+      }
+
+      function updateScatterCellAxisTitles() {
+        d3.selectAll(".scatter-matrix-svg g.cell text").text(function (d) {
+          var el = d3.select(this);
+          var current = (el.text() || "").trim();
+          var transform = el.attr("transform") || "";
+
+          // Only rewrite axis titles ("n: ..."), leave drill/filter lines untouched.
+          var isAxisTitle = /^\s*\d+\s*:/.test(current);
+          if (!isAxisTitle) {
+            return current;
+          }
+
+          var isYAxisTitle = transform.indexOf("rotate(-90)") >= 0;
+          var key =
+            d && (isYAxisTitle ? d.y : d.x)
+              ? isYAxisTitle
+                ? d.y
+                : d.x
+              : current.replace(/^\s*\d+\s*:\s*/, "").trim();
+
+          var idx = getScatterVariableIndex(key);
+          var prefix = idx !== null ? idx + ": " : "";
+          return prefix + getDimLabel(key);
+        });
+      }
+
       function setDimLabels(dimLabels) {
         dimLabels = dimLabels || {};
 
@@ -6425,12 +6499,7 @@
         });
 
         // Update scatter variable checklist labels
-        d3.selectAll(".scatter-matrix-variable-control label").text(function (
-          d,
-          i
-        ) {
-          return i + 1 + ": " + getDimLabel(d);
-        });
+        updateScatterVariableChecklistLabels();
 
         // Update scatter filter headers
         d3.selectAll(".scatter-matrix-filter-control p").each(function () {
@@ -6443,16 +6512,7 @@
         });
 
         // Update scatter cell axis titles (x/y labels inside cells)
-        d3.selectAll(".scatter-matrix-svg g.cell text").text(function (d) {
-          var current = d3.select(this).text();
-          var prefix =
-            current.indexOf(":") >= 0 ? current.split(":")[0] + ": " : "";
-          var key = d && d.y ? d.y : d && d.x ? d.x : null;
-          if (!key) {
-            return current;
-          }
-          return prefix + getDimLabel(key);
-        });
+        updateScatterCellAxisTitles();
 
         // Update parallel coordinates axis labels
         d3.selectAll(".dimension text.label").text(function (d) {
@@ -6489,32 +6549,10 @@
 
       // Apply custom labels to scatter matrix after render
       function updateScatterLabels() {
-        // relabel only the scatter cell titles; leave tick labels untouched
-        d3.selectAll(".scatter-matrix-svg g.cell text").text(function () {
-          var current = d3.select(this).text() || "";
-          var cellData = d3.select(this.parentNode).datum() || {};
-          var field = cellData.y || cellData.x || null;
-
-          // preserve numeric prefix if present
-          var matchPrefix = current.match(/^\s*(\d+)\s*:\s*/);
-          var prefix = matchPrefix ? matchPrefix[1] + ": " : "";
-
-          var name = field
-            ? field
-            : matchPrefix
-            ? current.replace(/^\s*\d+\s*:\s*/, "")
-            : current.trim();
-
-          return prefix + getDimLabel(name);
-        });
+        updateScatterCellAxisTitles();
 
         // variable checklist
-        d3.selectAll(".scatter-matrix-variable-control label").text(function (
-          d,
-          i
-        ) {
-          return i + 1 + ": " + getDimLabel(d);
-        });
+        updateScatterVariableChecklistLabels();
 
         // filter headers
         d3.selectAll(".scatter-matrix-filter-control p").each(function () {
