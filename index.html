@@ -3599,8 +3599,28 @@
           d3.keys(pinnedData).forEach(addKey);
         }
 
+        function parseNumericValue(value) {
+          if (value === undefined || value === null || value === "") return NaN;
+          var normalized = String(value).replace(/,/g, "");
+          var parsed = Number(normalized);
+          return isFinite(parsed) ? parsed : NaN;
+        }
+
+        function formatDiffValue(currentVal, pinnedVal) {
+          var currentNum = parseNumericValue(currentVal);
+          var pinnedNum = parseNumericValue(pinnedVal);
+          if (!isFinite(currentNum) || !isFinite(pinnedNum)) return "";
+
+          var diff = currentNum - pinnedNum;
+          if (Math.abs(diff) < 1e-10) return "0";
+          if (Math.abs(diff - Math.round(diff)) < 1e-10) {
+            return String(Math.round(diff));
+          }
+          return diff.toFixed(3).replace(/\.?0+$/, "");
+        }
+
         var headerHtml = pinnedData
-          ? "<tr><th>Parameter</th><th>Pinned</th><th>Current</th></tr>"
+          ? "<tr><th>Parameter</th><th>Pinned</th><th>Current</th><th>Diff</th></tr>"
           : "<tr><th>Parameter</th><th>Value</th></tr>";
 
         var bodyHtml = keyOrder
@@ -3614,6 +3634,7 @@
               !pinnedData || pinnedData[key] === undefined || pinnedData[key] === null
                 ? ""
                 : pinnedData[key];
+            var diffVal = formatDiffValue(currentVal, pinnedVal);
 
             return pinnedData
               ? "<tr><td><strong>" +
@@ -3622,6 +3643,8 @@
                   pinnedVal +
                   "</td><td>" +
                   currentVal +
+                  "</td><td>" +
+                  diffVal +
                   "</td></tr>"
               : "<tr><td><strong>" +
                   label +
