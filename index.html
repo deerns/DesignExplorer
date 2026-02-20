@@ -2073,6 +2073,7 @@
       function updateLayoutOnSelect() {
         var selectedImage = d3.select(this);
         var selectedDatum = selectedImage.datum();
+        activeSelectedData = selectedDatum;
 
         // highlight the line graph
         graph.highlight(selectedImage.data());
@@ -2143,6 +2144,7 @@
         isAnyItemSelected = true;
 
         updateThumbVisibility();
+        updateViewer2dCompareState(selectedDatum);
       }
 
       // function viewer2dNextImg(imgKeyList, currentImgKey){
@@ -2190,6 +2192,7 @@
         d3.select("#IterationData").style("display", "none");
 
         pinnedComparisonData = null;
+        activeSelectedData = null;
 
         // unhighlight the line graph
         graph.unhighlight();
@@ -3768,6 +3771,10 @@
       function loadDataToDesignExplorer(data) {
         overwriteInitialGlobalValues();
         pinnedComparisonData = null;
+        activeSelectedData = null;
+        currentView = "2D_1";
+        currentThumbView = "2D_1";
+        d3.select("input.toggleView[value='2D_1']").property("checked", true);
 
         // analyze data and separate them as input/output and general data
         analyzeInputData(data);
@@ -4131,6 +4138,7 @@
 
         if (ids.indexOf(id) != -1) {
           selectedData = allDataCollector[id].cleanedParams;
+          activeSelectedData = selectedData;
           //console.log(selectedData);
 
           // update chart
@@ -4213,8 +4221,21 @@
       var fullscreen = false;
       var va3cViewer;
       var pinnedComparisonData = null;
+      var activeSelectedData = null;
+
+      function normalize2dView(viewValue) {
+        if (!viewValue || typeof viewValue !== "string") return "2D_1";
+        if (viewValue === "2D") return "2D_1";
+        if (viewValue.indexOf("2D_") === 0) return viewValue;
+        return "2D_1";
+      }
+
+      function is2dView(viewValue) {
+        return normalize2dView(viewValue).indexOf("2D_") === 0;
+      }
 
       function getSelectedDatum() {
+        if (activeSelectedData) return activeSelectedData;
         if (!graph) return null;
         if (typeof graph.highlight === "function") {
           var highlighted = graph.highlight();
@@ -4263,6 +4284,7 @@
         slidersInfo.forEach(function (info) {
           var input = $("#" + info.namewithnospace);
           if (!input.length) return;
+          var sliderInstance = input.data("ionRangeSlider");
 
           var irs = input.next(".irs");
           if (!irs.length) return;
@@ -4279,8 +4301,16 @@
             return;
           }
 
+          var liveValues =
+            sliderInstance &&
+            sliderInstance.options &&
+            Array.isArray(sliderInstance.options.values)
+              ? sliderInstance.options.values
+              : null;
           var values =
-            (info.tickValues && info.tickValues.length
+            (liveValues && liveValues.length
+              ? liveValues
+              : info.tickValues && info.tickValues.length
               ? info.tickValues
               : info.originalTickValues) || [];
           if (!values.length) {
@@ -4303,17 +4333,10 @@
             marker.hide();
             return;
           }
-
-          var line = irs.find(".irs-line");
-          if (!line.length || line.outerWidth() <= 0) {
-            marker.hide();
-            return;
-          }
-
           var ratio = values.length <= 1 ? 0 : idx / (values.length - 1);
-          var left = line.position().left + ratio * line.outerWidth();
+          var leftPercent = Math.max(0, Math.min(100, ratio * 100));
 
-          marker.css("left", left + "px").show();
+          marker.css("left", leftPercent + "%").show();
         });
       }
 
@@ -4321,16 +4344,7 @@
         var button = d3.select("#pinCompareToggle");
         if (button.empty()) return;
 
-        var selectionCount = 0;
-        if (graph && typeof graph.highlight === "function") {
-          var highlighted = graph.highlight();
-          selectionCount = highlighted && highlighted.length ? highlighted.length : 0;
-        } else if (graph && typeof graph.highlighted === "function") {
-          var altHighlighted = graph.highlighted();
-          selectionCount =
-            altHighlighted && altHighlighted.length ? altHighlighted.length : 0;
-        }
-        var hasSelection = selectionCount === 1;
+        var hasSelection = !!getSelectedDatum();
         button.classed("hidden", !hasSelection);
         if (!hasSelection) return;
 
@@ -4347,14 +4361,16 @@
       function updateViewer2dCompareState(selectedDatum) {
         var selected =
           arguments.length > 0 ? selectedDatum : getSelectedDatum();
-        var is2dView = currentView && currentView.indexOf("2D_") === 0;
-        var activeViewKey = is2dView ? currentView : getActiveThumbView();
-        var splitActive = !!pinnedComparisonData && !!selected && is2dView;
+        var in2dMode = is2dView(currentView);
+        var activeViewKey = in2dMode
+          ? normalize2dView(currentView)
+          : getActiveThumbView();
+        var splitActive = !!pinnedComparisonData && !!selected && in2dMode;
 
         d3.select(".viewer2d-main").classed("compare-active", splitActive);
         d3.select(".compare-pane-pinned").classed("hidden", !splitActive);
 
-        if (selected && is2dView) {
+        if (selected && in2dMode) {
           var currentUrl = pickImageForView(selected, activeViewKey);
           d3.select("#viewer2d-mainimg")
             .attr("src", currentUrl || "")
@@ -4382,6 +4398,23 @@
           pinnedComparisonData = null;
         } else {
           pinnedComparisonData = Object.assign({}, selected);
+          var targetView =
+            currentView === "3D"
+              ? getActiveThumbView()
+              : normalize2dView(currentView);
+          if (!targetView || targetView.indexOf("2D_") !== 0) {
+            targetView = "2D_1";
+          }
+
+          var targetInput = d3.select(
+            "input.toggleView[value='" + targetView + "']"
+          );
+          if (!targetInput.empty()) {
+            targetInput.property("checked", true);
+            toggleView.call(targetInput.node());
+          } else {
+            currentView = targetView;
+          }
         }
 
         updateViewer2dCompareState(selected);
