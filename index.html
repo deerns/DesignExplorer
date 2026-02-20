@@ -283,7 +283,12 @@
         flex-basis: 50%;
       }
 
+      #viewer2d .viewer2d-main .compare-pane-current {
+        order: 2;
+      }
+
       #viewer2d .viewer2d-main .compare-pane-pinned {
+        order: 1;
         border-right: 2px solid #d0021b;
       }
 
@@ -312,15 +317,14 @@
         object-fit: contain;
       }
 
-      #inputSliders .irs .pinned-slider-marker {
+      #graph #pinnedReferenceCanvas {
         position: absolute;
-        top: 2px;
-        bottom: 2px;
-        width: 2px;
-        background: #d0021b;
-        z-index: 5;
         pointer-events: none;
-        display: none;
+        z-index: 2;
+      }
+
+      #graph > svg {
+        z-index: 3;
       }
     </style>
 
@@ -3012,6 +3016,150 @@
         //console.log(graphHeight+"x"+zoomedHeight);
       }
 
+      function ensurePinnedReferenceCanvas() {
+        if (!graph) return null;
+        var graphContainer = d3.select("#graph");
+        if (graphContainer.empty()) return null;
+
+        var canvasSel = graphContainer.select("#pinnedReferenceCanvas");
+        if (canvasSel.empty()) {
+          canvasSel = graphContainer
+            .append("canvas")
+            .attr("id", "pinnedReferenceCanvas");
+        }
+
+        var margin =
+          graph && typeof graph.margin === "function"
+            ? graph.margin()
+            : { top: 0, left: 0, right: 0, bottom: 0 };
+        var totalWidth =
+          graph && typeof graph.width === "function"
+            ? graph.width()
+            : graphContainer.node().clientWidth;
+        var totalHeight =
+          graph && typeof graph.height === "function"
+            ? graph.height()
+            : graphContainer.node().clientHeight;
+
+        var innerWidth = Math.max(
+          0,
+          totalWidth - (margin.left || 0) - (margin.right || 0)
+        );
+        var innerHeight = Math.max(
+          0,
+          totalHeight - (margin.top || 0) - (margin.bottom || 0)
+        );
+        var dpr = window.devicePixelRatio || 1;
+
+        canvasSel
+          .style("margin-top", (margin.top || 0) + "px")
+          .style("margin-left", (margin.left || 0) + "px")
+          .style("width", innerWidth + "px")
+          .style("height", innerHeight + "px")
+          .attr("width", Math.max(1, Math.round(innerWidth * dpr)))
+          .attr("height", Math.max(1, Math.round(innerHeight * dpr)));
+
+        var ctx = canvasSel.node().getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        return {
+          ctx: ctx,
+          width: innerWidth,
+          height: innerHeight,
+        };
+      }
+
+      function drawPinnedReferenceLineInPc() {
+        var overlay = ensurePinnedReferenceCanvas();
+        if (!overlay) return;
+
+        var ctx = overlay.ctx;
+        ctx.clearRect(0, 0, overlay.width + 2, overlay.height + 2);
+
+        if (
+          !pinnedComparisonData ||
+          !graph ||
+          typeof graph.dimensions !== "function"
+        ) {
+          return;
+        }
+
+        var dimensions = graph.dimensions() || {};
+        var orderedKeys =
+          graph && typeof graph.getOrderedDimensionKeys === "function"
+            ? graph.getOrderedDimensionKeys()
+            : Object.keys(dimensions);
+        if (!orderedKeys || orderedKeys.length === 0) return;
+
+        var xByDim = {};
+        d3.select("#graph")
+          .selectAll(".dimension")
+          .each(function (dimKey) {
+            var transform = d3.select(this).attr("transform") || "";
+            var match = transform.match(/translate\(([-\d.]+)/);
+            if (match && match[1] !== undefined) {
+              xByDim[dimKey] = parseFloat(match[1]);
+            }
+          });
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = "#d0021b";
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.95;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+
+        var hasStarted = false;
+        var keyCount = orderedKeys.length;
+
+        orderedKeys.forEach(function (key, idx) {
+          var dim = dimensions[key];
+          if (!dim || !dim.yscale || typeof dim.yscale !== "function") {
+            hasStarted = false;
+            return;
+          }
+
+          var value = pinnedComparisonData[key];
+          if (value === undefined || value === null || value === "") {
+            hasStarted = false;
+            return;
+          }
+
+          var x = xByDim[key];
+          if (!isFinite(x)) {
+            x =
+              keyCount <= 1
+                ? overlay.width / 2
+                : (idx / (keyCount - 1)) * overlay.width;
+          }
+
+          var y = dim.yscale(value);
+          if (!isFinite(y)) {
+            var numericValue = Number(value);
+            if (isFinite(numericValue)) {
+              y = dim.yscale(numericValue);
+            }
+          }
+          if (!isFinite(y)) {
+            hasStarted = false;
+            return;
+          }
+
+          if (!hasStarted) {
+            ctx.moveTo(x, y);
+            hasStarted = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+
+        if (hasStarted) {
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       function drawParallelCoordinates() {
         // remove Rating for on page load
         var iniDimensions = d3
@@ -3060,6 +3208,10 @@
           updateLabels();
           refreshGraphLabelsWithRetry(0);
         });
+        graph.on("render.pinnedReference", drawPinnedReferenceLineInPc);
+        graph.on("resize.pinnedReference", drawPinnedReferenceLineInPc);
+        graph.on("axesreorder.pinnedReference", drawPinnedReferenceLineInPc);
+        graph.on("highlight.pinnedReference", drawPinnedReferenceLineInPc);
 
         // Keep dimReversed setting in sync with native axis double-click flips.
         d3.select("#graph").on("dblclick.dimReverseSync", function () {
@@ -3085,6 +3237,8 @@
           refreshGraphLabelsWithRetry(0);
           applyDimLabelsToGraph(3);
         }
+
+        drawPinnedReferenceLineInPc();
       }
 
       // update pc chart labels and axis color based on input and outputs parameters
@@ -4252,92 +4406,8 @@
         return null;
       }
 
-      function findSliderValueIndex(values, targetValue) {
-        if (!values || values.length === 0) return -1;
-        var targetText = String(targetValue);
-        for (var i = 0; i < values.length; i++) {
-          if (String(values[i]) === targetText) {
-            return i;
-          }
-        }
-
-        var targetNum = Number(targetValue);
-        if (!isFinite(targetNum)) return -1;
-
-        var bestIdx = -1;
-        var bestDistance = Infinity;
-        for (var j = 0; j < values.length; j++) {
-          var valNum = Number(values[j]);
-          if (!isFinite(valNum)) continue;
-          var distance = Math.abs(valNum - targetNum);
-          if (distance < bestDistance) {
-            bestDistance = distance;
-            bestIdx = j;
-          }
-        }
-        return bestIdx;
-      }
-
       function updatePinnedSliderMarkers() {
-        if (!Array.isArray(slidersInfo)) return;
-
-        slidersInfo.forEach(function (info) {
-          var input = $("#" + info.namewithnospace);
-          if (!input.length) return;
-          var sliderInstance = input.data("ionRangeSlider");
-
-          var irs = input.next(".irs");
-          if (!irs.length) return;
-
-          var marker = irs.find(".pinned-slider-marker");
-          if (!marker.length) {
-            marker = $('<span class="pinned-slider-marker"></span>').appendTo(
-              irs
-            );
-          }
-
-          if (!pinnedComparisonData) {
-            marker.hide();
-            return;
-          }
-
-          var liveValues =
-            sliderInstance &&
-            sliderInstance.options &&
-            Array.isArray(sliderInstance.options.values)
-              ? sliderInstance.options.values
-              : null;
-          var values =
-            (liveValues && liveValues.length
-              ? liveValues
-              : info.tickValues && info.tickValues.length
-              ? info.tickValues
-              : info.originalTickValues) || [];
-          if (!values.length) {
-            marker.hide();
-            return;
-          }
-
-          var pinnedValue = pinnedComparisonData[info.name];
-          if (
-            pinnedValue === undefined ||
-            pinnedValue === null ||
-            pinnedValue === ""
-          ) {
-            marker.hide();
-            return;
-          }
-
-          var idx = findSliderValueIndex(values, pinnedValue);
-          if (idx < 0) {
-            marker.hide();
-            return;
-          }
-          var ratio = values.length <= 1 ? 0 : idx / (values.length - 1);
-          var leftPercent = Math.max(0, Math.min(100, ratio * 100));
-
-          marker.css("left", leftPercent + "%").show();
-        });
+        drawPinnedReferenceLineInPc();
       }
 
       function updatePinCompareButton() {
