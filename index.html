@@ -289,7 +289,7 @@
 
       #viewer2d .viewer2d-main .compare-pane-pinned {
         order: 1;
-        border-right: 2px solid #d0021b;
+        border-right: 2px solid #00b2e2;
       }
 
       #viewer2d .viewer2d-main:not(.compare-active) .compare-pane-current .compare-badge {
@@ -303,10 +303,15 @@
         z-index: 3;
         background: rgba(255, 255, 255, 0.9);
         color: #333333;
-        font-size: 11px;
+        font-size: 14px;
+        font-weight: 600;
         line-height: 1;
         padding: 4px 7px;
         border-radius: 10px;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-pinned .compare-badge {
+        color: #ffa300;
       }
 
       #viewer2d-mainimg,
@@ -3121,7 +3126,7 @@
 
         ctx.save();
         ctx.beginPath();
-        ctx.strokeStyle = "#d0021b";
+        ctx.strokeStyle = "#ffa300";
         ctx.lineWidth = 3;
         ctx.globalAlpha = 0.95;
         ctx.lineJoin = "round";
@@ -3595,7 +3600,7 @@
         }
 
         var headerHtml = pinnedData
-          ? "<tr><th>Parameter</th><th>Current</th><th>Pinned</th></tr>"
+          ? "<tr><th>Parameter</th><th>Pinned</th><th>Current</th></tr>"
           : "<tr><th>Parameter</th><th>Value</th></tr>";
 
         var bodyHtml = keyOrder
@@ -3614,9 +3619,9 @@
               ? "<tr><td><strong>" +
                   label +
                   "</strong></td><td>" +
-                  currentVal +
-                  "</td><td>" +
                   pinnedVal +
+                  "</td><td>" +
+                  currentVal +
                   "</td></tr>"
               : "<tr><td><strong>" +
                   label +
