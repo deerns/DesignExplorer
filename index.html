@@ -335,6 +335,7 @@
         width: 100%;
         height: 100%;
         gap: 8px;
+        align-items: stretch;
       }
 
       #viewer2d .viewer2d-main .compare-pane-current.multi-active #viewer2d-mainimg {
@@ -343,6 +344,7 @@
 
       #viewer2d .viewer2d-main .compare-pane-current.multi-active #viewer2d-multi {
         display: grid;
+        grid-auto-rows: minmax(0, 1fr);
       }
 
       #viewer2d .viewer2d-main .compare-pane-current.multi-active #imgNext {
@@ -356,7 +358,12 @@
       #viewer2d .viewer2d-gallery-item {
         position: relative;
         min-width: 0;
+        min-height: 0;
         height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #ffffff;
       }
 
       #viewer2d .viewer2d-gallery-item .viewer2d-gallery-label {
@@ -374,8 +381,10 @@
       }
 
       #viewer2d .viewer2d-gallery-item img {
-        width: 100% !important;
-        height: 100% !important;
+        width: auto !important;
+        height: auto !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
         min-width: 0 !important;
         object-fit: contain;
         background-image: none !important;
