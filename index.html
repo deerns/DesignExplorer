@@ -75,6 +75,14 @@
         margin: 0;
       }
 
+      #vis form.compareActions {
+        margin: 2px 0 0;
+      }
+
+      #pinCompareToggle {
+        white-space: nowrap;
+      }
+
       /* give thumb toggles the same readable spacing as main toggles */
       #thumbViewControls label {
         display: inline-flex;
@@ -86,10 +94,15 @@
       #thumbViewControls input.thumbToggleView {
         margin: 0;
       }
-            /* keep main image labels spaced like thumb controls */
+      /* keep main image labels spaced like thumb controls */
       #IMG1Label,
       #IMG2Label,
       #IMG3Label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #threeDLabel {
         display: inline-flex;
         align-items: center;
         gap: 8px;
@@ -255,6 +268,220 @@
       /* keep legend disabled boxes visible as empty checkboxes */
       #legend rect.disabled {
         fill: #ffffff !important;
+      }
+
+      #viewer2d .viewer2d-main {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        gap: 0;
+        height: 100%;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane {
+        position: relative;
+        flex: 1 1 100%;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      #viewer2d .viewer2d-main.compare-active .compare-pane {
+        flex-basis: 50%;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-current {
+        order: 2;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-pinned {
+        order: 1;
+        border-right: 2px solid #00b2e2;
+      }
+
+      #viewer2d .viewer2d-main:not(.compare-active) .compare-pane-current .compare-badge {
+        display: none;
+      }
+
+      #viewer2d .viewer2d-main .compare-badge {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        z-index: 3;
+        background: rgba(255, 255, 255, 0.9);
+        color: #333333;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1;
+        padding: 4px 7px;
+        border-radius: 10px;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-pinned .compare-badge {
+        color: #ffa300;
+      }
+
+      #viewer2d-mainimg,
+      #viewer2d-pinnedimg {
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        object-fit: contain;
+        background-image: none !important;
+        background-color: #ffffff !important;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-current #viewer2d-multi {
+        display: none;
+        width: 100%;
+        height: 100%;
+        gap: 8px;
+        align-items: stretch;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-current.multi-active #viewer2d-mainimg {
+        display: none;
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-current.multi-active #viewer2d-multi {
+        display: grid;
+        grid-auto-rows: minmax(0, 1fr);
+      }
+
+      #viewer2d .viewer2d-main .compare-pane-current.multi-active #imgNext {
+        display: none;
+      }
+
+      #viewer2d .viewer2d-main.compare-active #imgNext {
+        display: none;
+      }
+
+      #viewer2d .viewer2d-gallery-item {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #ffffff;
+      }
+
+      #viewer2d .viewer2d-gallery-item .viewer2d-gallery-label {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        z-index: 3;
+        background: rgba(255, 255, 255, 0.92);
+        color: #333333;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1;
+        padding: 3px 6px;
+        border-radius: 10px;
+      }
+
+      #viewer2d .viewer2d-gallery-item img {
+        width: auto !important;
+        height: auto !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        min-width: 0 !important;
+        object-fit: contain;
+        background-image: none !important;
+        background-color: #ffffff !important;
+      }
+
+      #viewer2d .viewer2d-main.compare-active.compare-has-images #viewer2d-mainimg,
+      #viewer2d .viewer2d-main.compare-active.compare-has-images #viewer2d-pinnedimg {
+        background-image: none !important;
+        background-color: #ffffff !important;
+      }
+
+      #thumbnails-btm_container.onRight {
+        overflow: visible !important;
+        transform: translateX(0);
+        transition: transform 0.25s ease;
+      }
+
+      #thumbnails-btm_container.onRight.drawer-open,
+      #thumbnails-btm_container.onRight.drawer-pinned {
+        transform: translateX(0);
+      }
+
+      #thumbnails-btm_container.onRight:hover,
+      #thumbnails-btm_container.onRight:focus-within {
+        transform: translateX(0);
+      }
+
+      #thumbnailsPullTab {
+        position: absolute;
+        left: -34px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 34px;
+        height: 120px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid #cccccc;
+        border-right: 0;
+        border-radius: 8px 0 0 8px;
+        color: #444444;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        z-index: 3;
+      }
+
+      #thumbnails-btm_container.onRight #thumbnailsPullTab {
+        display: none;
+      }
+
+      #thumbnails-btm_container.onRight.drawer-pinned #thumbnailsPullTab {
+        background: #f3f8ff;
+        border-color: #7fa6d8;
+        color: #1f4f89;
+      }
+
+      #IterationData .attr-compare-table {
+        margin-bottom: 0;
+      }
+
+      #IterationData .attr-compare-table th,
+      #IterationData .attr-compare-table td {
+        padding: 4px 6px;
+        vertical-align: top;
+        font-size: 12px;
+      }
+
+      #IterationData .attr-compare-table td.attr-param.attr-input {
+        color: black;
+      }
+
+      #IterationData .attr-compare-table td.attr-param.attr-output {
+        color: steelblue;
+      }
+
+      #graph #pinnedReferenceCanvas {
+        position: absolute;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      #graph > svg {
+        z-index: 3;
+      }
+
+      .scatter-matrix-container circle.pinned {
+        fill: #ffa300 !important;
+        fill-opacity: 1 !important;
+        stroke: #d98600;
+        stroke-width: 1.5px;
+        r: 4;
       }
     </style>
 
@@ -1242,7 +1469,7 @@
                       class="btn btn-default btn-xs"
                       id="attr-collapse-toggle"
                       aria-label="Toggle attributes"
-                      title="Verberg attributen"
+                      title="Hide attributes"
                     >
                       <span
                         class="glyphicon glyphicon-chevron-up"
@@ -1259,10 +1486,9 @@
                 <form>
                   <label id="IMG1Label"
                     ><input
-                      type="radio"
+                      type="checkbox"
                       class="toggleView"
                       data-debug-group="vis-main"
-                      name="visMode"
                       value="2D_1"
                       id="IMG_1"
                       checked
@@ -1274,10 +1500,9 @@
 
                   <label id="IMG2Label"
                     ><input
-                      type="radio"
+                      type="checkbox"
                       class="toggleView"
                       data-debug-group="vis-main"
-                      name="visMode"
                       value="2D_2"
                       id="IMG_2"
                     />
@@ -1285,10 +1510,9 @@
                   >
                   <label id="IMG3Label"
                     ><input
-                      type="radio"
+                      type="checkbox"
                       class="toggleView"
                       data-debug-group="vis-main"
-                      name="visMode"
                       value="2D_3"
                       id="IMG_3"
                     />
@@ -1299,7 +1523,7 @@
                       type="radio"
                       class="toggleView"
                       data-debug-group="vis-main"
-                      name="visMode"
+                      name="visMode3D"
                       value="3D"
                       id="threeDRadio"
                     />
@@ -1348,6 +1572,15 @@
                   <input class="star" type="radio" name="rating" value="4" />
                   <input class="star" type="radio" name="rating" value="5" />
                 </form>
+                <form class="compareActions">
+                  <button
+                    type="button"
+                    class="btn btn-default btn-xs hidden"
+                    id="pinCompareToggle"
+                  >
+                    Pin To Compare
+                  </button>
+                </form>
                 <form class="dropdown imgSwitch"></form>
               </div>
               <div
@@ -1360,11 +1593,22 @@
               <div id="viewer2d" class="viewer2d">
                 <div id="viewer2d-toggles"></div>
                 <div class="viewer2d-main">
-                  <!--<button id="imgPrev" class="nav-btn" title="Vorige">‹</button>-->
-                  <img id="viewer2d-mainimg" src="" alt="2D view" />
-                  <button id="imgNext" class="nav-btn" title="Volgende">
-                    ›
-                  </button>
+                  <div class="compare-pane compare-pane-current">
+                    <span class="compare-badge">Current</span>
+                    <img id="viewer2d-mainimg" src="" alt="2D view" />
+                    <div id="viewer2d-multi"></div>
+                    <button id="imgNext" class="nav-btn" title="Next">
+                      ›
+                    </button>
+                  </div>
+                  <div class="compare-pane compare-pane-pinned hidden">
+                    <span class="compare-badge">Pinned</span>
+                    <img
+                      id="viewer2d-pinnedimg"
+                      src=""
+                      alt="Pinned 2D view"
+                    />
+                  </div>
                 </div>
                 <div id="viewer2d-thumbs" class="thumbs"></div>
               </div>
@@ -1372,6 +1616,7 @@
 
             <!--Here starts the thumbnails-btm_container-->
             <div class="col-lg-12" id="thumbnails-btm_container">
+              <div id="thumbnailsPullTab" title="Show thumbnails">Thumbnails</div>
               <div class="col-lg-12 sorting"></div>
               <div class="col-lg-12" id="thumbnails-btm"></div>
             </div>
@@ -1868,6 +2113,7 @@
         );
 
         scatterChart = sm;
+        updatePinnedScatterDot();
 
         //return sm;
       }
@@ -1894,6 +2140,20 @@
         data.forEach(function (d) {
           d3.selectAll("#" + getCircleID(d)).attr("visibility", "shown");
         });
+
+        updatePinnedScatterDot();
+      }
+
+      function updatePinnedScatterDot() {
+        d3.selectAll(".cell circle").classed("pinned", false);
+        if (!pinnedComparisonData) return;
+
+        var pinnedId = getCircleID(pinnedComparisonData);
+        if (!pinnedId) return;
+
+        d3.selectAll("#" + pinnedId)
+          .classed("pinned", true)
+          .attr("visibility", "shown");
       }
 
       function highlightScatterDot() {
@@ -1907,10 +2167,12 @@
             d3.selectAll("#" + getCircleID(d)).classed("highlighted", true);
           });
         }
+        updatePinnedScatterDot();
       }
 
       function unlighlightScatter() {
         d3.selectAll(".cell circle").classed("highlighted", false);
+        updatePinnedScatterDot();
       }
     </script>
 
@@ -1929,6 +2191,7 @@
           .classed("toggled", isToggled)
           .transition()
           .duration(300); //length of toggle animation
+        setTimeout(updatePinnedSliderMarkers, 320);
       });
 
       $("#scatter-menu-toggle, .scatter-matrix-control").click(function (e) {
@@ -1986,6 +2249,8 @@
       // update layout on select
       function updateLayoutOnSelect() {
         var selectedImage = d3.select(this);
+        var selectedDatum = selectedImage.datum();
+        activeSelectedData = selectedDatum;
 
         // highlight the line graph
         graph.highlight(selectedImage.data());
@@ -2001,17 +2266,16 @@
         d3.select("#zoomedArea").style("height", thumbnailsHeight + "px");
 
         // move btm thumbnail to right
-        d3.select("#thumbnails-btm_container").classed("onRight", true);
+        d3.select("#thumbnails-btm_container")
+          .classed("onRight", true);
 
         // push the image to zoomed viewer2d area
-        d3.select("#viewer2d")
-          .select("img")
-          .data(selectedImage.data())
-          .attr("src", function () {
-            var viewKey = getActiveThumbView();
-            return pickImageForView(selectedImage.datum(), viewKey);
-          })
-          .attr("title", getTitle);
+        setViewerImage(
+          "#viewer2d-mainimg",
+          pickImageForView(selectedDatum, getActiveThumbView()),
+          getTitle(selectedDatum)
+        );
+        updateViewer2dCompareState(selectedDatum);
 
         updateIterationData(selectedImage.data());
 
@@ -2060,6 +2324,7 @@
         isAnyItemSelected = true;
 
         updateThumbVisibility();
+        updateViewer2dCompareState(selectedDatum);
       }
 
       // function viewer2dNextImg(imgKeyList, currentImgKey){
@@ -2098,6 +2363,9 @@
           // .attr("class","col-lg-12")
           // .select("#thumbnails-btm")
           .classed("onRight", false);
+        d3.select("#thumbnails-btm_container")
+          .classed("drawer-open", false)
+          .classed("drawer-pinned", false);
 
         // // hide side thumbnail
         // d3.select("#thumbnails-side_container")
@@ -2105,6 +2373,9 @@
         //     .style("height", "0px");
 
         d3.select("#IterationData").style("display", "none");
+
+        pinnedComparisonData = null;
+        activeSelectedData = null;
 
         // unhighlight the line graph
         graph.unhighlight();
@@ -2122,6 +2393,7 @@
         isAnyItemSelected = false;
 
         updateThumbVisibility();
+        updateViewer2dCompareState(null);
       }
 
       // hide/show parallel coordinates
@@ -2326,22 +2598,79 @@
         return form;
       }
 
+      function set2dToggleInputMode(hasMultiple2d) {
+        var toggles = d3.selectAll("input.toggleView").filter(function () {
+          return this.value && this.value.indexOf("2D_") === 0;
+        });
+        var threeDRadio = d3.select("#threeDRadio");
+
+        if (hasMultiple2d) {
+          toggles
+            .attr("type", "checkbox")
+            .attr("name", null);
+          if (!threeDRadio.empty()) {
+            threeDRadio.attr("name", "visMode3D");
+          }
+          return;
+        }
+
+        toggles
+          .attr("type", "radio")
+          .attr("name", "visMode");
+        if (!threeDRadio.empty()) {
+          threeDRadio.attr("name", "visMode");
+        }
+
+        if (currentView === "3D") {
+          toggles.property("checked", false);
+          if (!threeDRadio.empty()) {
+            threeDRadio.property("checked", true);
+          }
+          return;
+        }
+
+        var primary = normalize2dView(currentView);
+        setChecked2dViews([primary]);
+        if (!threeDRadio.empty()) {
+          threeDRadio.property("checked", false);
+        }
+      }
+
       function updateImageRadioLabels(imgCount) {
         var hasSecondImg = imgCount > 1;
         var hasThirdImg = imgCount > 2;
+        var hasMultiple2d = hasSecondImg || hasThirdImg;
         var defaultLabel1 = hasSecondImg ? "#1" : "2D";
         var defaultLabel2 = "#2";
         var defaultLabel3 = "#3";
+
+        set2dToggleInputMode(hasMultiple2d);
 
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
 
         d3.select("#IMG2Label").classed("hidden", !hasSecondImg);
         if (hasSecondImg) {
           $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
+        } else {
+          d3.select("#IMG_2").property("checked", false);
         }
         d3.select("#IMG3Label").classed("hidden", !hasThirdImg);
         if (hasThirdImg) {
           $("#IMG3LabelText").text(getImageLabel("IMG_3", defaultLabel3));
+        } else {
+          d3.select("#IMG_3").property("checked", false);
+        }
+
+        if (currentView !== "3D" && !d3.select("#IMG_1").property("checked")) {
+          var anyChecked = false;
+          d3.selectAll("input.toggleView").filter(function () {
+            return this.value && this.value.indexOf("2D_") === 0;
+          }).each(function () {
+            if (this.checked) anyChecked = true;
+          });
+          if (!anyChecked) {
+            d3.select("#IMG_1").property("checked", true);
+          }
         }
 
         // thumbnails toggle (only when multiple image columns)
@@ -2384,6 +2713,7 @@
       function refreshImageRadioTexts() {
         var hasSecondImg = !d3.select("#IMG2Label").classed("hidden");
         var hasThirdImg = !d3.select("#IMG3Label").classed("hidden");
+        set2dToggleInputMode(hasSecondImg || hasThirdImg);
         var defaultLabel1 = hasSecondImg || hasThirdImg ? "#1" : "2D";
         var defaultLabel2 = "#2";
         var defaultLabel3 = "#3";
@@ -2923,6 +3253,150 @@
         //console.log(graphHeight+"x"+zoomedHeight);
       }
 
+      function ensurePinnedReferenceCanvas() {
+        if (!graph) return null;
+        var graphContainer = d3.select("#graph");
+        if (graphContainer.empty()) return null;
+
+        var canvasSel = graphContainer.select("#pinnedReferenceCanvas");
+        if (canvasSel.empty()) {
+          canvasSel = graphContainer
+            .append("canvas")
+            .attr("id", "pinnedReferenceCanvas");
+        }
+
+        var margin =
+          graph && typeof graph.margin === "function"
+            ? graph.margin()
+            : { top: 0, left: 0, right: 0, bottom: 0 };
+        var totalWidth =
+          graph && typeof graph.width === "function"
+            ? graph.width()
+            : graphContainer.node().clientWidth;
+        var totalHeight =
+          graph && typeof graph.height === "function"
+            ? graph.height()
+            : graphContainer.node().clientHeight;
+
+        var innerWidth = Math.max(
+          0,
+          totalWidth - (margin.left || 0) - (margin.right || 0)
+        );
+        var innerHeight = Math.max(
+          0,
+          totalHeight - (margin.top || 0) - (margin.bottom || 0)
+        );
+        var dpr = window.devicePixelRatio || 1;
+
+        canvasSel
+          .style("margin-top", (margin.top || 0) + "px")
+          .style("margin-left", (margin.left || 0) + "px")
+          .style("width", innerWidth + "px")
+          .style("height", innerHeight + "px")
+          .attr("width", Math.max(1, Math.round(innerWidth * dpr)))
+          .attr("height", Math.max(1, Math.round(innerHeight * dpr)));
+
+        var ctx = canvasSel.node().getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        return {
+          ctx: ctx,
+          width: innerWidth,
+          height: innerHeight,
+        };
+      }
+
+      function drawPinnedReferenceLineInPc() {
+        var overlay = ensurePinnedReferenceCanvas();
+        if (!overlay) return;
+
+        var ctx = overlay.ctx;
+        ctx.clearRect(0, 0, overlay.width + 2, overlay.height + 2);
+
+        if (
+          !pinnedComparisonData ||
+          !graph ||
+          typeof graph.dimensions !== "function"
+        ) {
+          return;
+        }
+
+        var dimensions = graph.dimensions() || {};
+        var orderedKeys =
+          graph && typeof graph.getOrderedDimensionKeys === "function"
+            ? graph.getOrderedDimensionKeys()
+            : Object.keys(dimensions);
+        if (!orderedKeys || orderedKeys.length === 0) return;
+
+        var xByDim = {};
+        d3.select("#graph")
+          .selectAll(".dimension")
+          .each(function (dimKey) {
+            var transform = d3.select(this).attr("transform") || "";
+            var match = transform.match(/translate\(([-\d.]+)/);
+            if (match && match[1] !== undefined) {
+              xByDim[dimKey] = parseFloat(match[1]);
+            }
+          });
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = "#ffa300";
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.95;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+
+        var hasStarted = false;
+        var keyCount = orderedKeys.length;
+
+        orderedKeys.forEach(function (key, idx) {
+          var dim = dimensions[key];
+          if (!dim || !dim.yscale || typeof dim.yscale !== "function") {
+            hasStarted = false;
+            return;
+          }
+
+          var value = pinnedComparisonData[key];
+          if (value === undefined || value === null || value === "") {
+            hasStarted = false;
+            return;
+          }
+
+          var x = xByDim[key];
+          if (!isFinite(x)) {
+            x =
+              keyCount <= 1
+                ? overlay.width / 2
+                : (idx / (keyCount - 1)) * overlay.width;
+          }
+
+          var y = dim.yscale(value);
+          if (!isFinite(y)) {
+            var numericValue = Number(value);
+            if (isFinite(numericValue)) {
+              y = dim.yscale(numericValue);
+            }
+          }
+          if (!isFinite(y)) {
+            hasStarted = false;
+            return;
+          }
+
+          if (!hasStarted) {
+            ctx.moveTo(x, y);
+            hasStarted = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+
+        if (hasStarted) {
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       function drawParallelCoordinates() {
         // remove Rating for on page load
         var iniDimensions = d3
@@ -2971,6 +3445,10 @@
           updateLabels();
           refreshGraphLabelsWithRetry(0);
         });
+        graph.on("render.pinnedReference", drawPinnedReferenceLineInPc);
+        graph.on("resize.pinnedReference", drawPinnedReferenceLineInPc);
+        graph.on("axesreorder.pinnedReference", drawPinnedReferenceLineInPc);
+        graph.on("highlight.pinnedReference", drawPinnedReferenceLineInPc);
 
         // Keep dimReversed setting in sync with native axis double-click flips.
         d3.select("#graph").on("dblclick.dimReverseSync", function () {
@@ -2996,6 +3474,8 @@
           refreshGraphLabelsWithRetry(0);
           applyDimLabelsToGraph(3);
         }
+
+        drawPinnedReferenceLineInPc();
       }
 
       // update pc chart labels and axis color based on input and outputs parameters
@@ -3097,6 +3577,7 @@
         d3.selectAll(".cell circle").style("fill", function (d) {
           return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
         });
+        updatePinnedScatterDot();
       }
     </script>
 
@@ -3301,25 +3782,129 @@
       }
 
       function updateIterationData(dataObj) {
-        // get title for each image
-        var title = [];
-        var data = dataObj[0];
-        d3.keys(data).forEach(function (key) {
+        var currentData =
+          dataObj && dataObj.length
+            ? dataObj[0]
+            : dataObj || (typeof getSelectedDatum === "function" ? getSelectedDatum() : null);
+        if (!currentData) {
+          d3.select("#IterationData").style("display", "none");
+          return;
+        }
+
+        var pinnedData = pinnedComparisonData || null;
+        var keyOrder = [];
+        var keySet = {};
+        var inputLabels =
+          Array.isArray(inputData) && inputData.length > 0
+            ? d3.keys(inputData[0])
+            : [];
+        var outputLabels =
+          Array.isArray(outputData) && outputData.length > 0
+            ? d3.keys(outputData[0])
+            : [];
+
+        function addKey(key) {
+          var rawKey = (key || "").toString();
+          var lower = rawKey.toLowerCase();
           if (
-            !String(key).startsWith("img") &&
-            !String(key).startsWith("threeD") &&
-            !String(key).startsWith("scid")
+            lower.indexOf("img") === 0 ||
+            lower.indexOf("threed") === 0 ||
+            lower.indexOf("scid") === 0
           ) {
-            var info =
-              "<strong>" + getDimLabel(key) + "</strong>" + " : " + data[key];
-            title.push(info);
+            return;
           }
-        });
+          if (keySet[rawKey]) return;
+          keySet[rawKey] = true;
+          keyOrder.push(rawKey);
+        }
+
+        d3.keys(currentData).forEach(addKey);
+        if (pinnedData) {
+          d3.keys(pinnedData).forEach(addKey);
+        }
+
+        function parseNumericValue(value) {
+          if (value === undefined || value === null || value === "") return NaN;
+          var normalized = String(value).replace(/,/g, "");
+          var parsed = Number(normalized);
+          return isFinite(parsed) ? parsed : NaN;
+        }
+
+        function formatDiffValue(currentVal, pinnedVal) {
+          var currentNum = parseNumericValue(currentVal);
+          var pinnedNum = parseNumericValue(pinnedVal);
+          if (!isFinite(currentNum) || !isFinite(pinnedNum)) return "";
+
+          var diff = currentNum - pinnedNum;
+          if (Math.abs(diff) < 1e-10) return "0";
+
+          var formatted =
+            Math.abs(diff - Math.round(diff)) < 1e-10
+              ? String(Math.round(diff))
+              : diff.toFixed(3).replace(/\.?0+$/, "");
+
+          return diff > 0 ? "+" + formatted : formatted;
+        }
+
+        function getParamClass(key) {
+          var k = (key || "").toString().trim();
+          if (outputLabels.indexOf(k) !== -1) return "attr-output";
+          if (inputLabels.indexOf(k) !== -1) return "attr-input";
+          return "attr-input";
+        }
+
+        var headerHtml = pinnedData
+          ? "<tr><th>Parameter</th><th>Pinned</th><th>Current</th><th>Diff</th></tr>"
+          : "<tr><th>Parameter</th><th>Value</th></tr>";
+
+        var bodyHtml = keyOrder
+          .map(function (key) {
+            var label = getDimLabel(key);
+            var currentVal =
+              currentData[key] === undefined || currentData[key] === null
+                ? ""
+                : currentData[key];
+            var pinnedVal =
+              !pinnedData || pinnedData[key] === undefined || pinnedData[key] === null
+                ? ""
+                : pinnedData[key];
+            var diffVal = formatDiffValue(currentVal, pinnedVal);
+            var paramClass = getParamClass(key);
+
+            return pinnedData
+              ? "<tr><td class='attr-param " +
+                  paramClass +
+                  "'><strong>" +
+                  label +
+                  "</strong></td><td>" +
+                  pinnedVal +
+                  "</td><td>" +
+                  currentVal +
+                  "</td><td>" +
+                  diffVal +
+                  "</td></tr>"
+              : "<tr><td class='attr-param " +
+                  paramClass +
+                  "'><strong>" +
+                  label +
+                  "</strong></td><td>" +
+                  currentVal +
+                  "</td></tr>";
+          })
+          .join("");
+
+        var tableHtml =
+          '<table class="table table-condensed table-striped attr-compare-table">' +
+          "<thead>" +
+          headerHtml +
+          "</thead><tbody>" +
+          bodyHtml +
+          "</tbody></table>";
 
         d3.select("#IterationData")
           .style("display", "block")
-          .select("p")
-          .html(title.join("<br>"));
+          .select(".panel-body")
+          .html(tableHtml);
       }
 
       $(function () {
@@ -3333,7 +3918,7 @@
             .toggleClass("glyphicon-chevron-down", !isOpen);
           $attrToggle.attr(
             "title",
-            isOpen ? "Verberg attributen" : "Toon attributen"
+            isOpen ? "Hide attributes" : "Show attributes"
           );
         }
 
@@ -3681,6 +4266,18 @@
     <script>
       function loadDataToDesignExplorer(data) {
         overwriteInitialGlobalValues();
+        pinnedComparisonData = null;
+        activeSelectedData = null;
+        isThumbnailDrawerPinned = false;
+        currentView = "2D_1";
+        currentThumbView = "2D_1";
+        d3.selectAll("input.toggleView").filter(function () {
+          return this.value && this.value.indexOf("2D_") === 0;
+        }).property("checked", function () {
+          return this.value === "2D_1";
+        });
+        d3.select("#threeDRadio").property("checked", false);
+        updateThumbnailsPullTabState();
 
         // analyze data and separate them as input/output and general data
         analyzeInputData(data);
@@ -3722,6 +4319,7 @@
 
         // set up events between graphs
         setupEvents();
+        updateViewer2dCompareState(null);
 
         //lazy load
         // $(function() {
@@ -3905,6 +4503,7 @@
         });
 
         updateSliderVisibilityFromSettings();
+        updatePinnedSliderMarkers();
       }
 
       function updateSlidersTickValues(unbrushedData) {
@@ -3971,6 +4570,7 @@
           // update current values
           updateSlidersValue(graph.highlighted()[0]);
         }
+        updatePinnedSliderMarkers();
       }
 
       function disableAllSliders() {
@@ -4023,6 +4623,7 @@
               from: info.tickValues.indexOf(value), //update the value
             });
         });
+        updatePinnedSliderMarkers();
       }
 
       function updateSliderValue(changedSliderName, newValue) {
@@ -4040,6 +4641,7 @@
 
         if (ids.indexOf(id) != -1) {
           selectedData = allDataCollector[id].cleanedParams;
+          activeSelectedData = selectedData;
           //console.log(selectedData);
 
           // update chart
@@ -4053,15 +4655,16 @@
           updateIterationData([selectedData]);
 
           // push the image to zoomed area
-          d3.select("#viewer2d")
-            .select("img")
-            .attr("src", function () {
-              var viewKey =
-                currentView && currentView.indexOf("2D_") === 0
-                  ? currentView
-                  : "2D_1";
-              return pickImageForView(selectedData, viewKey);
-            });
+          var current2dView =
+            currentView && currentView.indexOf("2D_") === 0
+              ? currentView
+              : "2D_1";
+          setViewerImage(
+            "#viewer2d-mainimg",
+            pickImageForView(selectedData, current2dView),
+            getTitle(selectedData)
+          );
+          updateViewer2dCompareState(selectedData);
 
           if (currentView == "3D") loadNew3DModel();
 
@@ -4122,6 +4725,251 @@
       var initit3DViewer = true;
       var fullscreen = false;
       var va3cViewer;
+      var pinnedComparisonData = null;
+      var activeSelectedData = null;
+      var isThumbnailDrawerPinned = false;
+
+      function normalize2dView(viewValue) {
+        if (!viewValue || typeof viewValue !== "string") return "2D_1";
+        if (viewValue === "2D") return "2D_1";
+        if (viewValue.indexOf("2D_") === 0) return viewValue;
+        return "2D_1";
+      }
+
+      function is2dView(viewValue) {
+        return normalize2dView(viewValue).indexOf("2D_") === 0;
+      }
+
+      function getSelectedDatum() {
+        if (activeSelectedData) return activeSelectedData;
+        if (!graph) return null;
+        if (typeof graph.highlight === "function") {
+          var highlighted = graph.highlight();
+          if (highlighted && highlighted.length > 0) {
+            return highlighted[0];
+          }
+        }
+        if (typeof graph.highlighted === "function") {
+          var alt = graph.highlighted();
+          if (alt && alt.length > 0) {
+            return alt[0];
+          }
+        }
+        return null;
+      }
+
+      function getLeafPlaceholderUrl() {
+        return "img/Deerns_Leaf.jpg";
+      }
+
+      function isLeafPlaceholderUrl(url) {
+        var normalized = (url || "").toString().toLowerCase();
+        return normalized.indexOf("deerns_leaf") >= 0;
+      }
+
+      function resolveViewerImageUrl(url) {
+        var cleanUrl = (url || "").toString().trim();
+        return cleanUrl.length > 0 ? cleanUrl : getLeafPlaceholderUrl();
+      }
+
+      function setViewerImage(selector, url, title) {
+        var finalUrl = resolveViewerImageUrl(url);
+        var isPlaceholder = isLeafPlaceholderUrl(finalUrl);
+        d3.select(selector)
+          .attr("src", finalUrl)
+          .attr("title", title || "")
+          .classed("no-image-placeholder", isPlaceholder);
+        return {
+          src: finalUrl,
+          isPlaceholder: isPlaceholder,
+        };
+      }
+
+      function updatePinnedSliderMarkers() {
+        drawPinnedReferenceLineInPc();
+      }
+
+      function updatePinCompareButton() {
+        var button = d3.select("#pinCompareToggle");
+        if (button.empty()) return;
+
+        var hasSelection = !!getSelectedDatum();
+        button.classed("hidden", !hasSelection);
+        if (!hasSelection) return;
+
+        button
+          .classed("btn-default", !pinnedComparisonData)
+          .classed("btn-primary", !!pinnedComparisonData)
+          .text(
+            pinnedComparisonData
+              ? "Unpin Comparison"
+              : "Pin To Compare"
+          );
+      }
+
+      function renderViewer2dMultiImages(selected, viewKeys) {
+        var gallery = d3.select("#viewer2d-multi");
+        var currentPane = d3.select(".compare-pane-current");
+        var shouldShow = !!selected && Array.isArray(viewKeys) && viewKeys.length > 1;
+
+        currentPane.classed("multi-active", shouldShow);
+        if (!shouldShow) {
+          gallery.selectAll("*").remove();
+          return {
+            hasNonPlaceholder: false,
+          };
+        }
+
+        gallery.style(
+          "grid-template-columns",
+          "repeat(" + viewKeys.length + ", minmax(0, 1fr))"
+        );
+
+        var items = gallery
+          .selectAll(".viewer2d-gallery-item")
+          .data(viewKeys, function (d) {
+            return d;
+          });
+
+        items.exit().remove();
+
+        var entered = items
+          .enter()
+          .append("div")
+          .attr("class", "viewer2d-gallery-item");
+        entered.append("span").attr("class", "viewer2d-gallery-label");
+        entered.append("img");
+
+        var merged = gallery.selectAll(".viewer2d-gallery-item");
+        merged.sort(function (a, b) {
+          return get2dViewIndex(a) - get2dViewIndex(b);
+        });
+        merged = gallery.selectAll(".viewer2d-gallery-item");
+        var hasNonPlaceholder = false;
+        merged.select(".viewer2d-gallery-label").text(function (viewKey) {
+          var canonical = getCanonicalImageKey(viewKey) || "IMG_1";
+          var fallbackIdx =
+            parseInt((viewKey || "").replace("2D_", ""), 10) || 1;
+          return getImageLabel(canonical, "#" + fallbackIdx);
+        });
+
+        merged.select("img").each(function (viewKey) {
+          var url = pickImageForView(selected, viewKey) || "";
+          var state = setViewerImage(this, url, getTitle(selected));
+          if (!state.isPlaceholder) {
+            hasNonPlaceholder = true;
+          }
+        });
+
+        return {
+          hasNonPlaceholder: hasNonPlaceholder,
+        };
+      }
+
+      function updateViewer2dCompareState(selectedDatum) {
+        var selected =
+          arguments.length > 0 ? selectedDatum : getSelectedDatum();
+        var in2dMode = is2dView(currentView);
+        var checkedViews = in2dMode ? getChecked2dViews(selected) : [];
+        var activeViewKey = in2dMode
+          ? getPrimaryChecked2dView(selected, normalize2dView(currentView))
+          : getActiveThumbView();
+        var splitActive = !!pinnedComparisonData && !!selected && in2dMode;
+        var useMultiCurrent = !!selected && in2dMode && !splitActive && checkedViews.length > 1;
+        var currentUrl = "";
+        var pinnedUrl = "";
+        var currentImageState = null;
+        var pinnedImageState = null;
+        var multiState = null;
+
+        d3.select(".viewer2d-main").classed("compare-active", splitActive);
+        d3.select(".compare-pane-pinned").classed("hidden", !splitActive);
+        d3.select("#imgNext").classed("hidden", splitActive || useMultiCurrent);
+
+        if (in2dMode) {
+          currentView = activeViewKey;
+          currentThumbView = activeViewKey;
+          syncThumbToggleFromMain(activeViewKey);
+        }
+
+        if (selected && in2dMode) {
+          multiState = renderViewer2dMultiImages(
+            selected,
+            useMultiCurrent ? checkedViews : []
+          );
+          if (!useMultiCurrent) {
+            currentUrl = pickImageForView(selected, activeViewKey) || "";
+            currentImageState = setViewerImage(
+              "#viewer2d-mainimg",
+              currentUrl,
+              getTitle(selected)
+            );
+          }
+        } else {
+          renderViewer2dMultiImages(null, []);
+        }
+
+        if (splitActive) {
+          pinnedUrl = pickImageForView(pinnedComparisonData, activeViewKey) || "";
+          pinnedImageState = setViewerImage(
+            "#viewer2d-pinnedimg",
+            pinnedUrl,
+            getTitle(pinnedComparisonData)
+          );
+        } else {
+          d3.select("#viewer2d-pinnedimg").attr("src", "").attr("title", "");
+        }
+
+        d3.select(".viewer2d-main").classed(
+          "compare-has-images",
+          splitActive &&
+            ((currentImageState && !currentImageState.isPlaceholder) ||
+              (pinnedImageState && !pinnedImageState.isPlaceholder))
+        );
+        d3.select(".viewer2d-main").classed(
+          "multi-has-images",
+          !splitActive && !!multiState && !!multiState.hasNonPlaceholder
+        );
+        updateThumbnailDrawerState(selected, checkedViews);
+
+        updatePinnedSliderMarkers();
+        updatePinCompareButton();
+        updatePinnedScatterDot();
+
+        if (selected) {
+          updateIterationData([selected]);
+        }
+      }
+
+      function togglePinnedComparison() {
+        var selected = getSelectedDatum();
+        if (!selected) return;
+
+        if (pinnedComparisonData) {
+          pinnedComparisonData = null;
+        } else {
+          pinnedComparisonData = Object.assign({}, selected);
+          var targetView =
+            currentView === "3D"
+              ? getActiveThumbView()
+              : normalize2dView(currentView);
+          if (!targetView || targetView.indexOf("2D_") !== 0) {
+            targetView = "2D_1";
+          }
+
+          var targetInput = d3.select(
+            "input.toggleView[value='" + targetView + "']"
+          );
+          if (!targetInput.empty()) {
+            targetInput.property("checked", true);
+            toggleView.call(targetInput.node());
+          } else {
+            currentView = targetView;
+          }
+        }
+
+        updateViewer2dCompareState(selected);
+      }
 
       // Initiate 3D viewer
       function initiate3DViewer() {
@@ -4185,6 +5033,17 @@
       d3.selectAll("input.toggleView").on("change", toggleView);
       d3.selectAll("input.thumbToggleView").on("change", toggleThumbView);
       d3.select("#viewer2d-mainimg").on("click", cycle2DImage);
+      d3.select("#imgNext").on("click", cycle2DImage);
+      d3.select("#pinCompareToggle").on("click", togglePinnedComparison);
+      d3.select("#thumbnailsPullTab").on("click", function () {
+        if (d3.event && typeof d3.event.preventDefault === "function") {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+        }
+        toggleThumbnailDrawerPin();
+      });
+      updatePinCompareButton();
+      updateThumbnailsPullTabState();
 
       function getCanonicalImageKey(toggleValue) {
         if (!toggleValue || typeof toggleValue !== "string") return null;
@@ -4280,6 +5139,156 @@
         );
       }
 
+      function get2dViewIndex(viewKey) {
+        var match = (viewKey || "").match(/^2D_(\d+)$/);
+        if (!match || !match[1]) return 9999;
+        var parsed = parseInt(match[1], 10);
+        return isFinite(parsed) ? parsed : 9999;
+      }
+
+      function sortViewKeysByImageOrder(viewKeys) {
+        return (viewKeys || []).slice().sort(function (a, b) {
+          return get2dViewIndex(a) - get2dViewIndex(b);
+        });
+      }
+
+      function updateThumbnailsPullTabState() {
+        var pullTab = d3.select("#thumbnailsPullTab");
+        if (pullTab.empty()) return;
+
+        pullTab
+          .classed("pinned", isThumbnailDrawerPinned)
+          .attr(
+            "title",
+            isThumbnailDrawerPinned
+              ? "Unpin thumbnails drawer"
+              : "Pin thumbnails drawer"
+          );
+      }
+
+      function updateThumbnailDrawerState(selectedDatum, checkedViews) {
+        var container = d3.select("#thumbnails-btm_container");
+        if (container.empty()) return;
+
+        var hasSelection = !!selectedDatum && container.classed("onRight");
+        if (!hasSelection) {
+          container
+            .classed("drawer-open", false)
+            .classed("drawer-pinned", false);
+          updateThumbnailsPullTabState();
+          return;
+        }
+
+        var shouldOpen = true;
+
+        container
+          .classed("drawer-open", shouldOpen)
+          .classed("drawer-pinned", isThumbnailDrawerPinned);
+        updateThumbnailsPullTabState();
+      }
+
+      function toggleThumbnailDrawerPin() {
+        var container = d3.select("#thumbnails-btm_container");
+        if (container.empty() || !container.classed("onRight")) return;
+        isThumbnailDrawerPinned = !isThumbnailDrawerPinned;
+        updateThumbnailDrawerState(getSelectedDatum());
+      }
+
+      function getRawChecked2dViews() {
+        var checked = [];
+        d3.selectAll("input.toggleView").filter(function () {
+          return this.value && this.value.indexOf("2D_") === 0;
+        }).each(function () {
+          if (this.checked) {
+            checked.push(this.value);
+          }
+        });
+        return sortViewKeysByImageOrder(checked);
+      }
+
+      function getChecked2dViews(selectedData) {
+        var checked = getRawChecked2dViews().filter(function (viewKey) {
+          return hasAliasForToggle(viewKey);
+        });
+
+        if (selectedData) {
+          checked = checked.filter(function (viewKey) {
+            return hasImageForToggle(viewKey, selectedData);
+          });
+        }
+
+        if (checked.length > 0) {
+          return sortViewKeysByImageOrder(checked);
+        }
+
+        var fallbackViews = ["2D_1", "2D_2", "2D_3"].filter(function (viewKey) {
+          return hasAliasForToggle(viewKey);
+        });
+        if (selectedData) {
+          fallbackViews = fallbackViews.filter(function (viewKey) {
+            return hasImageForToggle(viewKey, selectedData);
+          });
+        }
+        return fallbackViews.length > 0
+          ? [sortViewKeysByImageOrder(fallbackViews)[0]]
+          : ["2D_1"];
+      }
+
+      function setChecked2dViews(viewKeys) {
+        var set = {};
+        (viewKeys || []).forEach(function (viewKey) {
+          set[viewKey] = true;
+        });
+        d3.selectAll("input.toggleView").filter(function () {
+          return this.value && this.value.indexOf("2D_") === 0;
+        }).property("checked", function () {
+          return !!set[this.value];
+        });
+      }
+
+      function ensureAtLeastOneChecked2d(preferredView, selectedData) {
+        var checked = getRawChecked2dViews();
+        if (checked.length > 0) return;
+
+        var fallback =
+          preferredView && preferredView.indexOf("2D_") === 0
+            ? preferredView
+            : null;
+        if (!fallback || !hasAliasForToggle(fallback)) {
+          fallback = getChecked2dViews(selectedData)[0];
+        }
+
+        var fallbackInput = d3.select(
+          "input.toggleView[value='" + fallback + "']"
+        );
+        if (!fallbackInput.empty()) {
+          fallbackInput.property("checked", true);
+        }
+      }
+
+      function getPrimaryChecked2dView(selectedData, preferredView) {
+        var checked = getChecked2dViews(selectedData);
+        if (preferredView && checked.indexOf(preferredView) !== -1) {
+          return preferredView;
+        }
+        var thumbPreferred = getActiveThumbView();
+        if (checked.indexOf(thumbPreferred) !== -1) {
+          return thumbPreferred;
+        }
+        var currentPreferred = normalize2dView(currentView);
+        if (checked.indexOf(currentPreferred) !== -1) {
+          return currentPreferred;
+        }
+        return checked[0];
+      }
+
+      function syncThumbToggleFromMain(viewKey) {
+        if (!viewKey || viewKey.indexOf("2D_") !== 0) return;
+        d3.selectAll("input.thumbToggleView").property("checked", function () {
+          return this.value === viewKey;
+        });
+      }
+
       function toggleThumbView() {
         var viewValue = this.value;
         if (!viewValue || viewValue.indexOf("2D_") !== 0) {
@@ -4288,17 +5297,12 @@
 
         currentThumbView = viewValue;
 
-        // sync main 2D toggle if we are in a 2D mode
+        // Sync main 2D checkbox for the selected thumbnail mode.
         var mainToggle = d3.select(
           "input.toggleView[value='" + viewValue + "']"
         );
-        if (
-          !mainToggle.empty() &&
-          currentView &&
-          currentView.indexOf("3D") !== 0
-        ) {
+        if (!mainToggle.empty()) {
           mainToggle.property("checked", true);
-          currentView = viewValue;
         }
 
         var selected =
@@ -4306,49 +5310,47 @@
             ? graph.highlight()[0]
             : null;
 
-        if (selected) {
-          var url = pickImageForView(selected, viewValue);
-          if (url) {
-            d3.select("#viewer2d img").attr("src", url).attr("title", getTitle);
-          }
+        if (currentView !== "3D") {
+          currentView = getPrimaryChecked2dView(selected, viewValue);
         }
+        syncThumbToggleFromMain(currentView);
 
         if (graph && typeof updateImageGrid === "function") {
           var dataForGrid =
             graph.brushed && graph.brushed() ? graph.brushed() : graph.data();
           updateImageGrid(dataForGrid, false);
         }
+
+        updateViewer2dCompareState(selected);
       }
 
       function toggleView() {
         var viewValue = this.value;
+        var selected =
+          graph && graph.highlight && graph.highlight().length
+            ? graph.highlight()[0]
+            : null;
 
         if (viewValue.indexOf("2D_") === 0) {
-          var viewKey = viewValue;
-          currentThumbView = viewKey;
-          // keep thumbnail radio in sync with the main 2D selection
-          d3.selectAll("input.thumbToggleView").property(
-            "checked",
-            function () {
-              return this.value === viewKey;
-            }
-          );
+          d3.select("#threeDRadio").property("checked", false);
 
-          var selected =
-            graph && graph.highlight && graph.highlight().length
-              ? graph.highlight()[0]
-              : null;
-          if (selected) {
-            var url = pickImageForView(selected, viewKey);
-            if (url) {
-              d3.select("#viewer2d img")
-                .attr("src", url)
-                .attr("title", getTitle);
+          if (
+            this &&
+            this.type &&
+            this.type.toLowerCase() === "checkbox"
+          ) {
+            if (!this.checked) {
+              ensureAtLeastOneChecked2d(viewValue, selected);
             }
+            currentView = getPrimaryChecked2dView(selected, viewValue);
+          } else {
+            setChecked2dViews([viewValue]);
+            currentView = viewValue;
           }
-          currentView = viewValue; // onthoud welke 2D toggle actief is
+          currentThumbView = currentView;
+          syncThumbToggleFromMain(currentView);
 
-          // refresh thumbnails to match the chosen 2D column
+          // Refresh thumbnails to match the chosen 2D column.
           if (graph && typeof updateImageGrid === "function") {
             var dataForGrid =
               graph.brushed && graph.brushed() ? graph.brushed() : graph.data();
@@ -4365,21 +5367,21 @@
           }
         }
 
-        var onOff = {
-          "2D_1": ["zoomed", "viewer3d"],
-          "2D_2": ["zoomed", "viewer3d"],
-          "2D_3": ["zoomed", "viewer3d"],
-          "3D": ["viewer3d", "zoomed"],
-        };
-
-        d3.select("#" + onOff[currentView][0]).attr("class", "zoomed");
-        d3.select("#" + onOff[currentView][1]).attr("class", "zoomed hidden");
+        if (currentView === "3D") {
+          d3.select("#viewer3d").attr("class", "zoomed");
+          d3.select("#zoomed").attr("class", "zoomed hidden");
+        } else {
+          d3.select("#zoomed").attr("class", "zoomed");
+          d3.select("#viewer3d").attr("class", "zoomed hidden");
+        }
 
         d3.select(".Spectacles_Footer").remove();
 
         if (va3cViewer !== undefined) {
           va3cViewer.viewerDiv.resize();
         }
+
+        updateViewer2dCompareState(selected);
       }
 
       function cycle2DImage() {
@@ -4404,12 +5406,18 @@
           return;
         }
 
-        var currentIndex = available.indexOf(currentView);
+        var checkedViews = getChecked2dViews(selected);
+        if (checkedViews.length !== 1) {
+          return;
+        }
+
+        var currentIndex = available.indexOf(checkedViews[0]);
         if (currentIndex === -1) {
           currentIndex = 0;
         }
 
         var nextValue = available[(currentIndex + 1) % available.length];
+        setChecked2dViews([nextValue]);
         var nextInput = d3.select(
           "input.toggleView[value='" + nextValue + "']"
         );
@@ -4473,6 +5481,8 @@
         } else {
           va3cViewer.viewerDiv.resize();
         }
+
+        setTimeout(updatePinnedSliderMarkers, 0);
       }
     </script>
 
@@ -5820,6 +6830,80 @@
         });
       }
 
+      function getScatterVariableOrder() {
+        if (
+          typeof scatterChart !== "undefined" &&
+          scatterChart &&
+          Array.isArray(scatterChart.__numeric_variables) &&
+          scatterChart.__numeric_variables.length > 0
+        ) {
+          return scatterChart.__numeric_variables.slice();
+        }
+
+        var domOrder = [];
+        d3.selectAll(".scatter-matrix-variable-control label").each(function (d) {
+          if (d !== undefined && d !== null) {
+            domOrder.push(String(d));
+          }
+        });
+        if (domOrder.length > 0) {
+          return domOrder;
+        }
+
+        if (!graph || typeof graph.data !== "function") {
+          return [];
+        }
+        var rows = graph.data() || [];
+        if (!rows.length) return [];
+        return Object.keys(rows[0]).filter(function (k) {
+          var v = rows[0][k];
+          return v !== null && v !== "" && !isNaN(+v);
+        });
+      }
+
+      function getScatterVariableIndex(name) {
+        var key = (name || "").toString();
+        if (!key) return null;
+        var order = getScatterVariableOrder();
+        var idx = order.indexOf(key);
+        return idx >= 0 ? idx + 1 : null;
+      }
+
+      function updateScatterVariableChecklistLabels() {
+        d3.selectAll(".scatter-matrix-variable-control label").text(function (d) {
+          var key = (d || "").toString();
+          var idx = getScatterVariableIndex(key);
+          var prefix = idx !== null ? idx + ": " : "";
+          return prefix + getDimLabel(key);
+        });
+      }
+
+      function updateScatterCellAxisTitles() {
+        d3.selectAll(".scatter-matrix-svg g.cell text").text(function (d) {
+          var el = d3.select(this);
+          var current = (el.text() || "").trim();
+          var transform = el.attr("transform") || "";
+
+          // Only rewrite axis titles ("n: ..."), leave drill/filter lines untouched.
+          var isAxisTitle = /^\s*\d+\s*:/.test(current);
+          if (!isAxisTitle) {
+            return current;
+          }
+
+          var isYAxisTitle = transform.indexOf("rotate(-90)") >= 0;
+          var key =
+            d && (isYAxisTitle ? d.y : d.x)
+              ? isYAxisTitle
+                ? d.y
+                : d.x
+              : current.replace(/^\s*\d+\s*:\s*/, "").trim();
+
+          var idx = getScatterVariableIndex(key);
+          var prefix = idx !== null ? idx + ": " : "";
+          return prefix + getDimLabel(key);
+        });
+      }
+
       function setDimLabels(dimLabels) {
         dimLabels = dimLabels || {};
 
@@ -5873,12 +6957,7 @@
         });
 
         // Update scatter variable checklist labels
-        d3.selectAll(".scatter-matrix-variable-control label").text(function (
-          d,
-          i
-        ) {
-          return i + 1 + ": " + getDimLabel(d);
-        });
+        updateScatterVariableChecklistLabels();
 
         // Update scatter filter headers
         d3.selectAll(".scatter-matrix-filter-control p").each(function () {
@@ -5891,16 +6970,7 @@
         });
 
         // Update scatter cell axis titles (x/y labels inside cells)
-        d3.selectAll(".scatter-matrix-svg g.cell text").text(function (d) {
-          var current = d3.select(this).text();
-          var prefix =
-            current.indexOf(":") >= 0 ? current.split(":")[0] + ": " : "";
-          var key = d && d.y ? d.y : d && d.x ? d.x : null;
-          if (!key) {
-            return current;
-          }
-          return prefix + getDimLabel(key);
-        });
+        updateScatterCellAxisTitles();
 
         // Update parallel coordinates axis labels
         d3.selectAll(".dimension text.label").text(function (d) {
@@ -5937,32 +7007,10 @@
 
       // Apply custom labels to scatter matrix after render
       function updateScatterLabels() {
-        // relabel only the scatter cell titles; leave tick labels untouched
-        d3.selectAll(".scatter-matrix-svg g.cell text").text(function () {
-          var current = d3.select(this).text() || "";
-          var cellData = d3.select(this.parentNode).datum() || {};
-          var field = cellData.y || cellData.x || null;
-
-          // preserve numeric prefix if present
-          var matchPrefix = current.match(/^\s*(\d+)\s*:\s*/);
-          var prefix = matchPrefix ? matchPrefix[1] + ": " : "";
-
-          var name = field
-            ? field
-            : matchPrefix
-            ? current.replace(/^\s*\d+\s*:\s*/, "")
-            : current.trim();
-
-          return prefix + getDimLabel(name);
-        });
+        updateScatterCellAxisTitles();
 
         // variable checklist
-        d3.selectAll(".scatter-matrix-variable-control label").text(function (
-          d,
-          i
-        ) {
-          return i + 1 + ": " + getDimLabel(d);
-        });
+        updateScatterVariableChecklistLabels();
 
         // filter headers
         d3.selectAll(".scatter-matrix-filter-control p").each(function () {
