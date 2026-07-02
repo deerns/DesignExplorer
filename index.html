@@ -7484,19 +7484,23 @@
         }
 
         var exportJson = globalUserSetting;
-
-        var JsonContent = "data:attachment/json;charset=utf-8,";
-
-        JsonContent += encodeURI(JSON.stringify(exportJson));
+        var jsonString = JSON.stringify(exportJson, null, 2);
+        var jsonBlob = new Blob([jsonString], {
+          type: "application/json;charset=utf-8",
+        });
+        var downloadUrl = URL.createObjectURL(jsonBlob);
 
         var a = d3
           .select("body")
           .append("a")
-          .attr("href", JsonContent)
-          .attr("target", "_blank")
+          .attr("href", downloadUrl)
           .attr("download", "settings.json");
 
         a[0][0].click();
+        setTimeout(function () {
+          URL.revokeObjectURL(downloadUrl);
+          a.remove();
+        }, 0);
       }
 
       function loadSetting(settingFilePath) {
