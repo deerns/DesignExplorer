@@ -86,9 +86,33 @@ function overwriteInitialGlobalValues() {
     dimMark: {},
     dimLabels: {},
     dimHidden: {},
+    dimReversed: {},
     imageLabels: {},
     labelSize: "",
+    lineGradient: {
+      enabled: false,
+      start:
+        typeof defaultLineGradientColors !== "undefined"
+          ? defaultLineGradientColors[0]
+          : "#102F86",
+      end:
+        typeof defaultLineGradientColors !== "undefined"
+          ? defaultLineGradientColors[1]
+          : "#2FADDD",
+    },
   };
+
+  if (
+    typeof color !== "undefined" &&
+    color &&
+    typeof color.range === "function"
+  ) {
+    color.range(
+      typeof defaultLineGradientColors !== "undefined"
+        ? defaultLineGradientColors.slice()
+        : ["#102F86", "#2FADDD"]
+    );
+  }
 
   rcheight = height = d3.select("#graph").style("height").replace("px", "");
 
