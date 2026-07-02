@@ -242,10 +242,50 @@
         min-width: 120px;
         margin-left: 8px;
       }
+      #labelSizeRow #labelSizeInput {
+        flex: 0 0 78px;
+        min-width: 78px;
+        text-align: right;
+      }
       #labelSizeValue {
         text-align: right;
         min-width: 52px;
         flex: 0 0 52px;
+      }
+      #lineGradientToggleRow {
+        gap: 12px;
+      }
+      #lineGradientToggleRow .line-gradient-toggle {
+        margin: 0;
+      }
+      #lineGradientControlsRow {
+        gap: 12px;
+        align-items: center;
+      }
+      #lineGradientControlsRow .line-gradient-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 1 auto;
+      }
+      #lineGradientControlsRow .line-gradient-control label {
+        margin: 0;
+        font-weight: 600;
+      }
+      #lineGradientControlsRow input[type="color"] {
+        width: 42px;
+        height: 30px;
+        padding: 0;
+        border: 0;
+        background: none;
+        cursor: pointer;
+      }
+      #lineGradientPreview {
+        flex: 1 1 180px;
+        min-width: 180px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid #cccccc;
       }
 
       /* match settings panel primary color to project blue */
@@ -612,6 +652,8 @@
       type: "",
     };
 
+    var defaultLineGradientColors = ["#102F86", "#2FADDD"];
+
     _userSetting =
       typeof _userSetting !== "undefined"
         ? _userSetting
@@ -628,6 +670,11 @@
             dimReversed: {},
             imageLabels: {},
             labelSize: "",
+            lineGradient: {
+              enabled: false,
+              start: defaultLineGradientColors[0],
+              end: defaultLineGradientColors[1],
+            },
           };
     var imageLinkKeys = [];
     var imageKeyAliases = {};
@@ -1053,23 +1100,103 @@
       return getDimLabel(key) + ": " + value;
     }
 
+    function parseCsvText(csvText) {
+      var normalizedText = csvText || "";
+
+      // Remove UTF-8 BOM if present so first header is parsed cleanly.
+      if (normalizedText.charCodeAt(0) === 0xfeff) {
+        normalizedText = normalizedText.slice(1);
+      }
+
+      return d3.csv.parse(normalizedText);
+    }
+
+    function decodeCsvArrayBuffer(arrayBuffer, sourceLabel) {
+      var csvText = "";
+
+      if (typeof TextDecoder !== "undefined") {
+        try {
+          csvText = new TextDecoder("utf-8", { fatal: true }).decode(arrayBuffer);
+        } catch (utf8Error) {
+          console.warn(
+            "CSV decode fallback to windows-1252 for:",
+            sourceLabel,
+            utf8Error
+          );
+          csvText = new TextDecoder("windows-1252").decode(arrayBuffer);
+        }
+      } else {
+        // Legacy fallback: keep byte values and let parser continue.
+        var bytes = new Uint8Array(arrayBuffer || []);
+        for (var i = 0; i < bytes.length; i++) {
+          csvText += String.fromCharCode(bytes[i]);
+        }
+      }
+
+      return csvText;
+    }
+
+    function loadCsvWithEncodingFallback(csvFilePath, onSuccess, onError) {
+      if (typeof TextDecoder === "undefined") {
+        d3.csv(csvFilePath, function (data) {
+          onSuccess(data);
+        });
+        return;
+      }
+
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", csvFilePath, true);
+      xhr.responseType = "arraybuffer";
+
+      xhr.onload = function () {
+        if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
+          var csvText = decodeCsvArrayBuffer(xhr.response, csvFilePath);
+          onSuccess(parseCsvText(csvText));
+          return;
+        }
+
+        if (onError) {
+          onError(
+            new Error(
+              "CSV load failed: " + csvFilePath + " (HTTP " + xhr.status + ")"
+            )
+          );
+        }
+      };
+
+      xhr.onerror = function () {
+        if (onError) {
+          onError(new Error("CSV load failed: " + csvFilePath));
+        }
+      };
+
+      xhr.send();
+    }
+
     function readyToLoad(csvFilePathLink, settingFilePathLink) {
       if (csvFilePathLink.length > 0) {
         // remove the current selection
         unloadPageContent();
-        d3.csv(csvFilePathLink, function (data) {
-          loadDataToDesignExplorer(data);
-          loadSetting(settingFilePathLink);
-          updateLayoutOnDeselect();
+        loadCsvWithEncodingFallback(
+          csvFilePathLink,
+          function (data) {
+            loadDataToDesignExplorer(data);
+            loadSetting(settingFilePathLink);
+            updateLayoutOnDeselect();
 
-          // If a server link was provided manually, open settings (same as the Setting button)
-          // only after data finishes loading so image counts are ready
-          if (document.getElementById("folderLink").value) {
-            setTimeout(function () {
-              dataSetting(graph);
-            }, 200);
+            // If a server link was provided manually, open settings (same as the Setting button)
+            // only after data finishes loading so image counts are ready
+            if (document.getElementById("folderLink").value) {
+              setTimeout(function () {
+                dataSetting(graph);
+              }, 200);
+            }
+          },
+          function (err) {
+            console.error(err);
+            alert("Could not load CSV file. Please check file path and encoding.");
           }
-        });
+        );
       } else {
         alert("You have to put Google Drive Folder information first!");
       }
@@ -1960,7 +2087,40 @@
                             step="1"
                           />
                         </div>
+                        <input
+                          id="labelSizeInput"
+                          class="form-control input-sm"
+                          type="text"
+                        />
                         <span id="labelSizeValue"></span>
+                      </li>
+                      <li
+                        class="list-group-item form-inline"
+                        id="lineGradientToggleRow"
+                      >
+                        <span class="setting-label">Custom Gradient:</span>
+                        <input
+                          id="lineGradientEnabled"
+                          class="line-gradient-toggle"
+                          type="checkbox"
+                        />
+                        <span>Enable custom line colors</span>
+                      </li>
+                      <li
+                        class="list-group-item form-inline"
+                        id="lineGradientControlsRow"
+                        style="display: none"
+                      >
+                        <span class="setting-label">Line Gradient:</span>
+                        <div class="line-gradient-control">
+                          <label for="lineGradientStart">Start</label>
+                          <input id="lineGradientStart" type="color" />
+                        </div>
+                        <div class="line-gradient-control">
+                          <label for="lineGradientEnd">End</label>
+                          <input id="lineGradientEnd" type="color" />
+                        </div>
+                        <div id="lineGradientPreview"></div>
                       </li>
                       <li class="list-group-item form-inline double-input-row password-row">
                         <span class="setting-label">Password:</span>
@@ -2067,10 +2227,17 @@
         d3.select("div#welcome").style("display", "none");
 
         // load the new file
-        d3.csv(filePath, function (data) {
-          loadDataToDesignExplorer(data);
-          loadSetting(settingFilePath);
-        });
+        loadCsvWithEncodingFallback(
+          filePath,
+          function (data) {
+            loadDataToDesignExplorer(data);
+            loadSetting(settingFilePath);
+          },
+          function (err) {
+            console.error(err);
+            alert("Could not load sample CSV file.");
+          }
+        );
       });
     </script>
 
@@ -3204,7 +3371,132 @@
 
       var pcIsColoredBy;
 
-      var color = d3.scale.linear().range(["#102F86", "#2FADDD"]);
+      var color = d3.scale
+        .linear()
+        .range(defaultLineGradientColors.slice());
+
+      function normalizeHexColor(value, fallback) {
+        var raw = value === undefined || value === null ? "" : String(value).trim();
+        if (!raw) return fallback;
+
+        if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+          return (
+            "#" +
+            raw.charAt(1) +
+            raw.charAt(1) +
+            raw.charAt(2) +
+            raw.charAt(2) +
+            raw.charAt(3) +
+            raw.charAt(3)
+          ).toUpperCase();
+        }
+
+        if (/^#[0-9a-fA-F]{6}$/.test(raw)) {
+          return raw.toUpperCase();
+        }
+
+        return fallback;
+      }
+
+      function normalizeLineGradientSetting(setting) {
+        var raw =
+          setting && typeof setting === "object" && !Array.isArray(setting)
+            ? setting
+            : {};
+
+        return {
+          enabled: !!raw.enabled,
+          start: normalizeHexColor(raw.start, defaultLineGradientColors[0]),
+          end: normalizeHexColor(raw.end, defaultLineGradientColors[1]),
+        };
+      }
+
+      function cloneLineGradientSetting(setting) {
+        var normalized = normalizeLineGradientSetting(setting);
+        return {
+          enabled: normalized.enabled,
+          start: normalized.start,
+          end: normalized.end,
+        };
+      }
+
+      function getEffectiveLineGradientColors(setting) {
+        var normalized = normalizeLineGradientSetting(setting);
+        if (!normalized.enabled) {
+          return defaultLineGradientColors.slice();
+        }
+        return [normalized.start, normalized.end];
+      }
+
+      function syncLineGradientSettingsUI(setting) {
+        var normalized = normalizeLineGradientSetting(setting);
+        var toggle = d3.select("#lineGradientEnabled");
+        var startInput = d3.select("#lineGradientStart");
+        var endInput = d3.select("#lineGradientEnd");
+        var controlsRow = d3.select("#lineGradientControlsRow");
+        var preview = d3.select("#lineGradientPreview");
+
+        if (!toggle.empty()) {
+          toggle.property("checked", normalized.enabled);
+        }
+        if (!startInput.empty()) {
+          startInput.property("value", normalized.start);
+        }
+        if (!endInput.empty()) {
+          endInput.property("value", normalized.end);
+        }
+        if (!controlsRow.empty()) {
+          controlsRow.style("display", normalized.enabled ? "flex" : "none");
+        }
+        if (!preview.empty()) {
+          preview
+            .style(
+              "background",
+              "linear-gradient(90deg, " +
+                normalized.start +
+                ", " +
+                normalized.end +
+                ")"
+            )
+            .attr("title", normalized.start + " -> " + normalized.end);
+        }
+      }
+
+      function refreshColorDrivenViews() {
+        if (!graph || typeof graph.data !== "function") return;
+        var graphData = graph.data() || [];
+        if (!graphData.length) return;
+
+        var dimensions =
+          typeof graph.dimensions === "function" ? graph.dimensions() || {} : {};
+        var dimToColorBy = pcIsColoredBy;
+
+        if (!dimToColorBy || !dimensions[dimToColorBy]) {
+          if (typeof graph.getOrderedDimensionKeys === "function") {
+            var orderedKeys = graph.getOrderedDimensionKeys() || [];
+            dimToColorBy = orderedKeys.length > 0 ? orderedKeys[0] : null;
+          }
+
+          if (!dimToColorBy) {
+            var dimensionKeys = Object.keys(dimensions);
+            dimToColorBy = dimensionKeys.length > 0 ? dimensionKeys[0] : null;
+          }
+        }
+
+        if (dimToColorBy && dimensions[dimToColorBy]) {
+          update_colors(dimToColorBy);
+        }
+      }
+
+      function applyLineGradientSetting(setting, rerender) {
+        var normalized = normalizeLineGradientSetting(setting);
+        color.range(getEffectiveLineGradientColors(normalized));
+        syncLineGradientSettingsUI(normalized);
+
+        if (rerender) {
+          refreshColorDrivenViews();
+        }
+      }
 
       var scatterHeight = d3
         .select("#ScChartWrapper")
@@ -4356,10 +4648,17 @@
         } else {
           // load default data
           //parse the csv data from the design_explorer_data folder
-          d3.csv("design_explorer_data/default_onload.csv", function (data) {
-            loadDataToDesignExplorer(data);
-            loadSetting("design_explorer_data/DefaultData/settings.json");
-          });
+          loadCsvWithEncodingFallback(
+            "design_explorer_data/default_onload.csv",
+            function (data) {
+              loadDataToDesignExplorer(data);
+              loadSetting("design_explorer_data/DefaultData/settings.json");
+            },
+            function (err) {
+              console.error(err);
+              alert("Could not load default CSV file.");
+            }
+          );
         }
 
         //function to close intro window div
@@ -4415,36 +4714,51 @@
           unloadPageContent();
 
           var file = fileInput.files[0];
+          if (!file) {
+            return;
+          }
+
           var reader = new FileReader();
 
           var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt)$/;
 
-          if (regex.test(file.name.toLowerCase())) {
-            // Update project name
-            var inputFileName = file.name.toUpperCase().replace(".CSV", "");
-
-            d3.select("p.navbar-brand").text(inputFileName);
-
-            reader.onload = function (e) {
-              var inputString = e.target.result;
-
-              // I need to add some defense here
-              // separateInputOutputs(e);
-
-              var data = d3.csv.parse(inputString);
-
-              //originalDataLength = data.length;
-
-              if (data !== null) {
-                loadDataToDesignExplorer(data);
-                loadSetting();
-              }
-            };
-          } else {
+          if (!regex.test(file.name.toLowerCase())) {
             alert("Please upload a valid CSV file!");
+            return;
           }
 
-          reader.readAsText(file);
+          // Update project name
+          var inputFileName = file.name.toUpperCase().replace(".CSV", "");
+
+          d3.select("p.navbar-brand").text(inputFileName);
+
+          reader.onload = function (e) {
+            var inputString;
+
+            if (typeof e.target.result === "string") {
+              inputString = e.target.result;
+            } else {
+              inputString = decodeCsvArrayBuffer(e.target.result, file.name);
+            }
+
+            // I need to add some defense here
+            // separateInputOutputs(e);
+
+            var data = parseCsvText(inputString);
+
+            //originalDataLength = data.length;
+
+            if (data !== null) {
+              loadDataToDesignExplorer(data);
+              loadSetting();
+            }
+          };
+
+          if (typeof TextDecoder !== "undefined") {
+            reader.readAsArrayBuffer(file);
+          } else {
+            reader.readAsText(file);
+          }
           d3.select("#welcome").style("display", "none");
         });
       }; // end of window.onload
@@ -5610,6 +5924,9 @@
         _userSetting.dimHidden = _userSetting.dimHidden || {};
         _userSetting.dimReversed = _userSetting.dimReversed || {};
         _userSetting.imageLabels = _userSetting.imageLabels || {};
+        _userSetting.lineGradient = cloneLineGradientSetting(
+          _userSetting.lineGradient
+        );
         var currentStudyInfo =
           _userSetting.studyInfo && typeof _userSetting.studyInfo === "object"
             ? _userSetting.studyInfo
@@ -5673,6 +5990,7 @@
           dimReversed: Object.assign({}, _userSetting.dimReversed || {}),
           imageLabels: effectiveImageLabels,
           labelSize: _userSetting.labelSize || "",
+          lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
         };
 
         // var userStudyInfo = {
@@ -5936,6 +6254,40 @@
             setLabelSizeFromAny(val, true);
           };
         }
+
+        function syncLineGradientSettingFromInputs(applyPreview) {
+          var nextSetting = normalizeLineGradientSetting({
+            enabled: dimSettingListDiv
+              .select("#lineGradientEnabled")
+              .property("checked"),
+            start: dimSettingListDiv.select("#lineGradientStart").property("value"),
+            end: dimSettingListDiv.select("#lineGradientEnd").property("value"),
+          });
+
+          newUserSetting.lineGradient = cloneLineGradientSetting(nextSetting);
+          syncLineGradientSettingsUI(nextSetting);
+
+          if (applyPreview) {
+            applyLineGradientSetting(nextSetting, true);
+          }
+
+          return nextSetting;
+        }
+
+        syncLineGradientSettingsUI(newUserSetting.lineGradient);
+        dimSettingListDiv.select("#lineGradientEnabled").on("change", function () {
+          syncLineGradientSettingFromInputs(true);
+        });
+        dimSettingListDiv
+          .select("#lineGradientStart")
+          .on("input change", function () {
+            syncLineGradientSettingFromInputs(true);
+          });
+        dimSettingListDiv
+          .select("#lineGradientEnd")
+          .on("input change", function () {
+            syncLineGradientSettingFromInputs(true);
+          });
 
         // show only the number of image label inputs that match available images/labels
         var imgCount = Math.max(
@@ -6422,6 +6774,7 @@
           } else {
             delete newUserSetting.labelSize;
           }
+          syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
           // force slider/axis labels to refresh immediately
@@ -6533,6 +6886,7 @@
           } else {
             delete newUserSetting.labelSize;
           }
+          syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           // refresh radio labels immediately even before saving
           applyImageLabelsImmediate(newUserSetting.imageLabels || {});
@@ -6551,6 +6905,7 @@
         var userDimReversed = userSetting.dimReversed || {};
         var userImageLabels = userSetting.imageLabels || {};
         var userLabelSize = userSetting.labelSize;
+        var userLineGradient = cloneLineGradientSetting(userSetting.lineGradient);
         var isThereNewDimTicks = Object.keys(userDimTicks).length > 0;
         var isThereNewDimLabels = Object.keys(userDimLabels).length > 0;
         var isThereNewImageLabels = Object.keys(userImageLabels).length > 0;
@@ -6559,6 +6914,9 @@
           userLabelSize !== null &&
           String(userLabelSize).trim().length > 0;
         var reversedChanged = false;
+
+        _userSetting.lineGradient = cloneLineGradientSetting(userLineGradient);
+        applyLineGradientSetting(userLineGradient, false);
 
         if (isThereNewStudyInfo) {
           setStudyInfo(userSetting.studyInfo);
@@ -6604,6 +6962,8 @@
         if (hasLabelSize && typeof applyLabelFontSize === "function") {
           applyLabelFontSize(userLabelSize);
         }
+
+        refreshColorDrivenViews();
 
         // always sync image labels so UI picks up values from settings.json
         setImageLabels(userImageLabels);
@@ -7109,6 +7469,9 @@
           globalUserSetting.imageLabels,
           newUserSetting.imageLabels
         );
+        globalUserSetting.lineGradient = cloneLineGradientSetting(
+          newUserSetting.lineGradient || globalUserSetting.lineGradient
+        );
         if (newUserSetting.hasOwnProperty("labelSize")) {
           if (
             newUserSetting.labelSize === null ||
@@ -7121,19 +7484,23 @@
         }
 
         var exportJson = globalUserSetting;
-
-        var JsonContent = "data:attachment/json;charset=utf-8,";
-
-        JsonContent += encodeURI(JSON.stringify(exportJson));
+        var jsonString = JSON.stringify(exportJson, null, 2);
+        var jsonBlob = new Blob([jsonString], {
+          type: "application/json;charset=utf-8",
+        });
+        var downloadUrl = URL.createObjectURL(jsonBlob);
 
         var a = d3
           .select("body")
           .append("a")
-          .attr("href", JsonContent)
-          .attr("target", "_blank")
+          .attr("href", downloadUrl)
           .attr("download", "settings.json");
 
         a[0][0].click();
+        setTimeout(function () {
+          URL.revokeObjectURL(downloadUrl);
+          a.remove();
+        }, 0);
       }
 
       function loadSetting(settingFilePath) {
@@ -7207,6 +7574,20 @@
             loadedDimReversed = asPlainObject(d.reversedDims || d.dimFlip);
           }
           var loadedImageLabels = asPlainObject(d.imageLabels);
+          var rawLoadedLineGradient = asPlainObject(d.lineGradient);
+          if (Object.keys(rawLoadedLineGradient).length === 0) {
+            if (
+              d.lineGradientEnabled !== undefined ||
+              d.lineGradientStart !== undefined ||
+              d.lineGradientEnd !== undefined
+            ) {
+              rawLoadedLineGradient = {
+                enabled: d.lineGradientEnabled,
+                start: d.lineGradientStart,
+                end: d.lineGradientEnd,
+              };
+            }
+          }
 
           // Merge with current settings to keep optional fields
           var mergedSetting = Object.assign({}, _userSetting, d);
@@ -7250,6 +7631,10 @@
             _userSetting.imageLabels || {},
             loadedImageLabels || {}
           );
+          mergedSetting.lineGradient =
+            Object.keys(rawLoadedLineGradient).length > 0
+              ? normalizeLineGradientSetting(rawLoadedLineGradient)
+              : cloneLineGradientSetting(_userSetting.lineGradient);
           mergedSetting.labelSize =
             d.labelSize !== undefined && d.labelSize !== null
               ? d.labelSize
@@ -7257,15 +7642,18 @@
 
           // update the global _userSetting
           _userSetting = mergedSetting;
+          applyLineGradientSetting(_userSetting.lineGradient, true);
           setStudyInfo(_userSetting.studyInfo || {});
           // ensure image labels are available before applying settings
           setImageLabels(_userSetting.imageLabels);
           setDimLabels(mergedSetting.dimLabels);
           setSettings(graph, mergedSetting);
           if (graph) {
+            applyLineGradientSetting(_userSetting.lineGradient, true);
             updateLabels();
             refreshGraphLabelsWithRetry(0);
             graph.render();
+            applyLineGradientSetting(_userSetting.lineGradient, true);
             // force relabel axes immediately
             d3.selectAll(".dimension text.label").text(function (d) {
               return getDimLabel(d);
@@ -7278,6 +7666,7 @@
             if (_userSetting.labelSize) {
               applyLabelFontSize(_userSetting.labelSize);
             }
+            applyLineGradientSetting(_userSetting.lineGradient, true);
             setImageLabels(_userSetting.imageLabels);
             refreshImageRadioTexts();
             if (graph) updateLabels();
@@ -7299,10 +7688,12 @@
                 applyLabelFontSize(_userSetting.labelSize);
               }
               if (graph) graph.render();
+              applyLineGradientSetting(_userSetting.lineGradient, true);
             }, 0);
             // extra delayed pass in case parcoords re-renders after settings
             setTimeout(function () {
               setDimLabels(_userSetting.dimLabels);
+              applyLineGradientSetting(_userSetting.lineGradient, true);
               setImageLabels(_userSetting.imageLabels);
               refreshImageRadioTexts();
               if (graph) {
@@ -7313,6 +7704,7 @@
                   return getDimLabel(d);
                 });
                 graph.render();
+                applyLineGradientSetting(_userSetting.lineGradient, true);
                 applyDimLabelsToGraph(5);
               }
             }, 200);
@@ -7320,6 +7712,7 @@
             setTimeout(function () {
               setStudyInfo(_userSetting.studyInfo || {});
               setDimLabels(_userSetting.dimLabels);
+              applyLineGradientSetting(_userSetting.lineGradient, true);
               if (graph) {
                 updateLabels();
                 refreshGraphLabelsWithRetry(0);
@@ -7330,6 +7723,7 @@
                   applyLabelFontSize(_userSetting.labelSize);
                 }
                 graph.render();
+                applyLineGradientSetting(_userSetting.lineGradient, true);
                 applyDimLabelsToGraph(3);
               }
             }, 500);
