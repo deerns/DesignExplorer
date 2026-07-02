@@ -7642,15 +7642,18 @@
 
           // update the global _userSetting
           _userSetting = mergedSetting;
+          applyLineGradientSetting(_userSetting.lineGradient, true);
           setStudyInfo(_userSetting.studyInfo || {});
           // ensure image labels are available before applying settings
           setImageLabels(_userSetting.imageLabels);
           setDimLabels(mergedSetting.dimLabels);
           setSettings(graph, mergedSetting);
           if (graph) {
+            applyLineGradientSetting(_userSetting.lineGradient, true);
             updateLabels();
             refreshGraphLabelsWithRetry(0);
             graph.render();
+            applyLineGradientSetting(_userSetting.lineGradient, true);
             // force relabel axes immediately
             d3.selectAll(".dimension text.label").text(function (d) {
               return getDimLabel(d);
@@ -7663,6 +7666,7 @@
             if (_userSetting.labelSize) {
               applyLabelFontSize(_userSetting.labelSize);
             }
+            applyLineGradientSetting(_userSetting.lineGradient, true);
             setImageLabels(_userSetting.imageLabels);
             refreshImageRadioTexts();
             if (graph) updateLabels();
@@ -7684,10 +7688,12 @@
                 applyLabelFontSize(_userSetting.labelSize);
               }
               if (graph) graph.render();
+              applyLineGradientSetting(_userSetting.lineGradient, true);
             }, 0);
             // extra delayed pass in case parcoords re-renders after settings
             setTimeout(function () {
               setDimLabels(_userSetting.dimLabels);
+              applyLineGradientSetting(_userSetting.lineGradient, true);
               setImageLabels(_userSetting.imageLabels);
               refreshImageRadioTexts();
               if (graph) {
@@ -7698,6 +7704,7 @@
                   return getDimLabel(d);
                 });
                 graph.render();
+                applyLineGradientSetting(_userSetting.lineGradient, true);
                 applyDimLabelsToGraph(5);
               }
             }, 200);
@@ -7705,6 +7712,7 @@
             setTimeout(function () {
               setStudyInfo(_userSetting.studyInfo || {});
               setDimLabels(_userSetting.dimLabels);
+              applyLineGradientSetting(_userSetting.lineGradient, true);
               if (graph) {
                 updateLabels();
                 refreshGraphLabelsWithRetry(0);
@@ -7715,6 +7723,7 @@
                   applyLabelFontSize(_userSetting.labelSize);
                 }
                 graph.render();
+                applyLineGradientSetting(_userSetting.lineGradient, true);
                 applyDimLabelsToGraph(3);
               }
             }, 500);
