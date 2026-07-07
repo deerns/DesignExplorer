@@ -409,6 +409,21 @@ function getSliderWrapperSelection(dimName) {
   return fallback.empty() ? null : fallback;
 }
 
+function ensureSliderFontOverrideStyleTag() {
+  if (typeof document === "undefined") return null;
+
+  var styleEl = document.getElementById("slider-font-overrides");
+  if (!styleEl) {
+    styleEl = document.createElement("style");
+    styleEl.id = "slider-font-overrides";
+    (document.head || document.getElementsByTagName("head")[0]).appendChild(
+      styleEl
+    );
+  }
+
+  return styleEl;
+}
+
 function applySliderFontOverrides(setting) {
   if (typeof d3 === "undefined") return;
 
@@ -418,6 +433,8 @@ function applySliderFontOverrides(setting) {
   var baseTitleSize = normalizeSliderPercentSize(effectiveSetting.labelSize);
   var baseTickSize = 9;
   var baseSliderLabelPx = 12;
+  var styleEl = ensureSliderFontOverrideStyleTag();
+  var cssRules = [];
 
   if (baseTitleSize === null) {
     baseTitleSize = 85;
@@ -427,7 +444,8 @@ function applySliderFontOverrides(setting) {
     var dimName = d && d.name ? d.name : d;
     var wrapper = getSliderWrapperSelection(dimName);
     if (!wrapper) return;
-    var wrapperNode = wrapper.node ? wrapper.node() : null;
+    var wrapperId = wrapper.attr ? wrapper.attr("id") : null;
+    if (!wrapperId) return;
 
     var titleOverride = normalizeSliderPercentSize(
       findSliderDimOverride(dimName, titleMap)
@@ -445,40 +463,37 @@ function applySliderFontOverrides(setting) {
       12,
       Math.round(resolvedTitlePx * 1.2)
     ) + "px";
-    var labelNode = wrapper.select(".inputSliderLabel").node();
+    var wrapperSelector = "#" + wrapperId;
 
-    if (wrapperNode && wrapperNode.style) {
-      wrapperNode.style.setProperty(
-        "font-size",
-        resolvedTitlePx + "px",
-        "important"
-      );
-      wrapperNode.style.setProperty(
-        "line-height",
-        resolvedTitleLineHeight,
-        "important"
-      );
-    }
+    cssRules.push(
+      wrapperSelector +
+        " .inputSliderLabel{" +
+        "font-size:" +
+        resolvedTitlePx +
+        "px !important;" +
+        "line-height:" +
+        resolvedTitleLineHeight +
+        " !important;" +
+        "display:block !important;" +
+        "}"
+    );
 
-    if (labelNode && labelNode.style) {
-      labelNode.style.setProperty(
-        "font-size",
-        resolvedTitlePx + "px",
-        "important"
-      );
-      labelNode.style.setProperty(
-        "line-height",
-        resolvedTitleLineHeight,
-        "important"
-      );
-      labelNode.style.setProperty("display", "block", "important");
-    }
-
-    wrapper
-      .selectAll(".irs-grid-text")
-      .style("font-size", resolvedTick, "important")
-      .style("line-height", resolvedTick, "important");
+    cssRules.push(
+      wrapperSelector +
+        " .irs-grid-text{" +
+        "font-size:" +
+        resolvedTick +
+        " !important;" +
+        "line-height:" +
+        resolvedTick +
+        " !important;" +
+        "}"
+    );
   });
+
+  if (styleEl) {
+    styleEl.textContent = cssRules.join("\n");
+  }
 }
 
 function applyLabelFontSize(size) {
