@@ -6232,15 +6232,9 @@
           if (numeric === null) return;
 
           numeric = Math.max(50, Math.min(200, numeric));
-          var baseline = currentDraftLabelSizePercent();
           newUserSetting.dimSliderTitleSizes =
             newUserSetting.dimSliderTitleSizes || {};
-
-          if (numeric === baseline) {
-            clearDimSettingEntry(dimName, newUserSetting.dimSliderTitleSizes);
-          } else {
-            newUserSetting.dimSliderTitleSizes[dimName] = numeric + "%";
-          }
+          newUserSetting.dimSliderTitleSizes[dimName] = numeric + "%";
 
           syncDimSliderTitleSizeControl(dimName);
           if (applyPreview) {
@@ -6253,15 +6247,9 @@
           if (numeric === null) return;
 
           numeric = Math.max(8, Math.min(32, numeric));
-          var baseline = currentSliderTickSizePx();
           newUserSetting.dimSliderTickSizes =
             newUserSetting.dimSliderTickSizes || {};
-
-          if (numeric === baseline) {
-            clearDimSettingEntry(dimName, newUserSetting.dimSliderTickSizes);
-          } else {
-            newUserSetting.dimSliderTickSizes[dimName] = numeric + "px";
-          }
+          newUserSetting.dimSliderTickSizes[dimName] = numeric + "px";
 
           syncDimSliderTickSizeControl(dimName);
           if (applyPreview) {
