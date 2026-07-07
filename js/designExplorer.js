@@ -87,6 +87,8 @@ function overwriteInitialGlobalValues() {
     dimLabels: {},
     dimHidden: {},
     dimReversed: {},
+    dimSliderTitleSizes: {},
+    dimSliderTickSizes: {},
     imageLabels: {},
     labelSize: "",
     lineGradient: {
@@ -321,6 +323,130 @@ function loadFromUrl(rawUrl) {
   });
 }
 
+function normalizeSliderPercentSize(size) {
+  if (size === undefined || size === null) return null;
+  if (typeof size === "number" && isFinite(size)) return size;
+
+  var str = String(size).trim();
+  if (!str) return null;
+  if (/%$/.test(str)) {
+    str = str.replace(/%$/, "");
+  }
+
+  var num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+function normalizeSliderPixelSize(size) {
+  if (size === undefined || size === null) return null;
+  if (typeof size === "number" && isFinite(size)) return size;
+
+  var str = String(size).trim();
+  if (!str) return null;
+  if (/px$/i.test(str)) {
+    str = str.replace(/px$/i, "");
+  }
+
+  var num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+function normalizeSliderDimKey(key) {
+  if (typeof normalizeDimKey === "function") {
+    return normalizeDimKey(key);
+  }
+
+  var raw = key;
+  if (raw && typeof raw === "object") {
+    raw =
+      raw.name ||
+      raw.key ||
+      raw.dim ||
+      raw.dimension ||
+      (typeof raw.toString === "function" ? raw.toString() : "");
+  }
+
+  return (raw || "")
+    .toString()
+    .trim()
+    .replace(/[_\.]/g, " ")
+    .replace(/^in:/i, "")
+    .replace(/^out:/i, "")
+    .toLowerCase();
+}
+
+function findSliderDimOverride(dimName, settingMap) {
+  var map = settingMap || {};
+
+  if (map[dimName] !== undefined) {
+    return map[dimName];
+  }
+
+  var target = normalizeSliderDimKey(dimName);
+  var match = Object.keys(map).find(function (key) {
+    return normalizeSliderDimKey(key) === target;
+  });
+
+  return match ? map[match] : undefined;
+}
+
+function getSliderWrapperSelection(dimName) {
+  if (typeof d3 === "undefined") return null;
+
+  if (typeof string_as_unicode_escape === "function") {
+    var escaped = string_as_unicode_escape(String(dimName));
+    var byId = d3.select("#sliderWrap_" + escaped);
+    if (!byId.empty()) {
+      return byId;
+    }
+  }
+
+  var fallback = d3.selectAll("#inputSliders .inputSlider").filter(function (d) {
+    var currentDim = d && d.name ? d.name : d;
+    return normalizeSliderDimKey(currentDim) === normalizeSliderDimKey(dimName);
+  });
+
+  return fallback.empty() ? null : fallback;
+}
+
+function applySliderFontOverrides(setting) {
+  if (typeof d3 === "undefined") return;
+
+  var effectiveSetting = setting || _userSetting || {};
+  var titleMap = effectiveSetting.dimSliderTitleSizes || {};
+  var tickMap = effectiveSetting.dimSliderTickSizes || {};
+  var baseTitleSize = normalizeSliderPercentSize(effectiveSetting.labelSize);
+  var baseTickSize = 9;
+
+  if (baseTitleSize === null) {
+    baseTitleSize = 85;
+  }
+
+  d3.selectAll("#inputSliders .inputSlider").each(function (d) {
+    var dimName = d && d.name ? d.name : d;
+    var wrapper = getSliderWrapperSelection(dimName);
+    if (!wrapper) return;
+
+    var titleOverride = normalizeSliderPercentSize(
+      findSliderDimOverride(dimName, titleMap)
+    );
+    var tickOverride = normalizeSliderPixelSize(
+      findSliderDimOverride(dimName, tickMap)
+    );
+
+    var resolvedTitle =
+      (titleOverride !== null ? titleOverride : baseTitleSize) + "%";
+    var resolvedTick =
+      (tickOverride !== null ? tickOverride : baseTickSize) + "px";
+
+    wrapper.select(".inputSliderLabel").style("font-size", resolvedTitle);
+    wrapper
+      .selectAll(".irs-grid-text")
+      .style("font-size", resolvedTick)
+      .style("line-height", resolvedTick);
+  });
+}
+
 function applyLabelFontSize(size) {
   // Accept either preset keys or a raw CSS font-size string/number
   var map = {
@@ -346,10 +472,12 @@ function applyLabelFontSize(size) {
   }
 
   try {
-    // keep both axis labels and slider labels in sync with custom size
-    d3
-      .selectAll(".label, #inputSliders .inputSliderLabel")
-      .style("font-size", resolved);
+    d3.selectAll(".label").style("font-size", resolved);
+    applySliderFontOverrides(
+      Object.assign({}, _userSetting || {}, {
+        labelSize: resolved,
+      })
+    );
   } catch (err) {
     console.warn("Could not apply label font size", err);
   }

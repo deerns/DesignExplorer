@@ -228,16 +228,19 @@
       #dataSetting .list-group-item.form-inline.password-row input.form-control + input.form-control {
         margin-left: 10px;
       }
-      #labelSizeRow input[type="range"] {
+      #labelSizeRow input[type="range"],
+      #dataSetting .slider-font-size-row input[type="range"] {
         width: 100%;
         display: block;
         margin: 0;
       }
-      #labelSizeRow {
+      #labelSizeRow,
+      #dataSetting .slider-font-size-row {
         gap: 15px;
         flex-wrap: nowrap;
       }
-      #labelSizeRow .label-size-field {
+      #labelSizeRow .label-size-field,
+      #dataSetting .slider-font-size-row .slider-font-size-field {
         flex: 1 1 auto;
         min-width: 120px;
         margin-left: 8px;
@@ -247,7 +250,8 @@
         min-width: 78px;
         text-align: right;
       }
-      #labelSizeValue {
+      #labelSizeValue,
+      #dataSetting .slider-font-size-row .slider-font-size-value {
         text-align: right;
         min-width: 52px;
         flex: 0 0 52px;
@@ -668,6 +672,8 @@
             dimLabels: {},
             dimHidden: {},
             dimReversed: {},
+            dimSliderTitleSizes: {},
+            dimSliderTickSizes: {},
             imageLabels: {},
             labelSize: "",
             lineGradient: {
@@ -4782,11 +4788,18 @@
           .enter()
           .append("div")
           .attr("class", "inputSlider") // full width
+          .attr("id", function (d) {
+            return "sliderWrap_" + d.namewithnospace;
+          })
+          .attr("data-dim", function (d) {
+            return d.name;
+          })
           .each(function (d) {
             var wrapper = d3.select(this);
             wrapper
               .append("span")
               .attr("class", "inputSliderLabel")
+              .attr("data-dim", d.name)
               .text(getDimLabel(d.name));
 
             wrapper
@@ -4818,6 +4831,9 @@
 
         updateSliderVisibilityFromSettings();
         updatePinnedSliderMarkers();
+        if (typeof applySliderFontOverrides === "function") {
+          applySliderFontOverrides(_userSetting || {});
+        }
       }
 
       function updateSlidersTickValues(unbrushedData) {
@@ -4885,6 +4901,9 @@
           updateSlidersValue(graph.highlighted()[0]);
         }
         updatePinnedSliderMarkers();
+        if (typeof applySliderFontOverrides === "function") {
+          applySliderFontOverrides(_userSetting || {});
+        }
       }
 
       function disableAllSliders() {
@@ -5988,6 +6007,14 @@
           dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
           dimHidden: Object.assign({}, _userSetting.dimHidden || {}),
           dimReversed: Object.assign({}, _userSetting.dimReversed || {}),
+          dimSliderTitleSizes: Object.assign(
+            {},
+            _userSetting.dimSliderTitleSizes || {}
+          ),
+          dimSliderTickSizes: Object.assign(
+            {},
+            _userSetting.dimSliderTickSizes || {}
+          ),
           imageLabels: effectiveImageLabels,
           labelSize: _userSetting.labelSize || "",
           lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
@@ -6054,6 +6081,179 @@
           syncLabelSizeUI(numeric + "%");
           if (applyPreview && typeof applyLabelFontSize === "function") {
             applyLabelFontSize(numeric + "%");
+          }
+          syncAllDimSliderTitleSizeControls();
+          previewSliderFontOverrides();
+        }
+
+        function currentDraftLabelSizePercent() {
+          if (newUserSetting.hasOwnProperty("labelSize")) {
+            var draft = normalizeLabelSizeToNumber(newUserSetting.labelSize);
+            return draft !== null ? draft : 85;
+          }
+          return currentLabelSizePercent();
+        }
+
+        function normalizeSliderTickSizeToNumber(val) {
+          if (val === undefined || val === null) return null;
+          var str = String(val).trim();
+          if (!str) return null;
+          if (/px$/i.test(str)) {
+            str = str.replace(/px$/i, "");
+          }
+          var num = parseFloat(str);
+          return !isNaN(num) ? num : null;
+        }
+
+        function findDimSettingValue(settingMap, dimName) {
+          var map = settingMap || {};
+          if (map[dimName] !== undefined) return map[dimName];
+          var target = normalizeDimKey(dimName);
+          var match = Object.keys(map).find(function (key) {
+            return normalizeDimKey(key) === target;
+          });
+          return match ? map[match] : undefined;
+        }
+
+        function clearDimSettingEntry(dimName, settingMap) {
+          var map = settingMap || {};
+          var target = normalizeDimKey(dimName);
+          Object.keys(map).forEach(function (key) {
+            if (normalizeDimKey(key) === target) {
+              delete map[key];
+            }
+          });
+        }
+
+        function currentSliderTickSizePx() {
+          return 9;
+        }
+
+        function getEffectiveDimSliderTitleSize(dimName, settingObj) {
+          var settingMap =
+            (settingObj && settingObj.dimSliderTitleSizes) ||
+            newUserSetting.dimSliderTitleSizes ||
+            {};
+          var saved = normalizeLabelSizeToNumber(
+            findDimSettingValue(settingMap, dimName)
+          );
+          if (saved !== null) {
+            return Math.max(50, Math.min(200, saved));
+          }
+          return Math.max(50, Math.min(200, currentDraftLabelSizePercent()));
+        }
+
+        function getEffectiveDimSliderTickSize(dimName, settingObj) {
+          var settingMap =
+            (settingObj && settingObj.dimSliderTickSizes) ||
+            newUserSetting.dimSliderTickSizes ||
+            {};
+          var saved = normalizeSliderTickSizeToNumber(
+            findDimSettingValue(settingMap, dimName)
+          );
+          if (saved !== null) {
+            return Math.max(8, Math.min(32, saved));
+          }
+          return currentSliderTickSizePx();
+        }
+
+        function buildSliderFontPreviewSetting() {
+          return Object.assign({}, _userSetting || {}, {
+            labelSize: newUserSetting.labelSize || currentDraftLabelSizePercent() + "%",
+            dimSliderTitleSizes: Object.assign(
+              {},
+              newUserSetting.dimSliderTitleSizes || {}
+            ),
+            dimSliderTickSizes: Object.assign(
+              {},
+              newUserSetting.dimSliderTickSizes || {}
+            ),
+          });
+        }
+
+        function previewSliderFontOverrides() {
+          if (typeof applySliderFontOverrides === "function") {
+            applySliderFontOverrides(buildSliderFontPreviewSetting());
+          }
+        }
+
+        function syncDimSliderTitleSizeControl(dimName) {
+          var value = getEffectiveDimSliderTitleSize(dimName, newUserSetting);
+          dimSettingListDiv
+            .selectAll(".dim-slider-title-size-input")
+            .filter(function (d) {
+              return normalizeDimKey(d) === normalizeDimKey(dimName);
+            })
+            .property("value", value);
+          dimSettingListDiv
+            .selectAll(".dim-slider-title-size-value")
+            .filter(function (d) {
+              return normalizeDimKey(d) === normalizeDimKey(dimName);
+            })
+            .text(value + "%");
+        }
+
+        function syncDimSliderTickSizeControl(dimName) {
+          var value = getEffectiveDimSliderTickSize(dimName, newUserSetting);
+          dimSettingListDiv
+            .selectAll(".dim-slider-tick-size-input")
+            .filter(function (d) {
+              return normalizeDimKey(d) === normalizeDimKey(dimName);
+            })
+            .property("value", value);
+          dimSettingListDiv
+            .selectAll(".dim-slider-tick-size-value")
+            .filter(function (d) {
+              return normalizeDimKey(d) === normalizeDimKey(dimName);
+            })
+            .text(value + "px");
+        }
+
+        function syncAllDimSliderTitleSizeControls() {
+          settingDimKeys.forEach(function (dimName) {
+            syncDimSliderTitleSizeControl(dimName);
+          });
+        }
+
+        function setDimSliderTitleSize(dimName, value, applyPreview) {
+          var numeric = normalizeLabelSizeToNumber(value);
+          if (numeric === null) return;
+
+          numeric = Math.max(50, Math.min(200, numeric));
+          var baseline = currentDraftLabelSizePercent();
+          newUserSetting.dimSliderTitleSizes =
+            newUserSetting.dimSliderTitleSizes || {};
+
+          if (numeric === baseline) {
+            clearDimSettingEntry(dimName, newUserSetting.dimSliderTitleSizes);
+          } else {
+            newUserSetting.dimSliderTitleSizes[dimName] = numeric + "%";
+          }
+
+          syncDimSliderTitleSizeControl(dimName);
+          if (applyPreview) {
+            previewSliderFontOverrides();
+          }
+        }
+
+        function setDimSliderTickSize(dimName, value, applyPreview) {
+          var numeric = normalizeSliderTickSizeToNumber(value);
+          if (numeric === null) return;
+
+          numeric = Math.max(8, Math.min(32, numeric));
+          var baseline = currentSliderTickSizePx();
+          newUserSetting.dimSliderTickSizes =
+            newUserSetting.dimSliderTickSizes || {};
+
+          if (numeric === baseline) {
+            clearDimSettingEntry(dimName, newUserSetting.dimSliderTickSizes);
+          } else {
+            newUserSetting.dimSliderTickSizes[dimName] = numeric + "px";
+          }
+
+          syncDimSliderTickSizeControl(dimName);
+          if (applyPreview) {
+            previewSliderFontOverrides();
           }
         }
 
@@ -6215,8 +6415,10 @@
           .on("input change", function () {
             var value = ($(this).val() || "").trim();
             if (value.length === 0) {
-              delete newUserSetting.labelSize;
+              newUserSetting.labelSize = "";
               d3.select("#labelSizeValue").text("");
+              syncAllDimSliderTitleSizeControls();
+              previewSliderFontOverrides();
               return;
             }
             setLabelSizeFromAny(value, true);
@@ -6248,7 +6450,9 @@
             var val = (this.value || "").trim();
             if (val.length === 0) {
               if (labelSizeValueEl) labelSizeValueEl.textContent = "";
-              delete newUserSetting.labelSize;
+              newUserSetting.labelSize = "";
+              syncAllDimSliderTitleSizeControls();
+              previewSliderFontOverrides();
               return;
             }
             setLabelSizeFromAny(val, true);
@@ -6446,6 +6650,76 @@
             } else {
               newUserSetting.dimLabels[d] = value;
             }
+          });
+
+        var sliderTitleSizeSetting = panelBodyContent
+          .append("li")
+          .attr("class", "list-group-item form-inline slider-font-size-row");
+
+        sliderTitleSizeSetting
+          .append("span")
+          .attr("class", "setting-label")
+          .text("Slider Title Size:");
+
+        sliderTitleSizeSetting
+          .append("div")
+          .attr("class", "slider-font-size-field")
+          .append("input")
+          .attr("type", "range")
+          .attr("class", "dim-slider-title-size-input")
+          .attr("min", "50")
+          .attr("max", "200")
+          .attr("step", "1")
+          .attr("data-dim", function (d) {
+            return d;
+          })
+          .property("value", function (d) {
+            return getEffectiveDimSliderTitleSize(d, newUserSetting);
+          })
+          .on("input change", function (d) {
+            setDimSliderTitleSize(d, this.value, true);
+          });
+
+        sliderTitleSizeSetting
+          .append("span")
+          .attr("class", "slider-font-size-value dim-slider-title-size-value")
+          .text(function (d) {
+            return getEffectiveDimSliderTitleSize(d, newUserSetting) + "%";
+          });
+
+        var sliderTickSizeSetting = panelBodyContent
+          .append("li")
+          .attr("class", "list-group-item form-inline slider-font-size-row");
+
+        sliderTickSizeSetting
+          .append("span")
+          .attr("class", "setting-label")
+          .text("Slider Number Size:");
+
+        sliderTickSizeSetting
+          .append("div")
+          .attr("class", "slider-font-size-field")
+          .append("input")
+          .attr("type", "range")
+          .attr("class", "dim-slider-tick-size-input")
+          .attr("min", "8")
+          .attr("max", "32")
+          .attr("step", "1")
+          .attr("data-dim", function (d) {
+            return d;
+          })
+          .property("value", function (d) {
+            return getEffectiveDimSliderTickSize(d, newUserSetting);
+          })
+          .on("input change", function (d) {
+            setDimSliderTickSize(d, this.value, true);
+          });
+
+        sliderTickSizeSetting
+          .append("span")
+          .attr("class", "slider-font-size-value dim-slider-tick-size-value")
+          .text(function (d) {
+            return getEffectiveDimSliderTickSize(d, newUserSetting) + "px";
           });
 
         //TickNumber setting----------------------------------------------------------------------------------------------------------
@@ -6650,6 +6924,12 @@
             }
           }
         }
+
+        syncAllDimSliderTitleSizeControls();
+        settingDimKeys.forEach(function (dimName) {
+          syncDimSliderTickSizeControl(dimName);
+        });
+        previewSliderFontOverrides();
 
         function updateImageLabelsFromInputs() {
           var img1Val = ($("#img1LabelInput").val() || "").trim();
@@ -6903,12 +7183,13 @@
         var userDimLabels = userSetting.dimLabels || {};
         var userDimHidden = userSetting.dimHidden || {};
         var userDimReversed = userSetting.dimReversed || {};
+        var userDimSliderTitleSizes = userSetting.dimSliderTitleSizes || {};
+        var userDimSliderTickSizes = userSetting.dimSliderTickSizes || {};
         var userImageLabels = userSetting.imageLabels || {};
         var userLabelSize = userSetting.labelSize;
         var userLineGradient = cloneLineGradientSetting(userSetting.lineGradient);
         var isThereNewDimTicks = Object.keys(userDimTicks).length > 0;
         var isThereNewDimLabels = Object.keys(userDimLabels).length > 0;
-        var isThereNewImageLabels = Object.keys(userImageLabels).length > 0;
         var hasLabelSize =
           userLabelSize !== undefined &&
           userLabelSize !== null &&
@@ -6916,6 +7197,14 @@
         var reversedChanged = false;
 
         _userSetting.lineGradient = cloneLineGradientSetting(userLineGradient);
+        _userSetting.dimSliderTitleSizes = Object.assign(
+          {},
+          userDimSliderTitleSizes
+        );
+        _userSetting.dimSliderTickSizes = Object.assign(
+          {},
+          userDimSliderTickSizes
+        );
         applyLineGradientSetting(userLineGradient, false);
 
         if (isThereNewStudyInfo) {
@@ -6961,6 +7250,12 @@
 
         if (hasLabelSize && typeof applyLabelFontSize === "function") {
           applyLabelFontSize(userLabelSize);
+        } else if (!hasLabelSize) {
+          delete _userSetting.labelSize;
+          d3.selectAll(".label").style("font-size", "85%");
+        }
+        if (typeof applySliderFontOverrides === "function") {
+          applySliderFontOverrides(_userSetting || {});
         }
 
         refreshColorDrivenViews();
@@ -6989,6 +7284,9 @@
           if (graph) {
             updateLabels();
             refreshGraphLabelsWithRetry(0);
+          }
+          if (typeof applySliderFontOverrides === "function") {
+            applySliderFontOverrides(_userSetting || {});
           }
         }, 0);
       }
@@ -7297,6 +7595,9 @@
             return getDimLabel(dimName);
           }
         );
+        if (typeof applySliderFontOverrides === "function") {
+          applySliderFontOverrides(_userSetting || {});
+        }
 
         // Update sorting dropdown labels
         d3.selectAll(".sorting select option").text(function (d) {
@@ -7452,6 +7753,14 @@
         Object.assign(globalUserSetting.studyInfo, newUserSetting.studyInfo);
         globalUserSetting.dimLabels = globalUserSetting.dimLabels || {};
         Object.assign(globalUserSetting.dimLabels, newUserSetting.dimLabels);
+        globalUserSetting.dimSliderTitleSizes = Object.assign(
+          {},
+          newUserSetting.dimSliderTitleSizes || {}
+        );
+        globalUserSetting.dimSliderTickSizes = Object.assign(
+          {},
+          newUserSetting.dimSliderTickSizes || {}
+        );
         globalUserSetting.dimHidden = {};
         d3.keys(newUserSetting.dimHidden || {}).forEach(function (k) {
           if (normalizeDimHiddenValue(newUserSetting.dimHidden[k])) {
@@ -7567,6 +7876,8 @@
           var loadedDimMark = asPlainObject(d.dimMark);
           var loadedDimHidden = asPlainObject(d.dimHidden);
           var loadedDimReversed = asPlainObject(d.dimReversed);
+          var loadedDimSliderTitleSizes = asPlainObject(d.dimSliderTitleSizes);
+          var loadedDimSliderTickSizes = asPlainObject(d.dimSliderTickSizes);
           if (Object.keys(loadedDimHidden).length === 0) {
             loadedDimHidden = asPlainObject(d.hiddenDims || d.hiddenDimensions);
           }
@@ -7626,6 +7937,16 @@
             _userSetting.dimReversed || {},
             loadedDimReversed || {}
           );
+          mergedSetting.dimSliderTitleSizes = Object.assign(
+            {},
+            _userSetting.dimSliderTitleSizes || {},
+            loadedDimSliderTitleSizes || {}
+          );
+          mergedSetting.dimSliderTickSizes = Object.assign(
+            {},
+            _userSetting.dimSliderTickSizes || {},
+            loadedDimSliderTickSizes || {}
+          );
           mergedSetting.imageLabels = Object.assign(
             {},
             _userSetting.imageLabels || {},
@@ -7666,6 +7987,9 @@
             if (_userSetting.labelSize) {
               applyLabelFontSize(_userSetting.labelSize);
             }
+            if (typeof applySliderFontOverrides === "function") {
+              applySliderFontOverrides(_userSetting || {});
+            }
             applyLineGradientSetting(_userSetting.lineGradient, true);
             setImageLabels(_userSetting.imageLabels);
             refreshImageRadioTexts();
@@ -7687,6 +8011,9 @@
               if (_userSetting.labelSize) {
                 applyLabelFontSize(_userSetting.labelSize);
               }
+              if (typeof applySliderFontOverrides === "function") {
+                applySliderFontOverrides(_userSetting || {});
+              }
               if (graph) graph.render();
               applyLineGradientSetting(_userSetting.lineGradient, true);
             }, 0);
@@ -7696,6 +8023,9 @@
               applyLineGradientSetting(_userSetting.lineGradient, true);
               setImageLabels(_userSetting.imageLabels);
               refreshImageRadioTexts();
+              if (typeof applySliderFontOverrides === "function") {
+                applySliderFontOverrides(_userSetting || {});
+              }
               if (graph) {
                 updateLabels();
                 refreshGraphLabelsWithRetry(0);
@@ -7713,6 +8043,9 @@
               setStudyInfo(_userSetting.studyInfo || {});
               setDimLabels(_userSetting.dimLabels);
               applyLineGradientSetting(_userSetting.lineGradient, true);
+              if (typeof applySliderFontOverrides === "function") {
+                applySliderFontOverrides(_userSetting || {});
+              }
               if (graph) {
                 updateLabels();
                 refreshGraphLabelsWithRetry(0);
