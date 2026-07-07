@@ -427,6 +427,7 @@ function applySliderFontOverrides(setting) {
     var dimName = d && d.name ? d.name : d;
     var wrapper = getSliderWrapperSelection(dimName);
     if (!wrapper) return;
+    var wrapperNode = wrapper.node ? wrapper.node() : null;
 
     var titleOverride = normalizeSliderPercentSize(
       findSliderDimOverride(dimName, titleMap)
@@ -444,11 +445,35 @@ function applySliderFontOverrides(setting) {
       12,
       Math.round(resolvedTitlePx * 1.2)
     ) + "px";
+    var labelNode = wrapper.select(".inputSliderLabel").node();
 
-    wrapper
-      .select(".inputSliderLabel")
-      .style("font-size", resolvedTitlePx + "px", "important")
-      .style("line-height", resolvedTitleLineHeight, "important");
+    if (wrapperNode && wrapperNode.style) {
+      wrapperNode.style.setProperty(
+        "font-size",
+        resolvedTitlePx + "px",
+        "important"
+      );
+      wrapperNode.style.setProperty(
+        "line-height",
+        resolvedTitleLineHeight,
+        "important"
+      );
+    }
+
+    if (labelNode && labelNode.style) {
+      labelNode.style.setProperty(
+        "font-size",
+        resolvedTitlePx + "px",
+        "important"
+      );
+      labelNode.style.setProperty(
+        "line-height",
+        resolvedTitleLineHeight,
+        "important"
+      );
+      labelNode.style.setProperty("display", "block", "important");
+    }
+
     wrapper
       .selectAll(".irs-grid-text")
       .style("font-size", resolvedTick, "important")
