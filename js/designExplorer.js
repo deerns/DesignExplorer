@@ -457,6 +457,7 @@ function applySliderFontOverrides(setting) {
     var resolvedTitlePercent =
       titleOverride !== null ? titleOverride : baseTitleSize;
     var resolvedTitlePx = (baseSliderLabelPx * resolvedTitlePercent) / 100;
+    var resolvedTitleScale = resolvedTitlePercent / 100;
     var resolvedTick =
       (tickOverride !== null ? tickOverride : baseTickSize) + "px";
     var resolvedTitleLineHeight = Math.max(
@@ -467,14 +468,20 @@ function applySliderFontOverrides(setting) {
 
     cssRules.push(
       wrapperSelector +
-        " .inputSliderLabel{" +
+        " .inputSliderLabel," +
+        wrapperSelector +
+        " > span:first-child{" +
         "font-size:" +
-        resolvedTitlePx +
+        baseSliderLabelPx +
         "px !important;" +
         "line-height:" +
         resolvedTitleLineHeight +
         " !important;" +
-        "display:block !important;" +
+        "display:inline-block !important;" +
+        "transform:scale(" +
+        resolvedTitleScale +
+        ") !important;" +
+        "transform-origin:left top !important;" +
         "}"
     );
 
