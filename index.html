@@ -6181,14 +6181,20 @@
           var value = getEffectiveDimSliderTitleSize(dimName, newUserSetting);
           dimSettingListDiv
             .selectAll(".dim-slider-title-size-input")
-            .filter(function (d) {
-              return normalizeDimKey(d) === normalizeDimKey(dimName);
+            .filter(function () {
+              return (
+                normalizeDimKey(this.getAttribute("data-dim")) ===
+                normalizeDimKey(dimName)
+              );
             })
             .property("value", value);
           dimSettingListDiv
             .selectAll(".dim-slider-title-size-value")
-            .filter(function (d) {
-              return normalizeDimKey(d) === normalizeDimKey(dimName);
+            .filter(function () {
+              return (
+                normalizeDimKey(this.getAttribute("data-dim")) ===
+                normalizeDimKey(dimName)
+              );
             })
             .text(value + "%");
         }
@@ -6197,14 +6203,20 @@
           var value = getEffectiveDimSliderTickSize(dimName, newUserSetting);
           dimSettingListDiv
             .selectAll(".dim-slider-tick-size-input")
-            .filter(function (d) {
-              return normalizeDimKey(d) === normalizeDimKey(dimName);
+            .filter(function () {
+              return (
+                normalizeDimKey(this.getAttribute("data-dim")) ===
+                normalizeDimKey(dimName)
+              );
             })
             .property("value", value);
           dimSettingListDiv
             .selectAll(".dim-slider-tick-size-value")
-            .filter(function (d) {
-              return normalizeDimKey(d) === normalizeDimKey(dimName);
+            .filter(function () {
+              return (
+                normalizeDimKey(this.getAttribute("data-dim")) ===
+                normalizeDimKey(dimName)
+              );
             })
             .text(value + "px");
         }
@@ -6677,12 +6689,15 @@
             return getEffectiveDimSliderTitleSize(d, newUserSetting);
           })
           .on("input change", function (d) {
-            setDimSliderTitleSize(d, this.value, true);
+            setDimSliderTitleSize(this.getAttribute("data-dim") || d, this.value, true);
           });
 
         sliderTitleSizeSetting
           .append("span")
           .attr("class", "slider-font-size-value dim-slider-title-size-value")
+          .attr("data-dim", function (d) {
+            return d;
+          })
           .text(function (d) {
             return getEffectiveDimSliderTitleSize(d, newUserSetting) + "%";
           });
@@ -6712,12 +6727,15 @@
             return getEffectiveDimSliderTickSize(d, newUserSetting);
           })
           .on("input change", function (d) {
-            setDimSliderTickSize(d, this.value, true);
+            setDimSliderTickSize(this.getAttribute("data-dim") || d, this.value, true);
           });
 
         sliderTickSizeSetting
           .append("span")
           .attr("class", "slider-font-size-value dim-slider-tick-size-value")
+          .attr("data-dim", function (d) {
+            return d;
+          })
           .text(function (d) {
             return getEffectiveDimSliderTickSize(d, newUserSetting) + "px";
           });
