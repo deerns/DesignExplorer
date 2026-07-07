@@ -948,6 +948,8 @@
         typeof applyLabelFontSize === "function"
       ) {
         applyLabelFontSize(_userSetting.labelSize);
+      } else if (typeof applySliderFontOverrides === "function") {
+        applySliderFontOverrides(_userSetting || {});
       }
     }
 
@@ -6235,6 +6237,8 @@
           newUserSetting.dimSliderTitleSizes =
             newUserSetting.dimSliderTitleSizes || {};
           newUserSetting.dimSliderTitleSizes[dimName] = numeric + "%";
+          _userSetting.dimSliderTitleSizes = _userSetting.dimSliderTitleSizes || {};
+          _userSetting.dimSliderTitleSizes[dimName] = numeric + "%";
 
           syncDimSliderTitleSizeControl(dimName);
           if (applyPreview) {
@@ -6250,6 +6254,8 @@
           newUserSetting.dimSliderTickSizes =
             newUserSetting.dimSliderTickSizes || {};
           newUserSetting.dimSliderTickSizes[dimName] = numeric + "px";
+          _userSetting.dimSliderTickSizes = _userSetting.dimSliderTickSizes || {};
+          _userSetting.dimSliderTickSizes[dimName] = numeric + "px";
 
           syncDimSliderTickSizeControl(dimName);
           if (applyPreview) {
