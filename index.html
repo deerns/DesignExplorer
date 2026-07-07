@@ -6682,8 +6682,17 @@
           .property("value", function (d) {
             return getEffectiveDimSliderTitleSize(d, newUserSetting);
           })
-          .on("input change", function (d) {
-            setDimSliderTitleSize(this.getAttribute("data-dim") || d, this.value, true);
+          .each(function (d) {
+            var inputEl = this;
+            var onSliderFontChange = function () {
+              setDimSliderTitleSize(
+                inputEl.getAttribute("data-dim") || d,
+                inputEl.value,
+                true
+              );
+            };
+            d3.select(inputEl).on("input", onSliderFontChange);
+            d3.select(inputEl).on("change", onSliderFontChange);
           });
 
         sliderTitleSizeSetting
@@ -6720,8 +6729,17 @@
           .property("value", function (d) {
             return getEffectiveDimSliderTickSize(d, newUserSetting);
           })
-          .on("input change", function (d) {
-            setDimSliderTickSize(this.getAttribute("data-dim") || d, this.value, true);
+          .each(function (d) {
+            var inputEl = this;
+            var onSliderFontChange = function () {
+              setDimSliderTickSize(
+                inputEl.getAttribute("data-dim") || d,
+                inputEl.value,
+                true
+              );
+            };
+            d3.select(inputEl).on("input", onSliderFontChange);
+            d3.select(inputEl).on("change", onSliderFontChange);
           });
 
         sliderTickSizeSetting
