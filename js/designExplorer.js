@@ -417,6 +417,7 @@ function applySliderFontOverrides(setting) {
   var tickMap = effectiveSetting.dimSliderTickSizes || {};
   var baseTitleSize = normalizeSliderPercentSize(effectiveSetting.labelSize);
   var baseTickSize = 9;
+  var baseSliderLabelPx = 12;
 
   if (baseTitleSize === null) {
     baseTitleSize = 85;
@@ -434,16 +435,24 @@ function applySliderFontOverrides(setting) {
       findSliderDimOverride(dimName, tickMap)
     );
 
-    var resolvedTitle =
-      (titleOverride !== null ? titleOverride : baseTitleSize) + "%";
+    var resolvedTitlePercent =
+      titleOverride !== null ? titleOverride : baseTitleSize;
+    var resolvedTitlePx = (baseSliderLabelPx * resolvedTitlePercent) / 100;
     var resolvedTick =
       (tickOverride !== null ? tickOverride : baseTickSize) + "px";
+    var resolvedTitleLineHeight = Math.max(
+      12,
+      Math.round(resolvedTitlePx * 1.2)
+    ) + "px";
 
-    wrapper.select(".inputSliderLabel").style("font-size", resolvedTitle);
+    wrapper
+      .select(".inputSliderLabel")
+      .style("font-size", resolvedTitlePx + "px", "important")
+      .style("line-height", resolvedTitleLineHeight, "important");
     wrapper
       .selectAll(".irs-grid-text")
-      .style("font-size", resolvedTick)
-      .style("line-height", resolvedTick);
+      .style("font-size", resolvedTick, "important")
+      .style("line-height", resolvedTick, "important");
   });
 }
 
