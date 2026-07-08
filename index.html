@@ -1692,6 +1692,28 @@
       return nextSliderOrder.slice();
     }
 
+    function scheduleMainSliderSyncPasses(settingState, delays) {
+      var effectiveSetting = settingState || _userSetting || {};
+      var snapshot = {
+        dimOrder: normalizeDimOrder(effectiveSetting.dimOrder),
+        sliderOrder: normalizeDimOrder(effectiveSetting.sliderOrder),
+      };
+      var syncDelays = Array.isArray(delays) && delays.length > 0
+        ? delays.slice()
+        : [0, 60, 180];
+
+      syncDelays.forEach(function (delay) {
+        setTimeout(function () {
+          forceMainSliderSync(snapshot, {
+            skipSettingsPanels: true,
+          });
+          if (typeof updateSliderOrderDebug === "function") {
+            updateSliderOrderDebug("scheduleMainSliderSyncPasses:" + delay, snapshot);
+          }
+        }, delay);
+      });
+    }
+
     function ensureAllDimensionsCache() {
       if (typeof window === "undefined") return {};
       if (!graph || typeof graph.dimensions !== "function") {
@@ -8313,6 +8335,7 @@
               window.__dimSettingOrderObserver = null;
             }
           }
+          scheduleMainSliderSyncPasses(newUserSetting, [0, 80, 220]);
           // final hard refresh to avoid any async overwrite
           setTimeout(function () {
             if (Array.isArray(_userSetting.dimOrder)) {
@@ -8320,9 +8343,7 @@
                 sliderOrder: _userSetting.sliderOrder,
                 skipSettingPanels: true,
               });
-              forceMainSliderSync(_userSetting, {
-                skipSettingsPanels: true,
-              });
+              scheduleMainSliderSyncPasses(_userSetting, [0, 80]);
             }
             var hasSecondImg =
               Math.max(
