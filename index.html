@@ -6688,9 +6688,10 @@
           .attr("class", "panel-heading");
 
         panelHeading
-          .append("button")
-          .attr("type", "button")
+          .append("span")
           .attr("class", "setting-reorder-handle")
+          .attr("role", "button")
+          .attr("tabindex", "0")
           .attr("title", "Drag to reorder sliders")
           .attr("aria-label", function (d) {
             return "Drag to reorder " + getDimLabel(d);
@@ -7066,6 +7067,7 @@
 
           settingDimKeys = orderDimensionKeys(orderedDims, orderedDims);
           newUserSetting.dimOrder = settingDimKeys.slice();
+          applyDimensionOrderToSliders(newUserSetting.dimOrder);
           return newUserSetting.dimOrder;
         }
 
@@ -7084,6 +7086,7 @@
           $settingAccordion.sortable({
             items: "> .dynamic-dim-panel",
             handle: ".setting-reorder-handle",
+            cancel: "input,textarea,select,option",
             axis: "y",
             tolerance: "pointer",
             forcePlaceholderSize: true,
