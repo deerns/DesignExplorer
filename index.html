@@ -1153,7 +1153,10 @@
       }
 
       if (!options.skipPageSliders) {
-        applyDimensionOrderToSliders(nextOrder);
+        var appliedSliderOrder = reorderPageSlidersByDimNames(nextOrder);
+        if (appliedSliderOrder.length === 0) {
+          applyDimensionOrderToSliders(nextOrder);
+        }
       }
 
       if (!options.skipSettingPanels) {
@@ -5355,7 +5358,9 @@
         updateSliderVisibilityFromSettings();
         updatePinnedSliderMarkers();
         if (_userSetting && Array.isArray(_userSetting.dimOrder)) {
+          reorderPageSlidersByDimNames(_userSetting.dimOrder);
           setDimensionOrder(_userSetting.dimOrder, {
+            skipPageSliders: true,
             skipSettingPanels: true,
           });
         }
@@ -7484,7 +7489,9 @@
 
           settingDimKeys = orderDimensionKeys(orderedDims, orderedDims);
           newUserSetting.dimOrder = settingDimKeys.slice();
+          reorderPageSlidersByDimNames(settingDimKeys);
           setDimensionOrder(settingDimKeys, {
+            skipPageSliders: true,
             skipSettingPanels: true,
           });
           return settingDimKeys.slice();
@@ -7722,8 +7729,10 @@
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
           if (Array.isArray(newUserSetting.dimOrder)) {
+            reorderPageSlidersByDimNames(newUserSetting.dimOrder);
             setDimensionOrder(newUserSetting.dimOrder, {
               skipDraft: true,
+              skipPageSliders: true,
               skipSettingPanels: true,
             });
           }
@@ -7746,7 +7755,9 @@
           // final hard refresh to avoid any async overwrite
           setTimeout(function () {
             if (Array.isArray(_userSetting.dimOrder)) {
+              reorderPageSlidersByDimNames(_userSetting.dimOrder);
               setDimensionOrder(_userSetting.dimOrder, {
+                skipPageSliders: true,
                 skipSettingPanels: true,
               });
             }
@@ -7899,7 +7910,7 @@
         );
         if (userDimOrder.length > 0) {
           _userSetting.dimOrder = userDimOrder.slice();
-          applyDimensionOrderToSliders(userDimOrder);
+          reorderPageSlidersByDimNames(userDimOrder);
         }
         applyLineGradientSetting(userLineGradient, false);
 
