@@ -873,7 +873,7 @@
       return true;
     }
 
-    function getCurrentPageSliderOrder() {
+    function getCurrentPageSliderDomOrder() {
       return normalizeDimOrder(
         Array.prototype.map
           .call(
@@ -888,7 +888,7 @@
       );
     }
 
-    function getCurrentPageSliderVisualOrder() {
+    function getCurrentPageSliderOrder() {
       var sliderNodes = [];
 
       d3.selectAll("#inputSliders > .inputSlider").each(function () {
@@ -896,16 +896,13 @@
       });
 
       sliderNodes.sort(function (a, b) {
-        var orderA = parseInt(a.getAttribute("data-slider-order"), 10);
-        var orderB = parseInt(b.getAttribute("data-slider-order"), 10);
-        var hasOrderA = !isNaN(orderA);
-        var hasOrderB = !isNaN(orderB);
+        var rectA = a.getBoundingClientRect();
+        var rectB = b.getBoundingClientRect();
+        var topDiff = rectA.top - rectB.top;
+        if (Math.abs(topDiff) > 1) return topDiff;
 
-        if (hasOrderA && hasOrderB && orderA !== orderB) {
-          return orderA - orderB;
-        }
-        if (hasOrderA && !hasOrderB) return -1;
-        if (!hasOrderA && hasOrderB) return 1;
+        var leftDiff = rectA.left - rectB.left;
+        if (Math.abs(leftDiff) > 1) return leftDiff;
 
         if (a === b) return 0;
         if (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) {
@@ -923,6 +920,10 @@
             return dimName.length > 0;
           })
       );
+    }
+
+    function getCurrentPageSliderVisualOrder() {
+      return getCurrentPageSliderOrder();
     }
 
     function getLiveSliderOrderForSync(setting) {
@@ -974,7 +975,7 @@
 
       debugNode.textContent = [
         "context: " + (context || ""),
-        "main.dom: " + getCurrentPageSliderOrder().join(" | "),
+        "main.dom: " + getCurrentPageSliderDomOrder().join(" | "),
         "main.visual: " + getCurrentPageSliderVisualOrder().join(" | "),
         "settings: " + getCurrentSettingPanelOrder().join(" | "),
         "_userSetting.sliderOrder: " +
