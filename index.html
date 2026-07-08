@@ -7919,6 +7919,7 @@
               skipSettingPanels: true,
             }
           );
+          rerenderPageSlidersFromCurrentOrder();
           var pageSliderOrderAfterSync = getCurrentPageSliderOrder();
           if (
             !areDimOrdersEqual(
@@ -7926,7 +7927,9 @@
               newUserSetting.sliderOrder
             )
           ) {
-            applyPageSliderOrder(newUserSetting.sliderOrder);
+            applyPageSliderOrder(newUserSetting.sliderOrder, {
+              skipRerender: true,
+            });
             pageSliderOrderAfterSync = getCurrentPageSliderOrder();
           }
           if (
@@ -7968,10 +7971,10 @@
             },
             stop: function (event, ui) {
               ui.item.removeClass("is-dragging");
-              queueSyncDimOrderFromSettingPanels();
+              syncDimOrderFromSettingPanels();
             },
             update: function () {
-              queueSyncDimOrderFromSettingPanels();
+              syncDimOrderFromSettingPanels();
             },
           });
         }
@@ -8442,7 +8445,10 @@
         }
         var finalSliderOrder = getEffectiveSliderOrder(_userSetting);
         if (finalSliderOrder.length > 0) {
-          applyPageSliderOrder(finalSliderOrder);
+          rerenderPageSlidersFromCurrentOrder();
+          applyPageSliderOrder(finalSliderOrder, {
+            skipRerender: true,
+          });
         }
 
         refreshColorDrivenViews();
