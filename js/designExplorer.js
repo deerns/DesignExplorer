@@ -456,13 +456,23 @@ function applySliderFontOverrides(setting) {
 
     var resolvedTitlePercent =
       titleOverride !== null ? titleOverride : baseTitleSize;
-    var resolvedTitlePx = (baseSliderLabelPx * resolvedTitlePercent) / 100;
-    var resolvedTitleScale = resolvedTitlePercent / 100;
-    var resolvedTick =
-      (tickOverride !== null ? tickOverride : baseTickSize) + "px";
+    var resolvedTitlePx = Math.max(
+      8,
+      (baseSliderLabelPx * resolvedTitlePercent) / 100
+    );
+    var resolvedTickPx = tickOverride !== null ? tickOverride : baseTickSize;
+    var resolvedTick = resolvedTickPx + "px";
     var resolvedTitleLineHeight = Math.max(
       12,
       Math.round(resolvedTitlePx * 1.2)
+    ) + "px";
+    var resolvedGridHeight = Math.max(
+      20,
+      Math.round(resolvedTickPx * 2.2)
+    ) + "px";
+    var resolvedSliderHeight = Math.max(
+      60,
+      40 + Math.round(resolvedTickPx * 1.4)
     ) + "px";
     var wrapperSelector = "#" + wrapperId;
 
@@ -470,6 +480,9 @@ function applySliderFontOverrides(setting) {
       wrapperSelector +
         " .inputSliderLabel{" +
         "line-height:" +
+        resolvedTitleLineHeight +
+        " !important;" +
+        "min-height:" +
         resolvedTitleLineHeight +
         " !important;" +
         "display:block !important;" +
@@ -480,13 +493,31 @@ function applySliderFontOverrides(setting) {
       wrapperSelector +
         " .inputSliderLabelText{" +
         "font-size:" +
-        baseSliderLabelPx +
+        resolvedTitlePx +
         "px !important;" +
+        "line-height:" +
+        resolvedTitleLineHeight +
+        " !important;" +
         "display:inline-block !important;" +
-        "transform:scale(" +
-        resolvedTitleScale +
-        ") !important;" +
-        "transform-origin:left top !important;" +
+        "transform:none !important;" +
+        "}"
+    );
+
+    cssRules.push(
+      wrapperSelector +
+        " .irs-with-grid{" +
+        "height:" +
+        resolvedSliderHeight +
+        " !important;" +
+        "}"
+    );
+
+    cssRules.push(
+      wrapperSelector +
+        " .irs-grid{" +
+        "height:" +
+        resolvedGridHeight +
+        " !important;" +
         "}"
     );
 
