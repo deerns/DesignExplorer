@@ -926,6 +926,18 @@
       return getCurrentPageSliderOrder();
     }
 
+    function getCurrentGraphDimensionOrder(chart) {
+      var activeChart =
+        chart && typeof chart.getOrderedDimensionKeys === "function"
+          ? chart
+          : graph && typeof graph.getOrderedDimensionKeys === "function"
+          ? graph
+          : null;
+      if (!activeChart) return [];
+
+      return normalizeDimOrder(activeChart.getOrderedDimensionKeys() || []);
+    }
+
     function getLiveSliderOrderForSync(setting) {
       var source = setting || _userSetting || {};
       var explicitSliderOrder = normalizeDimOrder(source.sliderOrder);
@@ -1026,6 +1038,7 @@
         "context: " + (context || ""),
         "main.dom: " + getCurrentPageSliderDomOrder().join(" | "),
         "main.visual: " + getCurrentPageSliderVisualOrder().join(" | "),
+        "graph: " + getCurrentGraphDimensionOrder().join(" | "),
         "settings: " + getCurrentSettingPanelOrder().join(" | "),
         "settings.slidersOnly: " + getCurrentSettingSliderOrder().join(" | "),
         "_userSetting.sliderOrder: " +
@@ -1530,6 +1543,10 @@
         applyDimensionOrderToSettingPanels(nextOrder);
       }
 
+      if (!options.skipGraphDimensions && nextOrder.length > 0) {
+        applyDimensionOrderToGraph(nextOrder);
+      }
+
       return {
         dimOrder: nextOrder.slice(),
         sliderOrder: nextSliderOrder.slice(),
@@ -1662,6 +1679,82 @@
       }
     }
 
+    function applyDimensionOrderToGraph(dimOrder, chart) {
+      var activeChart =
+        chart && typeof chart.dimensions === "function"
+          ? chart
+          : graph && typeof graph.dimensions === "function"
+          ? graph
+          : null;
+      if (!activeChart || typeof activeChart.dimensions !== "function") return [];
+
+      var currentDims = activeChart.dimensions() || {};
+      var currentKeys = Object.keys(currentDims);
+      if (currentKeys.length === 0) return [];
+
+      var orderedKeys = orderDimensionKeys(currentKeys, dimOrder);
+      if (orderedKeys.length === 0) return [];
+
+      var reorderedDims = {};
+      orderedKeys.forEach(function (key, index) {
+        var resolvedKey = resolveDimKey(key, activeChart);
+        var currentDim = currentDims[resolvedKey];
+        if (!currentDim) return;
+
+        var nextDim = {};
+        Object.keys(currentDim).forEach(function (prop) {
+          nextDim[prop] = currentDim[prop];
+        });
+        nextDim.index = index;
+        reorderedDims[resolvedKey] = nextDim;
+      });
+
+      if (Object.keys(reorderedDims).length === 0) return [];
+
+      if (typeof window !== "undefined") {
+        window.__isApplyingGraphDimensionOrder = true;
+      }
+      try {
+        activeChart.dimensions(reorderedDims);
+        if (typeof activeChart.updateAxes === "function") {
+          activeChart.updateAxes();
+        }
+      } finally {
+        if (typeof window !== "undefined") {
+          window.__isApplyingGraphDimensionOrder = false;
+        }
+      }
+
+      return getCurrentGraphDimensionOrder(activeChart);
+    }
+
+    function syncDimOrderFromGraphAxes(orderedDimKeys) {
+      if (
+        typeof window !== "undefined" &&
+        window.__isApplyingGraphDimensionOrder
+      ) {
+        return getCurrentGraphDimensionOrder();
+      }
+
+      var graphOrder = normalizeDimOrder(
+        orderedDimKeys && orderedDimKeys.length
+          ? orderedDimKeys
+          : getCurrentGraphDimensionOrder()
+      );
+      if (graphOrder.length === 0) return [];
+
+      var sliderOrder = deriveSliderOrderForDimOrder(
+        graphOrder,
+        getCurrentSliderNameList()
+      );
+
+      commitDimensionAndSliderOrder(graphOrder, sliderOrder, {
+        skipGraphDimensions: true,
+      });
+      updateSliderOrderDebug("syncDimOrderFromGraphAxes");
+      return graphOrder.slice();
+    }
+
     function forceMainSliderSync(settingState, options) {
       options = options || {};
       var effectiveSetting = settingState || _userSetting || {};
@@ -1687,6 +1780,10 @@
 
       if (!options.skipSettingsPanels && nextDimOrder.length > 0) {
         applyDimensionOrderToSettingPanels(nextDimOrder);
+      }
+
+      if (!options.skipGraphDimensions && nextDimOrder.length > 0) {
+        applyDimensionOrderToGraph(nextDimOrder);
       }
 
       return nextSliderOrder.slice();
@@ -4721,6 +4818,9 @@
         graph.on("resize.pinnedReference", drawPinnedReferenceLineInPc);
         graph.on("axesreorder.pinnedReference", drawPinnedReferenceLineInPc);
         graph.on("highlight.pinnedReference", drawPinnedReferenceLineInPc);
+        graph.on("axesreorder.orderSync", function (orderedKeys) {
+          syncDimOrderFromGraphAxes(orderedKeys);
+        });
 
         // Keep dimReversed setting in sync with native axis double-click flips.
         d3.select("#graph").on("dblclick.dimReverseSync", function () {
