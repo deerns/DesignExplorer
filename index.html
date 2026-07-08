@@ -1485,12 +1485,13 @@
 
       $sliderContainer.sortable({
         items: "> .inputSlider",
-        handle: ".slider-reorder-handle",
+        handle: ".inputSliderLabel",
         cancel: "input,textarea,select,option,.irs,.irs *",
         axis: "y",
         tolerance: "pointer",
         forcePlaceholderSize: true,
         placeholder: "page-slider-placeholder",
+        distance: 4,
         start: function (event, ui) {
           ui.item.addClass("is-dragging");
           ui.placeholder.height(ui.item.outerHeight());

@@ -213,6 +213,7 @@ rect.disabled {
     align-items: center;
     gap: 8px;
     margin-bottom: 4px;
+    cursor: grab;
 }
 
 #inputSliders {
@@ -244,6 +245,10 @@ rect.disabled {
 }
 
 .inputSlider.is-dragging .slider-reorder-handle {
+    cursor: grabbing;
+}
+
+.inputSlider.is-dragging .inputSliderLabel {
     cursor: grabbing;
 }
 
