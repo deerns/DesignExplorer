@@ -7721,6 +7721,13 @@
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
+          if (Array.isArray(newUserSetting.dimOrder)) {
+            setDimensionOrder(newUserSetting.dimOrder, {
+              skipDraft: true,
+              skipSettingPanels: true,
+            });
+            rerenderPageSlidersFromCurrentOrder();
+          }
           // force slider/axis labels to refresh immediately
           setDimLabels(newUserSetting.dimLabels || {});
           if (graph) {
@@ -7739,6 +7746,12 @@
           }
           // final hard refresh to avoid any async overwrite
           setTimeout(function () {
+            if (Array.isArray(_userSetting.dimOrder)) {
+              setDimensionOrder(_userSetting.dimOrder, {
+                skipSettingPanels: true,
+              });
+              rerenderPageSlidersFromCurrentOrder();
+            }
             var hasSecondImg =
               Math.max(
                 imageLinkKeys.length || 0,
@@ -7810,6 +7823,18 @@
           }
         });
 
+        d3.select("#showSetting .popupWindowClose").on("click", function () {
+          var e = d3.event;
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          var btn = d3.select("#dataSetting #setUserSetting").node();
+          if (btn && typeof btn.click === "function") {
+            btn.click();
+          }
+        });
+
         // Click on settings backdrop should behave like Apply
         d3.select("#showSetting").on("click.applyOnBackdrop", function () {
           var e = d3.event;
@@ -7877,6 +7902,7 @@
         if (userDimOrder.length > 0) {
           _userSetting.dimOrder = userDimOrder.slice();
           applyDimensionOrderToSliders(userDimOrder);
+          rerenderPageSlidersFromCurrentOrder();
         }
         applyLineGradientSetting(userLineGradient, false);
 
