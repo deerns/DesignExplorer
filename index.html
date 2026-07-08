@@ -865,14 +865,35 @@
 
       var sliderContainer = document.getElementById("inputSliders");
       if (sliderContainer) {
+        var fragment = document.createDocumentFragment();
+        var movedAnySlider = false;
+
         slidersInfo.forEach(function (info) {
           var sliderNode = document.getElementById(
             "sliderWrap_" + info.namewithnospace
           );
-          if (sliderNode) {
-            sliderContainer.appendChild(sliderNode);
-          }
+          if (!sliderNode) return;
+          movedAnySlider = true;
+          fragment.appendChild(sliderNode);
         });
+
+        if (movedAnySlider) {
+          sliderContainer.appendChild(fragment);
+        }
+
+        if (
+          typeof window !== "undefined" &&
+          window.jQuery &&
+          window.jQuery.fn &&
+          typeof window.jQuery(sliderContainer).sortable === "function" &&
+          window.jQuery(sliderContainer).data("ui-sortable")
+        ) {
+          window.jQuery(sliderContainer).sortable("refresh");
+        }
+      }
+
+      if (typeof updatePinnedSliderMarkers === "function") {
+        updatePinnedSliderMarkers();
       }
 
       if (typeof applySliderFontOverrides === "function") {
@@ -913,6 +934,16 @@
           panelContainer.appendChild(panel);
         }
       });
+
+      if (
+        typeof window !== "undefined" &&
+        window.jQuery &&
+        window.jQuery.fn &&
+        typeof window.jQuery(panelContainer).sortable === "function" &&
+        window.jQuery(panelContainer).data("ui-sortable")
+      ) {
+        window.jQuery(panelContainer).sortable("refresh");
+      }
     }
 
     function getAllOrderableDimKeys() {
