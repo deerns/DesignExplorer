@@ -919,6 +919,64 @@
       return getEffectiveSliderOrder(setting || _userSetting || {});
     }
 
+    function getCurrentSettingPanelOrder() {
+      var panelContainer = document.getElementById("dimSettingList");
+      if (!panelContainer) return [];
+
+      return normalizeDimOrder(
+        Array.prototype.filter
+          .call(panelContainer.children || [], function (child) {
+            return (
+              child &&
+              child.classList &&
+              child.classList.contains("dynamic-dim-panel")
+            );
+          })
+          .map(function (panel) {
+            return panel.getAttribute("data-dim") || "";
+          })
+          .filter(function (dimName) {
+            return dimName.length > 0;
+          })
+      );
+    }
+
+    function updateSliderOrderDebug(context, draftSetting) {
+      var debugNode = document.getElementById("sliderOrderDebug");
+      if (!debugNode) return;
+
+      var sliderInfoOrder = normalizeDimOrder(
+        (slidersInfo || []).map(function (info) {
+          return info && info.name ? info.name : info;
+        })
+      );
+      var activeDraft =
+        draftSetting ||
+        (typeof window !== "undefined" && window.__activeSettingsDraft
+          ? window.__activeSettingsDraft
+          : null) ||
+        {};
+
+      debugNode.textContent = [
+        "context: " + (context || ""),
+        "main: " + getCurrentPageSliderOrder().join(" | "),
+        "settings: " + getCurrentSettingPanelOrder().join(" | "),
+        "_userSetting.sliderOrder: " +
+          normalizeDimOrder((_userSetting && _userSetting.sliderOrder) || []).join(
+            " | "
+          ),
+        "_userSetting.dimOrder: " +
+          normalizeDimOrder((_userSetting && _userSetting.dimOrder) || []).join(
+            " | "
+          ),
+        "draft.sliderOrder: " +
+          normalizeDimOrder(activeDraft.sliderOrder || []).join(" | "),
+        "draft.dimOrder: " +
+          normalizeDimOrder(activeDraft.dimOrder || []).join(" | "),
+        "slidersInfo: " + sliderInfoOrder.join(" | "),
+      ].join("\n");
+    }
+
     function applyVisualSliderOrder(dimOrder) {
       var normalizedOrder = normalizeDimOrder(dimOrder);
       var orderLookup = {};
@@ -1386,6 +1444,7 @@
           sliderOrder: orderedSliderDims,
         })
       );
+      updateSliderOrderDebug("syncDimOrderFromPageSliders");
 
       return committedOrder.dimOrder;
     }
@@ -2741,6 +2800,11 @@
               All settings will not be effective once this page is reloaded,
               unless save the setting file with data.csv on the cloud.
             </h6>
+
+            <pre
+              id="sliderOrderDebug"
+              style="margin: 0 0 16px 0; padding: 12px; background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; font-size: 11px; line-height: 1.4; white-space: pre-wrap"
+            ></pre>
 
             <div class="panel-group" id="dimSettingList">
               <!--placeholder for scale setting list-->
@@ -7761,6 +7825,7 @@
           ) {
             rerenderPageSlidersFromCurrentOrder();
           }
+          updateSliderOrderDebug("syncDimOrderFromSettingPanels", newUserSetting);
           return newUserSetting.sliderOrder.slice();
         }
 
@@ -7887,6 +7952,7 @@
           }
         }
         syncDimOrderFromSettingPanels();
+        updateSliderOrderDebug("dataSetting:init", newUserSetting);
         syncAllDimSliderTitleSizeControls();
         settingDimKeys.forEach(function (dimName) {
           syncDimSliderTickSizeControl(dimName);
@@ -8020,6 +8086,7 @@
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
+          updateSliderOrderDebug("setUserSetting:afterSetSettings", newUserSetting);
           // force slider/axis labels to refresh immediately
           setDimLabels(newUserSetting.dimLabels || {});
           if (graph) {
