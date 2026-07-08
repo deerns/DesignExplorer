@@ -7487,7 +7487,6 @@
           setDimensionOrder(settingDimKeys, {
             skipSettingPanels: true,
           });
-          rerenderPageSlidersFromCurrentOrder();
           return settingDimKeys.slice();
         }
 
@@ -7727,7 +7726,6 @@
               skipDraft: true,
               skipSettingPanels: true,
             });
-            rerenderPageSlidersFromCurrentOrder();
           }
           // force slider/axis labels to refresh immediately
           setDimLabels(newUserSetting.dimLabels || {});
@@ -7751,7 +7749,6 @@
               setDimensionOrder(_userSetting.dimOrder, {
                 skipSettingPanels: true,
               });
-              rerenderPageSlidersFromCurrentOrder();
             }
             var hasSecondImg =
               Math.max(
@@ -7903,7 +7900,6 @@
         if (userDimOrder.length > 0) {
           _userSetting.dimOrder = userDimOrder.slice();
           applyDimensionOrderToSliders(userDimOrder);
-          rerenderPageSlidersFromCurrentOrder();
         }
         applyLineGradientSetting(userLineGradient, false);
 
