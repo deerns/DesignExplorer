@@ -966,6 +966,46 @@
       );
     }
 
+    function getSliderSubsetFromDimOrder(dimOrder, fallbackOrder) {
+      var fullDimOrder = normalizeDimOrder(dimOrder);
+      var baseSliderOrder = normalizeDimOrder(fallbackOrder);
+      if (baseSliderOrder.length === 0) {
+        baseSliderOrder = getCurrentSliderNameList();
+      }
+      if (baseSliderOrder.length === 0) return [];
+
+      var sliderLookup = {};
+      var used = {};
+      var result = [];
+
+      baseSliderOrder.forEach(function (dimName) {
+        sliderLookup[normalizeDimKey(dimName)] = dimName;
+      });
+
+      fullDimOrder.forEach(function (dimName) {
+        var normalized = normalizeDimKey(dimName);
+        if (!normalized || !sliderLookup[normalized] || used[normalized]) return;
+        used[normalized] = true;
+        result.push(sliderLookup[normalized]);
+      });
+
+      baseSliderOrder.forEach(function (dimName) {
+        var normalized = normalizeDimKey(dimName);
+        if (!normalized || used[normalized]) return;
+        used[normalized] = true;
+        result.push(dimName);
+      });
+
+      return normalizeDimOrder(result);
+    }
+
+    function getCurrentSettingSliderOrder() {
+      return getSliderSubsetFromDimOrder(
+        getCurrentSettingPanelOrder(),
+        getCurrentSliderNameList()
+      );
+    }
+
     function updateSliderOrderDebug(context, draftSetting) {
       var debugNode = document.getElementById("sliderOrderDebug");
       if (!debugNode) return;
@@ -987,6 +1027,7 @@
         "main.dom: " + getCurrentPageSliderDomOrder().join(" | "),
         "main.visual: " + getCurrentPageSliderVisualOrder().join(" | "),
         "settings: " + getCurrentSettingPanelOrder().join(" | "),
+        "settings.slidersOnly: " + getCurrentSettingSliderOrder().join(" | "),
         "_userSetting.sliderOrder: " +
           normalizeDimOrder((_userSetting && _userSetting.sliderOrder) || []).join(
             " | "
@@ -1209,15 +1250,7 @@
     }
 
     function deriveSliderOrderForDimOrder(dimOrder, fallbackOrder) {
-      var normalizedDimOrder = normalizeDimOrder(dimOrder);
-      if (normalizedDimOrder.length === 0) return [];
-
-      var baseSliderOrder = normalizeDimOrder(fallbackOrder);
-      if (baseSliderOrder.length === 0) {
-        baseSliderOrder = getCurrentSliderNameList();
-      }
-
-      return orderDimensionKeys(baseSliderOrder, normalizedDimOrder);
+      return getSliderSubsetFromDimOrder(dimOrder, fallbackOrder);
     }
 
     function getExpectedPageSliderOrder(dimOrder) {
