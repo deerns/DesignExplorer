@@ -1188,7 +1188,28 @@
       return orderDimensionKeys(baseKeys, mergedOrder);
     }
 
-    function applyPageSliderOrder(dimOrder) {
+    function getExpectedPageSliderOrder(dimOrder) {
+      var currentSliderNames = [];
+
+      if (Array.isArray(slidersInfo) && slidersInfo.length > 0) {
+        currentSliderNames = slidersInfo
+          .map(function (info) {
+            return info && info.name ? info.name : info;
+          })
+          .filter(function (name) {
+            return !!name;
+          });
+      }
+
+      if (currentSliderNames.length === 0) {
+        currentSliderNames = getKnownSliderDimKeys();
+      }
+
+      return orderDimensionKeys(currentSliderNames, dimOrder);
+    }
+
+    function applyPageSliderOrder(dimOrder, options) {
+      options = options || {};
       var normalizedOrder = normalizeDimOrder(dimOrder);
       if (normalizedOrder.length === 0) return [];
 
@@ -1196,11 +1217,36 @@
       var appliedOrder = reorderPageSlidersByDimNames(normalizedOrder);
       applyVisualSliderOrder(normalizedOrder);
 
-      if (appliedOrder.length > 0) {
+      var expectedOrder = getExpectedPageSliderOrder(normalizedOrder);
+      var visualOrder = getCurrentPageSliderVisualOrder();
+
+      if (
+        !options.skipRerender &&
+        expectedOrder.length > 0 &&
+        !areDimOrdersEqual(visualOrder, expectedOrder)
+      ) {
+        if (typeof window !== "undefined" && window.__isRebuildingPageSliders) {
+          return visualOrder;
+        }
+
+        if (typeof window !== "undefined") {
+          window.__isRebuildingPageSliders = true;
+        }
+        try {
+          rerenderPageSlidersFromCurrentOrder();
+        } finally {
+          if (typeof window !== "undefined") {
+            window.__isRebuildingPageSliders = false;
+          }
+        }
+        visualOrder = getCurrentPageSliderVisualOrder();
+      }
+
+      if (appliedOrder.length > 0 && areDimOrdersEqual(visualOrder, expectedOrder)) {
         return normalizeDimOrder(appliedOrder);
       }
 
-      return getCurrentPageSliderDomOrder();
+      return visualOrder;
     }
 
     function getAllOrderableDimKeys() {
@@ -1527,35 +1573,44 @@
       var sliderContainer = d3.select("#inputSliders");
       if (sliderContainer.empty()) return;
 
-      var effectiveSliderOrder = getEffectiveSliderOrder(_userSetting);
-      if (effectiveSliderOrder.length > 0) {
-        applyDimensionOrderToSliders(effectiveSliderOrder);
-        applyVisualSliderOrder(effectiveSliderOrder);
+      if (typeof window !== "undefined") {
+        window.__isRebuildingPageSliders = true;
       }
+      try {
+        var effectiveSliderOrder = getEffectiveSliderOrder(_userSetting);
+        if (effectiveSliderOrder.length > 0) {
+          applyDimensionOrderToSliders(effectiveSliderOrder);
+          applyVisualSliderOrder(effectiveSliderOrder);
+        }
 
-      var selectedDatum =
-        graph &&
-        typeof graph.highlighted === "function" &&
-        graph.highlighted().length > 0
-          ? graph.highlighted()[0]
-          : null;
+        var selectedDatum =
+          graph &&
+          typeof graph.highlighted === "function" &&
+          graph.highlighted().length > 0
+            ? graph.highlighted()[0]
+            : null;
 
-      sliderContainer.selectAll(".inputSlider").remove();
-      initiateSliders();
+        sliderContainer.selectAll(".inputSlider").remove();
+        initiateSliders();
 
-      if (selectedDatum) {
-        updateSlidersTickValues();
-        updateSlidersValue(selectedDatum);
-        enableAllSliders();
-      } else {
-        disableAllSliders();
+        if (selectedDatum) {
+          updateSlidersTickValues();
+          updateSlidersValue(selectedDatum);
+          enableAllSliders();
+        } else {
+          disableAllSliders();
+        }
+
+        updatePinnedSliderMarkers();
+        if (typeof applySliderFontOverrides === "function") {
+          applySliderFontOverrides(_userSetting || {});
+        }
+        applyVisualSliderOrder(getEffectiveSliderOrder(_userSetting));
+      } finally {
+        if (typeof window !== "undefined") {
+          window.__isRebuildingPageSliders = false;
+        }
       }
-
-      updatePinnedSliderMarkers();
-      if (typeof applySliderFontOverrides === "function") {
-        applySliderFontOverrides(_userSetting || {});
-      }
-      applyVisualSliderOrder(getEffectiveSliderOrder(_userSetting));
     }
 
     function ensureAllDimensionsCache() {
