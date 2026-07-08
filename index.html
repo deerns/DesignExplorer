@@ -987,17 +987,93 @@
       return keys;
     }
 
-    function hasSliderForDim(dimName) {
-      var target = normalizeDimKey(dimName);
-      return Array.isArray(slidersInfo)
-        ? slidersInfo.some(function (info) {
-            return (
-              info &&
-              info.name &&
-              normalizeDimKey(info.name) === target
-            );
-          })
-        : false;
+    function reorderPageSlidersByDimNames(orderedDimNames) {
+      var sliderContainer = document.getElementById("inputSliders");
+      if (!sliderContainer) return [];
+
+      var sliderNodes = Array.prototype.filter.call(
+        sliderContainer.children || [],
+        function (child) {
+          return (
+            child &&
+            child.classList &&
+            child.classList.contains("inputSlider")
+          );
+        }
+      );
+      if (sliderNodes.length === 0) return [];
+
+      var sliderNodeByNormalized = {};
+      var sliderInfoByNormalized = {};
+      var handled = {};
+      var orderedSliderDims = [];
+      var fragment = document.createDocumentFragment();
+
+      sliderNodes.forEach(function (node) {
+        var dimName = node.getAttribute("data-dim");
+        var normalized = normalizeDimKey(dimName);
+        if (!normalized) return;
+        sliderNodeByNormalized[normalized] = node;
+      });
+
+      (slidersInfo || []).forEach(function (info) {
+        if (!info || !info.name) return;
+        sliderInfoByNormalized[normalizeDimKey(info.name)] = info;
+      });
+
+      (orderedDimNames || []).forEach(function (dimName) {
+        var normalized = normalizeDimKey(dimName);
+        if (!normalized || handled[normalized]) return;
+        var sliderNode = sliderNodeByNormalized[normalized];
+        if (!sliderNode) return;
+        handled[normalized] = true;
+        orderedSliderDims.push(sliderNode.getAttribute("data-dim") || dimName);
+        fragment.appendChild(sliderNode);
+      });
+
+      sliderNodes.forEach(function (node) {
+        var dimName = node.getAttribute("data-dim");
+        var normalized = normalizeDimKey(dimName);
+        if (!normalized || handled[normalized]) return;
+        handled[normalized] = true;
+        orderedSliderDims.push(dimName);
+        fragment.appendChild(node);
+      });
+
+      sliderContainer.appendChild(fragment);
+
+      var reorderedInfos = orderedSliderDims
+        .map(function (dimName) {
+          return sliderInfoByNormalized[normalizeDimKey(dimName)];
+        })
+        .filter(function (info) {
+          return !!info;
+        });
+
+      if (reorderedInfos.length > 0) {
+        slidersInfo.length = 0;
+        Array.prototype.push.apply(slidersInfo, reorderedInfos);
+      }
+
+      if (
+        typeof window !== "undefined" &&
+        window.jQuery &&
+        window.jQuery.fn &&
+        typeof window.jQuery(sliderContainer).sortable === "function" &&
+        window.jQuery(sliderContainer).data("ui-sortable")
+      ) {
+        window.jQuery(sliderContainer).sortable("refresh");
+      }
+
+      if (typeof updatePinnedSliderMarkers === "function") {
+        updatePinnedSliderMarkers();
+      }
+
+      if (typeof applySliderFontOverrides === "function") {
+        applySliderFontOverrides(_userSetting || {});
+      }
+
+      return orderedSliderDims;
     }
 
     function mergeSliderDimOrderIntoDimOrder(
@@ -7342,22 +7418,26 @@
         var $settingAccordion = $("#dimSettingList");
 
         function syncDimOrderFromSettingPanels() {
-          var orderedDims = [];
-          dimSettingListDiv.selectAll(".dynamic-dim-panel").each(function () {
-            var dimName = this.getAttribute("data-dim");
-            if (dimName) {
-              orderedDims.push(dimName);
-            }
-          });
+          var orderedDims = Array.prototype.filter
+            .call(
+              document.getElementById("dimSettingList").children || [],
+              function (child) {
+                return (
+                  child &&
+                  child.classList &&
+                  child.classList.contains("dynamic-dim-panel")
+                );
+              }
+            )
+            .map(function (panel) {
+              return panel.getAttribute("data-dim") || "";
+            })
+            .filter(function (dimName) {
+              return dimName.length > 0;
+            });
 
           settingDimKeys = orderDimensionKeys(orderedDims, orderedDims);
-          var orderedSliderDims = settingDimKeys.filter(function (dimName) {
-            return hasSliderForDim(dimName);
-          });
-
-          if (orderedSliderDims.length > 0) {
-            applyDimensionOrderToSliders(orderedSliderDims);
-          }
+          reorderPageSlidersByDimNames(settingDimKeys);
 
           newUserSetting.dimOrder = settingDimKeys.slice();
           return setDimensionOrder(newUserSetting.dimOrder, {
