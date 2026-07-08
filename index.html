@@ -1188,7 +1188,7 @@
       return orderDimensionKeys(baseKeys, mergedOrder);
     }
 
-    function getExpectedPageSliderOrder(dimOrder) {
+    function getCurrentSliderNameList() {
       var currentSliderNames = [];
 
       if (Array.isArray(slidersInfo) && slidersInfo.length > 0) {
@@ -1205,7 +1205,23 @@
         currentSliderNames = getKnownSliderDimKeys();
       }
 
-      return orderDimensionKeys(currentSliderNames, dimOrder);
+      return normalizeDimOrder(currentSliderNames);
+    }
+
+    function deriveSliderOrderForDimOrder(dimOrder, fallbackOrder) {
+      var normalizedDimOrder = normalizeDimOrder(dimOrder);
+      if (normalizedDimOrder.length === 0) return [];
+
+      var baseSliderOrder = normalizeDimOrder(fallbackOrder);
+      if (baseSliderOrder.length === 0) {
+        baseSliderOrder = getCurrentSliderNameList();
+      }
+
+      return orderDimensionKeys(baseSliderOrder, normalizedDimOrder);
+    }
+
+    function getExpectedPageSliderOrder(dimOrder) {
+      return orderDimensionKeys(getCurrentSliderNameList(), dimOrder);
     }
 
     function applyPageSliderOrder(dimOrder, options) {
@@ -1611,6 +1627,36 @@
           window.__isRebuildingPageSliders = false;
         }
       }
+    }
+
+    function forceMainSliderSync(settingState, options) {
+      options = options || {};
+      var effectiveSetting = settingState || _userSetting || {};
+      var nextDimOrder = normalizeDimOrder(effectiveSetting.dimOrder);
+      var nextSliderOrder = normalizeDimOrder(effectiveSetting.sliderOrder);
+
+      if (nextSliderOrder.length === 0) {
+        nextSliderOrder = deriveSliderOrderForDimOrder(nextDimOrder);
+      }
+      if (nextSliderOrder.length === 0) return [];
+
+      _userSetting = _userSetting || {};
+      if (nextDimOrder.length > 0) {
+        _userSetting.dimOrder = nextDimOrder.slice();
+      }
+      _userSetting.sliderOrder = nextSliderOrder.slice();
+
+      applyDimensionOrderToSliders(nextSliderOrder);
+      rerenderPageSlidersFromCurrentOrder();
+      applyPageSliderOrder(nextSliderOrder, {
+        skipRerender: true,
+      });
+
+      if (!options.skipSettingsPanels && nextDimOrder.length > 0) {
+        applyDimensionOrderToSettingPanels(nextDimOrder);
+      }
+
+      return nextSliderOrder.slice();
     }
 
     function ensureAllDimensionsCache() {
@@ -8185,7 +8231,16 @@
 
         //set up button event
         d3.select("#dataSetting #setUserSetting").on("click", function (d) {
-          syncDimOrderFromSettingPanels();
+          var liveSettingPanelOrder = getCurrentSettingPanelOrder();
+          if (liveSettingPanelOrder.length > 0) {
+            newUserSetting.dimOrder = liveSettingPanelOrder.slice();
+            newUserSetting.sliderOrder = deriveSliderOrderForDimOrder(
+              liveSettingPanelOrder,
+              getCurrentSliderNameList()
+            );
+          } else {
+            syncDimOrderFromSettingPanels();
+          }
           d3.selectAll(".slider-label-input").each(function (dimName) {
             var value = (d3.select(this).property("value") || "").trim();
             if (value.length > 0) {
@@ -8201,6 +8256,9 @@
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
+          forceMainSliderSync(newUserSetting, {
+            skipSettingsPanels: true,
+          });
           updateSliderOrderDebug("setUserSetting:afterSetSettings", newUserSetting);
           // force slider/axis labels to refresh immediately
           setDimLabels(newUserSetting.dimLabels || {});
@@ -8229,7 +8287,9 @@
                 sliderOrder: _userSetting.sliderOrder,
                 skipSettingPanels: true,
               });
-              rerenderPageSlidersFromCurrentOrder();
+              forceMainSliderSync(_userSetting, {
+                skipSettingsPanels: true,
+              });
             }
             var hasSecondImg =
               Math.max(
@@ -8445,9 +8505,31 @@
         }
         var finalSliderOrder = getEffectiveSliderOrder(_userSetting);
         if (finalSliderOrder.length > 0) {
-          rerenderPageSlidersFromCurrentOrder();
-          applyPageSliderOrder(finalSliderOrder, {
-            skipRerender: true,
+          forceMainSliderSync(
+            {
+              dimOrder: _userSetting.dimOrder || [],
+              sliderOrder: finalSliderOrder,
+            },
+            {
+              skipSettingsPanels: true,
+            }
+          );
+        } else if ((_userSetting.dimOrder || []).length > 0) {
+          forceMainSliderSync(
+            {
+              dimOrder: _userSetting.dimOrder || [],
+              sliderOrder: [],
+            },
+            {
+              skipSettingsPanels: true,
+            }
+          );
+        }
+
+        if (typeof updateSliderOrderDebug === "function") {
+          updateSliderOrderDebug("setSettings:afterForceMainSync", {
+            dimOrder: _userSetting.dimOrder || [],
+            sliderOrder: _userSetting.sliderOrder || [],
           });
         }
 
