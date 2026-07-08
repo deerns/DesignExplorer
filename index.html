@@ -713,6 +713,7 @@
             dimHidden: {},
             dimReversed: {},
             dimOrder: [],
+            sliderOrder: [],
             dimSliderTitleSizes: {},
             dimSliderTickSizes: {},
             imageLabels: {},
@@ -805,6 +806,51 @@
           seen[normalized] = true;
           return true;
         });
+    }
+
+    function getKnownSliderDimKeys() {
+      var keys = [];
+      var seen = {};
+
+      function addKey(key) {
+        var normalized = normalizeDimKey(key);
+        if (!normalized || seen[normalized]) return;
+        seen[normalized] = true;
+        keys.push(String(key).trim());
+      }
+
+      if (Array.isArray(slidersInfo)) {
+        slidersInfo.forEach(function (info) {
+          addKey(info && info.name ? info.name : info);
+        });
+      }
+
+      d3.selectAll("#inputSliders > .inputSlider").each(function () {
+        addKey(this.getAttribute("data-dim"));
+      });
+
+      return normalizeDimOrder(keys);
+    }
+
+    function deriveSliderOrderFromDimOrder(dimOrder, fallbackOrder) {
+      var baseSliderOrder = normalizeDimOrder(fallbackOrder);
+      if (baseSliderOrder.length === 0) {
+        baseSliderOrder = getKnownSliderDimKeys();
+      }
+      if (baseSliderOrder.length === 0) return [];
+      return orderDimensionKeys(baseSliderOrder, dimOrder);
+    }
+
+    function getEffectiveSliderOrder(setting) {
+      var source = setting || _userSetting || {};
+      var explicitSliderOrder = normalizeDimOrder(source.sliderOrder);
+      if (explicitSliderOrder.length > 0) {
+        return explicitSliderOrder;
+      }
+      return deriveSliderOrderFromDimOrder(
+        source.dimOrder || [],
+        getKnownSliderDimKeys()
+      );
     }
 
     function orderDimensionKeys(keys, dimOrder) {
@@ -1140,9 +1186,24 @@
     function setDimensionOrder(dimOrder, options) {
       options = options || {};
       var nextOrder = normalizeDimOrder(dimOrder);
+      var nextSliderOrder = normalizeDimOrder(options.sliderOrder);
+      if (nextSliderOrder.length === 0) {
+        nextSliderOrder = deriveSliderOrderFromDimOrder(
+          nextOrder,
+          (_userSetting && _userSetting.sliderOrder) || getKnownSliderDimKeys()
+        );
+      }
+      if (nextOrder.length === 0 && nextSliderOrder.length > 0) {
+        nextOrder = mergeSliderDimOrderIntoDimOrder(
+          nextSliderOrder,
+          (_userSetting && _userSetting.dimOrder) || [],
+          getAllOrderableDimKeys()
+        );
+      }
 
       _userSetting = _userSetting || {};
       _userSetting.dimOrder = nextOrder.slice();
+      _userSetting.sliderOrder = nextSliderOrder.slice();
 
       if (
         !options.skipDraft &&
@@ -1150,12 +1211,14 @@
         window.__activeSettingsDraft
       ) {
         window.__activeSettingsDraft.dimOrder = nextOrder.slice();
+        window.__activeSettingsDraft.sliderOrder = nextSliderOrder.slice();
       }
 
       if (!options.skipPageSliders) {
-        var appliedSliderOrder = reorderPageSlidersByDimNames(nextOrder);
+        var pageSliderOrder = nextSliderOrder.length > 0 ? nextSliderOrder : nextOrder;
+        var appliedSliderOrder = reorderPageSlidersByDimNames(pageSliderOrder);
         if (appliedSliderOrder.length === 0) {
-          applyDimensionOrderToSliders(nextOrder);
+          applyDimensionOrderToSliders(pageSliderOrder);
         }
       }
 
@@ -1184,6 +1247,7 @@
 
       return setDimensionOrder(mergedOrder, {
         skipPageSliders: true,
+        sliderOrder: orderedSliderDims,
       });
     }
 
@@ -5357,12 +5421,14 @@
 
         updateSliderVisibilityFromSettings();
         updatePinnedSliderMarkers();
-        if (_userSetting && Array.isArray(_userSetting.dimOrder)) {
-          reorderPageSlidersByDimNames(_userSetting.dimOrder);
-          setDimensionOrder(_userSetting.dimOrder, {
+        if (_userSetting) {
+          var initialSliderOrder = getEffectiveSliderOrder(_userSetting);
+          setDimensionOrder(_userSetting.dimOrder || [], {
+            sliderOrder: initialSliderOrder,
             skipPageSliders: true,
             skipSettingPanels: true,
           });
+          reorderPageSlidersByDimNames(initialSliderOrder);
         }
         initPageSliderSortable();
         if (typeof applySliderFontOverrides === "function") {
@@ -6477,6 +6543,7 @@
         _userSetting.dimHidden = _userSetting.dimHidden || {};
         _userSetting.dimReversed = _userSetting.dimReversed || {};
         _userSetting.dimOrder = normalizeDimOrder(_userSetting.dimOrder);
+        _userSetting.sliderOrder = normalizeDimOrder(_userSetting.sliderOrder);
         _userSetting.imageLabels = _userSetting.imageLabels || {};
         _userSetting.lineGradient = cloneLineGradientSetting(
           _userSetting.lineGradient
@@ -6543,6 +6610,7 @@
           dimHidden: Object.assign({}, _userSetting.dimHidden || {}),
           dimReversed: Object.assign({}, _userSetting.dimReversed || {}),
           dimOrder: normalizeDimOrder(_userSetting.dimOrder),
+          sliderOrder: getEffectiveSliderOrder(_userSetting),
           dimSliderTitleSizes: Object.assign(
             {},
             _userSetting.dimSliderTitleSizes || {}
@@ -7488,13 +7556,17 @@
             });
 
           settingDimKeys = orderDimensionKeys(orderedDims, orderedDims);
+          var sliderOrderFromPanels = deriveSliderOrderFromDimOrder(
+            settingDimKeys,
+            getKnownSliderDimKeys()
+          );
           newUserSetting.dimOrder = settingDimKeys.slice();
-          reorderPageSlidersByDimNames(settingDimKeys);
+          newUserSetting.sliderOrder = sliderOrderFromPanels.slice();
           setDimensionOrder(settingDimKeys, {
-            skipPageSliders: true,
+            sliderOrder: sliderOrderFromPanels,
             skipSettingPanels: true,
           });
-          return settingDimKeys.slice();
+          return sliderOrderFromPanels.slice();
         }
 
         function initDimSettingSortable() {
@@ -7729,10 +7801,9 @@
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
           if (Array.isArray(newUserSetting.dimOrder)) {
-            reorderPageSlidersByDimNames(newUserSetting.dimOrder);
             setDimensionOrder(newUserSetting.dimOrder, {
               skipDraft: true,
-              skipPageSliders: true,
+              sliderOrder: newUserSetting.sliderOrder,
               skipSettingPanels: true,
             });
           }
@@ -7755,9 +7826,8 @@
           // final hard refresh to avoid any async overwrite
           setTimeout(function () {
             if (Array.isArray(_userSetting.dimOrder)) {
-              reorderPageSlidersByDimNames(_userSetting.dimOrder);
               setDimensionOrder(_userSetting.dimOrder, {
-                skipPageSliders: true,
+                sliderOrder: _userSetting.sliderOrder,
                 skipSettingPanels: true,
               });
             }
@@ -7886,6 +7956,7 @@
         var userDimHidden = userSetting.dimHidden || {};
         var userDimReversed = userSetting.dimReversed || {};
         var userDimOrder = normalizeDimOrder(userSetting.dimOrder);
+        var userSliderOrder = normalizeDimOrder(userSetting.sliderOrder);
         var userDimSliderTitleSizes = userSetting.dimSliderTitleSizes || {};
         var userDimSliderTickSizes = userSetting.dimSliderTickSizes || {};
         var userImageLabels = userSetting.imageLabels || {};
@@ -7908,9 +7979,17 @@
           {},
           userDimSliderTickSizes
         );
-        if (userDimOrder.length > 0) {
-          _userSetting.dimOrder = userDimOrder.slice();
-          reorderPageSlidersByDimNames(userDimOrder);
+        if (userSliderOrder.length === 0) {
+          userSliderOrder = deriveSliderOrderFromDimOrder(
+            userDimOrder,
+            (_userSetting && _userSetting.sliderOrder) || getKnownSliderDimKeys()
+          );
+        }
+        if (userDimOrder.length > 0 || userSliderOrder.length > 0) {
+          setDimensionOrder(userDimOrder, {
+            sliderOrder: userSliderOrder,
+            skipSettingPanels: true,
+          });
         }
         applyLineGradientSetting(userLineGradient, false);
 
@@ -8484,6 +8563,9 @@
         globalUserSetting.dimOrder = normalizeDimOrder(
           newUserSetting.dimOrder || globalUserSetting.dimOrder
         );
+        globalUserSetting.sliderOrder = normalizeDimOrder(
+          newUserSetting.sliderOrder || globalUserSetting.sliderOrder
+        );
         globalUserSetting.imageLabels = globalUserSetting.imageLabels || {};
         Object.assign(
           globalUserSetting.imageLabels,
@@ -8588,12 +8670,14 @@
           var loadedDimHidden = asPlainObject(d.dimHidden);
           var loadedDimReversed = asPlainObject(d.dimReversed);
           var loadedDimOrder = normalizeDimOrder(
-            Array.isArray(d.dimOrder)
-              ? d.dimOrder
-              : Array.isArray(d.sliderOrder)
-              ? d.sliderOrder
-              : []
+            Array.isArray(d.dimOrder) ? d.dimOrder : []
           );
+          var loadedSliderOrder = normalizeDimOrder(
+            Array.isArray(d.sliderOrder) ? d.sliderOrder : []
+          );
+          if (loadedDimOrder.length === 0 && loadedSliderOrder.length > 0) {
+            loadedDimOrder = loadedSliderOrder.slice();
+          }
           var loadedDimSliderTitleSizes = asPlainObject(d.dimSliderTitleSizes);
           var loadedDimSliderTickSizes = asPlainObject(d.dimSliderTickSizes);
           if (Object.keys(loadedDimHidden).length === 0) {
@@ -8659,6 +8743,13 @@
             loadedDimOrder.length > 0
               ? loadedDimOrder.slice()
               : normalizeDimOrder(_userSetting.dimOrder);
+          mergedSetting.sliderOrder =
+            loadedSliderOrder.length > 0
+              ? loadedSliderOrder.slice()
+              : deriveSliderOrderFromDimOrder(
+                  mergedSetting.dimOrder,
+                  normalizeDimOrder(_userSetting.sliderOrder)
+                );
           mergedSetting.dimSliderTitleSizes = Object.assign(
             {},
             _userSetting.dimSliderTitleSizes || {},
