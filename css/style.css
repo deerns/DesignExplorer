@@ -215,6 +215,19 @@ rect.disabled {
     margin-bottom: 4px;
 }
 
+#inputSliders {
+    display: flex;
+    flex-direction: column;
+}
+
+#inputSliders > form.sliders {
+    display: none;
+}
+
+#inputSliders > .inputSlider {
+    width: 100%;
+}
+
 .inputSlider {
     position: relative;
 }

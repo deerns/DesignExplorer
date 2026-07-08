@@ -608,7 +608,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20260708-4" rel="stylesheet" />
+    <link href="css/style.css?v=20260708-5" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -881,6 +881,26 @@
       });
 
       return normalizeDimOrder(orderedSliderDims);
+    }
+
+    function applyVisualSliderOrder(dimOrder) {
+      var normalizedOrder = normalizeDimOrder(dimOrder);
+      var orderLookup = {};
+
+      normalizedOrder.forEach(function (dimName, index) {
+        orderLookup[normalizeDimKey(dimName)] = index + 1;
+      });
+
+      d3.selectAll("#inputSliders > .inputSlider").each(function (d, index) {
+        var dimName = this.getAttribute("data-dim") || (d && d.name) || "";
+        var normalized = normalizeDimKey(dimName);
+        var visualOrder = orderLookup.hasOwnProperty(normalized)
+          ? orderLookup[normalized]
+          : normalizedOrder.length + index + 1;
+
+        this.style.order = String(visualOrder);
+        this.setAttribute("data-slider-order", String(visualOrder));
+      });
     }
 
     function orderDimensionKeys(keys, dimOrder) {
@@ -1249,10 +1269,12 @@
 
       if (effectivePageSliderOrder.length > 0) {
         applyDimensionOrderToSliders(effectivePageSliderOrder);
+        applyVisualSliderOrder(effectivePageSliderOrder);
       }
 
       if (!options.skipPageSliders) {
         reorderPageSlidersByDimNames(effectivePageSliderOrder);
+        applyVisualSliderOrder(effectivePageSliderOrder);
       }
 
       if (!options.skipSettingPanels) {
@@ -1350,6 +1372,7 @@
       var effectiveSliderOrder = getEffectiveSliderOrder(_userSetting);
       if (effectiveSliderOrder.length > 0) {
         applyDimensionOrderToSliders(effectiveSliderOrder);
+        applyVisualSliderOrder(effectiveSliderOrder);
       }
 
       var selectedDatum =
@@ -1374,6 +1397,7 @@
       if (typeof applySliderFontOverrides === "function") {
         applySliderFontOverrides(_userSetting || {});
       }
+      applyVisualSliderOrder(getEffectiveSliderOrder(_userSetting));
     }
 
     function ensureAllDimensionsCache() {
@@ -5492,6 +5516,7 @@
             sliderOrder: initialSliderOrder,
             skipSettingPanels: true,
           });
+          applyVisualSliderOrder(initialSliderOrder);
         }
         initPageSliderSortable();
         if (typeof applySliderFontOverrides === "function") {
