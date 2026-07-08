@@ -874,16 +874,40 @@
     }
 
     function getCurrentPageSliderOrder() {
-      var orderedSliderDims = [];
+      var sliderNodes = [];
 
       d3.selectAll("#inputSliders > .inputSlider").each(function () {
-        var dimName = this.getAttribute("data-dim");
-        if (dimName) {
-          orderedSliderDims.push(dimName);
-        }
+        sliderNodes.push(this);
       });
 
-      return normalizeDimOrder(orderedSliderDims);
+      sliderNodes.sort(function (a, b) {
+        var orderA = parseInt(a.getAttribute("data-slider-order"), 10);
+        var orderB = parseInt(b.getAttribute("data-slider-order"), 10);
+        var hasOrderA = !isNaN(orderA);
+        var hasOrderB = !isNaN(orderB);
+
+        if (hasOrderA && hasOrderB && orderA !== orderB) {
+          return orderA - orderB;
+        }
+        if (hasOrderA && !hasOrderB) return -1;
+        if (!hasOrderA && hasOrderB) return 1;
+
+        if (a === b) return 0;
+        if (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) {
+          return -1;
+        }
+        return 1;
+      });
+
+      return normalizeDimOrder(
+        sliderNodes
+          .map(function (node) {
+            return node.getAttribute("data-dim") || "";
+          })
+          .filter(function (dimName) {
+            return dimName.length > 0;
+          })
+      );
     }
 
     function getLiveSliderOrderForSync(setting) {
@@ -7023,8 +7047,11 @@
           baseDimsForSettings = currentGraph ? currentGraph.dimensions() || {} : {};
         }
 
-        // start from slider names so the submenu list always matches the left slider set
-        if (Array.isArray(slidersInfo) && slidersInfo.length > 0) {
+        // start from the visible main slider order so settings mirrors the page
+        var liveSliderOrderForSettings = getLiveSliderOrderForSync(_userSetting);
+        if (liveSliderOrderForSettings.length > 0) {
+          settingDimKeys = liveSliderOrderForSettings.slice();
+        } else if (Array.isArray(slidersInfo) && slidersInfo.length > 0) {
           settingDimKeys = slidersInfo
             .map(function (s) {
               return s && s.name ? s.name : null;
