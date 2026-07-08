@@ -87,6 +87,7 @@ function overwriteInitialGlobalValues() {
     dimLabels: {},
     dimHidden: {},
     dimReversed: {},
+    dimOrder: [],
     dimSliderTitleSizes: {},
     dimSliderTickSizes: {},
     imageLabels: {},
