@@ -340,28 +340,6 @@
         color: #033899;
         outline: none;
       }
-      #dimSettingList .setting-reorder-actions {
-        flex: 0 0 auto;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-      }
-      #dimSettingList .setting-reorder-btn {
-        min-width: 32px;
-        height: 28px;
-        padding: 0 8px;
-        border: 1px solid #c9d6ea;
-        border-radius: 4px;
-        background: #ffffff;
-        color: #033899;
-        font-size: 12px;
-        line-height: 1;
-      }
-      #dimSettingList .setting-reorder-btn:hover,
-      #dimSettingList .setting-reorder-btn:focus {
-        background: #eef4ff;
-        outline: none;
-      }
       #dimSettingList .dynamic-dim-panel.is-dragging .setting-reorder-handle {
         cursor: grabbing;
       }
@@ -370,28 +348,6 @@
         border: 1px dashed #7fa6d8;
         border-radius: 4px;
         background: rgba(3, 56, 153, 0.06);
-      }
-      .inputSlider .slider-reorder-actions {
-        flex: 0 0 auto;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-      }
-      .inputSlider .slider-reorder-btn {
-        min-width: 28px;
-        height: 24px;
-        padding: 0 6px;
-        border: 1px solid #c9d6ea;
-        border-radius: 4px;
-        background: #ffffff;
-        color: #033899;
-        font-size: 11px;
-        line-height: 1;
-      }
-      .inputSlider .slider-reorder-btn:hover,
-      .inputSlider .slider-reorder-btn:focus {
-        background: #eef4ff;
-        outline: none;
       }
       /* keep legend disabled boxes visible as empty checkboxes */
       #legend rect.disabled {
@@ -1172,43 +1128,6 @@
       return orderedSliderDims;
     }
 
-    function movePageSliderByDirection(dimName, direction) {
-      if (!direction) return [];
-
-      var orderedSliderDims = [];
-      d3.selectAll("#inputSliders > .inputSlider").each(function () {
-        var currentDim = this.getAttribute("data-dim");
-        if (currentDim) {
-          orderedSliderDims.push(currentDim);
-        }
-      });
-
-      if (orderedSliderDims.length < 2) return orderedSliderDims;
-
-      var currentIndex = -1;
-      for (var i = 0; i < orderedSliderDims.length; i++) {
-        if (normalizeDimKey(orderedSliderDims[i]) === normalizeDimKey(dimName)) {
-          currentIndex = i;
-          break;
-        }
-      }
-
-      if (currentIndex === -1) return orderedSliderDims;
-
-      var nextIndex = currentIndex + direction;
-      if (nextIndex < 0 || nextIndex >= orderedSliderDims.length) {
-        return orderedSliderDims;
-      }
-
-      var movedDim = orderedSliderDims[currentIndex];
-      orderedSliderDims[currentIndex] = orderedSliderDims[nextIndex];
-      orderedSliderDims[nextIndex] = movedDim;
-
-      reorderPageSlidersByDimNames(orderedSliderDims);
-      syncDimOrderFromPageSliders();
-      return orderedSliderDims;
-    }
-
     function mergeSliderDimOrderIntoDimOrder(
       orderedSliderDims,
       currentDimOrder,
@@ -1352,7 +1271,7 @@
       $sliderContainer.sortable({
         items: "> .inputSlider",
         handle: ".slider-reorder-handle",
-        cancel: "input,textarea,select,option,button,.irs,.irs *",
+        cancel: "input,textarea,select,option,.irs,.irs *",
         axis: "y",
         tolerance: "pointer",
         forcePlaceholderSize: true,
@@ -5473,38 +5392,6 @@
               .attr("class", "inputSliderLabelText")
               .text(getDimLabel(d.name));
 
-            var sliderActions = label
-              .append("span")
-              .attr("class", "slider-reorder-actions");
-
-            sliderActions
-              .append("button")
-              .attr("type", "button")
-              .attr("class", "slider-reorder-btn")
-              .attr("title", "Move up")
-              .text("Up")
-              .on("click", function (dimData) {
-                if (d3.event) {
-                  d3.event.preventDefault();
-                  d3.event.stopPropagation();
-                }
-                movePageSliderByDirection(dimData.name, -1);
-              });
-
-            sliderActions
-              .append("button")
-              .attr("type", "button")
-              .attr("class", "slider-reorder-btn")
-              .attr("title", "Move down")
-              .text("Down")
-              .on("click", function (dimData) {
-                if (d3.event) {
-                  d3.event.preventDefault();
-                  d3.event.stopPropagation();
-                }
-                movePageSliderByDirection(dimData.name, 1);
-              });
-
             wrapper
               .append("input")
               .attr("id", d.namewithnospace)
@@ -7299,38 +7186,6 @@
             return d;
           });
 
-        var panelMoveActions = panelHeading
-          .append("div")
-          .attr("class", "setting-reorder-actions");
-
-        panelMoveActions
-          .append("button")
-          .attr("type", "button")
-          .attr("class", "setting-reorder-btn")
-          .attr("title", "Move up")
-          .text("Up")
-          .on("click", function (d) {
-            if (d3.event) {
-              d3.event.preventDefault();
-              d3.event.stopPropagation();
-            }
-            moveSettingPanelByDirection(d, -1);
-          });
-
-        panelMoveActions
-          .append("button")
-          .attr("type", "button")
-          .attr("class", "setting-reorder-btn")
-          .attr("title", "Move down")
-          .text("Down")
-          .on("click", function (d) {
-            if (d3.event) {
-              d3.event.preventDefault();
-              d3.event.stopPropagation();
-            }
-            moveSettingPanelByDirection(d, 1);
-          });
-
         var panelBody = selectList
           .append("div")
           .attr("id", function (d) {
@@ -7726,57 +7581,8 @@
             sliderOrder: newUserSetting.sliderOrder,
             skipSettingPanels: true,
           });
+          rerenderPageSlidersFromCurrentOrder();
           return newUserSetting.sliderOrder.slice();
-        }
-
-        function moveSettingPanelByDirection(dimName, direction) {
-          var panelContainer = document.getElementById("dimSettingList");
-          if (!panelContainer || !direction) return;
-
-          var panels = Array.prototype.filter.call(
-            panelContainer.children || [],
-            function (child) {
-              return (
-                child &&
-                child.classList &&
-                child.classList.contains("dynamic-dim-panel")
-              );
-            }
-          );
-
-          if (panels.length < 2) return;
-
-          var normalizedTarget = normalizeDimKey(dimName);
-          var panel = null;
-          panels.forEach(function (item) {
-            if (
-              !panel &&
-              normalizeDimKey(item.getAttribute("data-dim")) === normalizedTarget
-            ) {
-              panel = item;
-            }
-          });
-          if (!panel) return;
-
-          var currentIndex = panels.indexOf(panel);
-          var nextIndex = currentIndex + direction;
-          if (nextIndex < 0 || nextIndex >= panels.length) return;
-
-          var swapPanel = panels[nextIndex];
-          if (direction < 0) {
-            panelContainer.insertBefore(panel, swapPanel);
-          } else {
-            panelContainer.insertBefore(swapPanel, panel);
-          }
-
-          syncDimOrderFromSettingPanels();
-
-          var targetId = "#setting" + string_as_unicode_escape(dimName);
-          openSettingPanel(targetId, true);
-
-          if ($settingAccordion.data("ui-sortable")) {
-            $settingAccordion.sortable("refresh");
-          }
         }
 
         function initDimSettingSortable() {
@@ -7794,7 +7600,7 @@
           $settingAccordion.sortable({
             items: "> .dynamic-dim-panel",
             handle: ".setting-reorder-handle",
-            cancel: "input,textarea,select,option,button",
+            cancel: "input,textarea,select,option",
             axis: "y",
             tolerance: "pointer",
             forcePlaceholderSize: true,
@@ -8016,6 +7822,7 @@
               sliderOrder: newUserSetting.sliderOrder,
               skipSettingPanels: true,
             });
+            rerenderPageSlidersFromCurrentOrder();
           }
           // force slider/axis labels to refresh immediately
           setDimLabels(newUserSetting.dimLabels || {});
@@ -8200,6 +8007,7 @@
             sliderOrder: userSliderOrder,
             skipSettingPanels: true,
           });
+          rerenderPageSlidersFromCurrentOrder();
         }
         applyLineGradientSetting(userLineGradient, false);
 
