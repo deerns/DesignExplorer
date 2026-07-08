@@ -886,6 +886,15 @@
       return normalizeDimOrder(orderedSliderDims);
     }
 
+    function getLiveSliderOrderForSync(setting) {
+      var livePageOrder = getCurrentPageSliderOrder();
+      if (livePageOrder.length > 0) {
+        return livePageOrder;
+      }
+
+      return getEffectiveSliderOrder(setting || _userSetting || {});
+    }
+
     function applyVisualSliderOrder(dimOrder) {
       var normalizedOrder = normalizeDimOrder(dimOrder);
       var orderLookup = {};
@@ -1056,7 +1065,7 @@
       if (baseKeys.length === 0) return [];
 
       var effectiveSetting = setting || _userSetting || {};
-      var sliderOrder = getEffectiveSliderOrder(effectiveSetting);
+      var sliderOrder = getLiveSliderOrderForSync(effectiveSetting);
       var dimOrder = normalizeDimOrder(effectiveSetting.dimOrder);
       var mergedOrder = mergeSliderDimOrderIntoDimOrder(
         sliderOrder,
@@ -1345,6 +1354,13 @@
           skipPageSliders: true,
           sliderOrder: orderedSliderDims,
         }
+      );
+
+      applyDimensionOrderToSettingPanels(
+        deriveSettingPanelOrder(getAllOrderableDimKeys(), {
+          dimOrder: committedOrder.dimOrder,
+          sliderOrder: orderedSliderDims,
+        })
       );
 
       return committedOrder.dimOrder;
@@ -6660,6 +6676,15 @@
         _userSetting.lineGradient = cloneLineGradientSetting(
           _userSetting.lineGradient
         );
+        var livePageSliderOrder = getCurrentPageSliderOrder();
+        if (livePageSliderOrder.length > 0) {
+          _userSetting.sliderOrder = livePageSliderOrder.slice();
+          _userSetting.dimOrder = mergeSliderDimOrderIntoDimOrder(
+            livePageSliderOrder,
+            _userSetting.dimOrder || [],
+            getAllOrderableDimKeys()
+          );
+        }
         var currentStudyInfo =
           _userSetting.studyInfo && typeof _userSetting.studyInfo === "object"
             ? _userSetting.studyInfo
@@ -6722,7 +6747,7 @@
           dimHidden: Object.assign({}, _userSetting.dimHidden || {}),
           dimReversed: Object.assign({}, _userSetting.dimReversed || {}),
           dimOrder: normalizeDimOrder(_userSetting.dimOrder),
-          sliderOrder: getEffectiveSliderOrder(_userSetting),
+          sliderOrder: getLiveSliderOrderForSync(_userSetting),
           dimSliderTitleSizes: Object.assign(
             {},
             _userSetting.dimSliderTitleSizes || {}
@@ -7672,7 +7697,7 @@
 
           var sliderLookup = {};
           var sliderOrderFromPanels = [];
-          getKnownSliderDimKeys().forEach(function (dimName) {
+          getLiveSliderOrderForSync(newUserSetting).forEach(function (dimName) {
             sliderLookup[normalizeDimKey(dimName)] = dimName;
           });
 
