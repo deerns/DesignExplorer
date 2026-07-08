@@ -874,6 +874,21 @@
     }
 
     function getCurrentPageSliderOrder() {
+      return normalizeDimOrder(
+        Array.prototype.map
+          .call(
+            document.querySelectorAll("#inputSliders > .inputSlider"),
+            function (node) {
+              return node.getAttribute("data-dim") || "";
+            }
+          )
+          .filter(function (dimName) {
+            return dimName.length > 0;
+          })
+      );
+    }
+
+    function getCurrentPageSliderVisualOrder() {
       var sliderNodes = [];
 
       d3.selectAll("#inputSliders > .inputSlider").each(function () {
@@ -959,7 +974,8 @@
 
       debugNode.textContent = [
         "context: " + (context || ""),
-        "main: " + getCurrentPageSliderOrder().join(" | "),
+        "main.dom: " + getCurrentPageSliderOrder().join(" | "),
+        "main.visual: " + getCurrentPageSliderVisualOrder().join(" | "),
         "settings: " + getCurrentSettingPanelOrder().join(" | "),
         "_userSetting.sliderOrder: " +
           normalizeDimOrder((_userSetting && _userSetting.sliderOrder) || []).join(
@@ -7808,7 +7824,6 @@
           newUserSetting.sliderOrder = normalizeDimOrder(
             sliderOrderFromPanels
           );
-          var pageSliderOrderBeforeSync = getCurrentPageSliderOrder();
           commitDimensionAndSliderOrder(
             settingDimKeys,
             newUserSetting.sliderOrder,
@@ -7817,9 +7832,20 @@
               skipSettingPanels: true,
             }
           );
+          var pageSliderOrderAfterSync = getCurrentPageSliderOrder();
           if (
             !areDimOrdersEqual(
-              pageSliderOrderBeforeSync,
+              pageSliderOrderAfterSync,
+              newUserSetting.sliderOrder
+            )
+          ) {
+            applyDimensionOrderToSliders(newUserSetting.sliderOrder);
+            reorderPageSlidersByDimNames(newUserSetting.sliderOrder);
+            pageSliderOrderAfterSync = getCurrentPageSliderOrder();
+          }
+          if (
+            !areDimOrdersEqual(
+              pageSliderOrderAfterSync,
               newUserSetting.sliderOrder
             )
           ) {
