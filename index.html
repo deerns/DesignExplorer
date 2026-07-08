@@ -1217,6 +1217,34 @@
       });
     }
 
+    function rerenderPageSlidersFromCurrentOrder() {
+      var sliderContainer = d3.select("#inputSliders");
+      if (sliderContainer.empty()) return;
+
+      var selectedDatum =
+        graph &&
+        typeof graph.highlighted === "function" &&
+        graph.highlighted().length > 0
+          ? graph.highlighted()[0]
+          : null;
+
+      sliderContainer.selectAll(".inputSlider").remove();
+      initiateSliders();
+
+      if (selectedDatum) {
+        updateSlidersTickValues();
+        updateSlidersValue(selectedDatum);
+        enableAllSliders();
+      } else {
+        disableAllSliders();
+      }
+
+      updatePinnedSliderMarkers();
+      if (typeof applySliderFontOverrides === "function") {
+        applySliderFontOverrides(_userSetting || {});
+      }
+    }
+
     function ensureAllDimensionsCache() {
       if (typeof window === "undefined") return {};
       if (!graph || typeof graph.dimensions !== "function") {
@@ -7437,7 +7465,10 @@
             });
 
           settingDimKeys = orderDimensionKeys(orderedDims, orderedDims);
+          _userSetting = _userSetting || {};
+          _userSetting.dimOrder = settingDimKeys.slice();
           reorderPageSlidersByDimNames(settingDimKeys);
+          rerenderPageSlidersFromCurrentOrder();
 
           newUserSetting.dimOrder = settingDimKeys.slice();
           return setDimensionOrder(newUserSetting.dimOrder, {
