@@ -853,6 +853,36 @@
       );
     }
 
+    function areDimOrdersEqual(firstOrder, secondOrder) {
+      var normalizedFirst = normalizeDimOrder(firstOrder);
+      var normalizedSecond = normalizeDimOrder(secondOrder);
+      if (normalizedFirst.length !== normalizedSecond.length) return false;
+
+      for (var i = 0; i < normalizedFirst.length; i++) {
+        if (
+          normalizeDimKey(normalizedFirst[i]) !==
+          normalizeDimKey(normalizedSecond[i])
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function getCurrentPageSliderOrder() {
+      var orderedSliderDims = [];
+
+      d3.selectAll("#inputSliders > .inputSlider").each(function () {
+        var dimName = this.getAttribute("data-dim");
+        if (dimName) {
+          orderedSliderDims.push(dimName);
+        }
+      });
+
+      return normalizeDimOrder(orderedSliderDims);
+    }
+
     function orderDimensionKeys(keys, dimOrder) {
       var orderedKeys = [];
       var seen = {};
@@ -7610,6 +7640,7 @@
           newUserSetting.sliderOrder = normalizeDimOrder(
             sliderOrderFromPanels
           );
+          var pageSliderOrderBeforeSync = getCurrentPageSliderOrder();
           commitDimensionAndSliderOrder(
             settingDimKeys,
             newUserSetting.sliderOrder,
@@ -7618,6 +7649,14 @@
               skipSettingPanels: true,
             }
           );
+          if (
+            !areDimOrdersEqual(
+              pageSliderOrderBeforeSync,
+              newUserSetting.sliderOrder
+            )
+          ) {
+            rerenderPageSlidersFromCurrentOrder();
+          }
           return newUserSetting.sliderOrder.slice();
         }
 
@@ -7718,6 +7757,30 @@
         }
 
         initDimSettingSortable();
+        if (typeof window !== "undefined" && window.__dimSettingOrderObserver) {
+          window.__dimSettingOrderObserver.disconnect();
+        }
+        if (
+          typeof window !== "undefined" &&
+          typeof MutationObserver === "function"
+        ) {
+          window.__dimSettingOrderObserver = new MutationObserver(function (
+            mutations
+          ) {
+            var changed = mutations.some(function (mutation) {
+              return mutation.type === "childList";
+            });
+            if (changed) {
+              queueSyncDimOrderFromSettingPanels();
+            }
+          });
+          var settingListNode = document.getElementById("dimSettingList");
+          if (settingListNode) {
+            window.__dimSettingOrderObserver.observe(settingListNode, {
+              childList: true,
+            });
+          }
+        }
         syncDimOrderFromSettingPanels();
         syncAllDimSliderTitleSizeControls();
         settingDimKeys.forEach(function (dimName) {
@@ -7867,6 +7930,10 @@
           d3.select("#showSetting").style("display", "none");
           if (typeof window !== "undefined") {
             window.__activeSettingsDraft = null;
+            if (window.__dimSettingOrderObserver) {
+              window.__dimSettingOrderObserver.disconnect();
+              window.__dimSettingOrderObserver = null;
+            }
           }
           // final hard refresh to avoid any async overwrite
           setTimeout(function () {
@@ -7875,6 +7942,7 @@
                 sliderOrder: _userSetting.sliderOrder,
                 skipSettingPanels: true,
               });
+              rerenderPageSlidersFromCurrentOrder();
             }
             var hasSecondImg =
               Math.max(
