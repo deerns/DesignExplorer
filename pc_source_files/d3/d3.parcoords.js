@@ -952,7 +952,11 @@ d3.parcoords = function (config) {
         //console.log(g_data);
         // Enter
         g_data.enter().append("svg:g")
-            .attr("id", function (d) {return "dim_"+d;})
+            .attr("id", function (d) {
+                return "dim_" + (typeof string_as_unicode_escape === "function"
+                    ? string_as_unicode_escape(d)
+                    : d);
+            })
             .attr("class", "dimension")
             .attr("transform", function (p) {
                 return "translate(" + position(p) + ")";

@@ -532,7 +532,7 @@
     <!-- Parallel Coordinates -->
     <script
       type="text/javascript"
-      src="./pc_source_files/d3/d3.parcoords.js"
+      src="./pc_source_files/d3/d3.parcoords.js?v=20260708-2"
     ></script>
 
     <!-- D3 Parallel Coordinates CSS -->
@@ -629,7 +629,7 @@
     <script src="./js/divgrid.js"></script>
     <!-- Design Explorer Scripts -->
     <script
-      src="./js/designExplorer.js"
+      src="./js/designExplorer.js?v=20260708-2"
       type="text/javascript"
       language="javascript"
     ></script>
@@ -3743,6 +3743,9 @@
         graph.on("render", function () {
           syncGraphDimensionTitles();
           updateLabels();
+          if (typeof applySliderFontOverrides === "function") {
+            applySliderFontOverrides(_userSetting || {});
+          }
           refreshGraphLabelsWithRetry(0);
         });
         graph.on("render.pinnedReference", drawPinnedReferenceLineInPc);

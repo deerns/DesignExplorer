@@ -435,17 +435,39 @@ function applySliderFontOverrides(setting) {
   var baseSliderLabelPx = 12;
   var styleEl = ensureSliderFontOverrideStyleTag();
   var cssRules = [];
+  var dimNames = [];
+  var seenDims = {};
+
+  function addDimName(dimName) {
+    var normalized = normalizeSliderDimKey(dimName);
+    if (!normalized || seenDims[normalized]) return;
+    seenDims[normalized] = true;
+    dimNames.push(dimName);
+  }
 
   if (baseTitleSize === null) {
     baseTitleSize = 85;
   }
 
   d3.selectAll("#inputSliders .inputSlider").each(function (d) {
-    var dimName = d && d.name ? d.name : d;
+    addDimName(d && d.name ? d.name : d);
+  });
+
+  d3.selectAll("#graph .dimension").each(function (d) {
+    addDimName(d && d.name ? d.name : d);
+  });
+
+  Object.keys(titleMap).forEach(addDimName);
+  Object.keys(tickMap).forEach(addDimName);
+
+  dimNames.forEach(function (dimName) {
     var wrapper = getSliderWrapperSelection(dimName);
-    if (!wrapper) return;
-    var wrapperId = wrapper.attr ? wrapper.attr("id") : null;
-    if (!wrapperId) return;
+    var wrapperId = wrapper && wrapper.attr ? wrapper.attr("id") : null;
+    var escapedDim =
+      typeof string_as_unicode_escape === "function"
+        ? string_as_unicode_escape(String(dimName))
+        : String(dimName);
+    var graphDimSelector = "#dim_" + escapedDim;
 
     var titleOverride = normalizeSliderPercentSize(
       findSliderDimOverride(dimName, titleMap)
@@ -474,64 +496,85 @@ function applySliderFontOverrides(setting) {
       60,
       40 + Math.round(resolvedTickPx * 1.4)
     ) + "px";
-    var wrapperSelector = "#" + wrapperId;
 
     cssRules.push(
-      wrapperSelector +
-        " .inputSliderLabel{" +
-        "line-height:" +
-        resolvedTitleLineHeight +
-        " !important;" +
-        "min-height:" +
-        resolvedTitleLineHeight +
-        " !important;" +
-        "display:block !important;" +
-        "}"
-    );
-
-    cssRules.push(
-      wrapperSelector +
-        " .inputSliderLabelText{" +
+      graphDimSelector +
+        " .label{" +
         "font-size:" +
-        resolvedTitlePx +
-        "px !important;" +
-        "line-height:" +
-        resolvedTitleLineHeight +
-        " !important;" +
-        "display:inline-block !important;" +
-        "transform:none !important;" +
+        resolvedTitlePercent +
+        "% !important;" +
         "}"
     );
 
     cssRules.push(
-      wrapperSelector +
-        " .irs-with-grid{" +
-        "height:" +
-        resolvedSliderHeight +
-        " !important;" +
-        "}"
-    );
-
-    cssRules.push(
-      wrapperSelector +
-        " .irs-grid{" +
-        "height:" +
-        resolvedGridHeight +
-        " !important;" +
-        "}"
-    );
-
-    cssRules.push(
-      wrapperSelector +
-        " .irs-grid-text{" +
+      graphDimSelector +
+        " .axis .tick text{" +
         "font-size:" +
         resolvedTick +
         " !important;" +
-        "line-height:" +
-        resolvedTick +
-        " !important;" +
         "}"
     );
+
+    if (wrapperId) {
+      var wrapperSelector = "#" + wrapperId;
+
+      cssRules.push(
+        wrapperSelector +
+          " .inputSliderLabel{" +
+          "line-height:" +
+          resolvedTitleLineHeight +
+          " !important;" +
+          "min-height:" +
+          resolvedTitleLineHeight +
+          " !important;" +
+          "display:block !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        wrapperSelector +
+          " .inputSliderLabelText{" +
+          "font-size:" +
+          resolvedTitlePx +
+          "px !important;" +
+          "line-height:" +
+          resolvedTitleLineHeight +
+          " !important;" +
+          "display:inline-block !important;" +
+          "transform:none !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        wrapperSelector +
+          " .irs-with-grid{" +
+          "height:" +
+          resolvedSliderHeight +
+          " !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        wrapperSelector +
+          " .irs-grid{" +
+          "height:" +
+          resolvedGridHeight +
+          " !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        wrapperSelector +
+          " .irs-grid-text{" +
+          "font-size:" +
+          resolvedTick +
+          " !important;" +
+          "line-height:" +
+          resolvedTick +
+          " !important;" +
+          "}"
+      );
+    }
   });
 
   if (styleEl) {
