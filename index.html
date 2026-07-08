@@ -987,6 +987,19 @@
       return keys;
     }
 
+    function hasSliderForDim(dimName) {
+      var target = normalizeDimKey(dimName);
+      return Array.isArray(slidersInfo)
+        ? slidersInfo.some(function (info) {
+            return (
+              info &&
+              info.name &&
+              normalizeDimKey(info.name) === target
+            );
+          })
+        : false;
+    }
+
     function mergeSliderDimOrderIntoDimOrder(
       orderedSliderDims,
       currentDimOrder,
@@ -7338,9 +7351,18 @@
           });
 
           settingDimKeys = orderDimensionKeys(orderedDims, orderedDims);
+          var orderedSliderDims = settingDimKeys.filter(function (dimName) {
+            return hasSliderForDim(dimName);
+          });
+
+          if (orderedSliderDims.length > 0) {
+            applyDimensionOrderToSliders(orderedSliderDims);
+          }
+
           newUserSetting.dimOrder = settingDimKeys.slice();
           return setDimensionOrder(newUserSetting.dimOrder, {
             skipDraft: true,
+            skipPageSliders: true,
             skipSettingPanels: true,
           });
         }
