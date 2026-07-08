@@ -7555,18 +7555,33 @@
               return dimName.length > 0;
             });
 
+          var sliderLookup = {};
+          var sliderOrderFromPanels = [];
+          getKnownSliderDimKeys().forEach(function (dimName) {
+            sliderLookup[normalizeDimKey(dimName)] = dimName;
+          });
+
+          orderedDims.forEach(function (dimName) {
+            var normalized = normalizeDimKey(dimName);
+            if (!normalized || !sliderLookup[normalized]) return;
+            sliderOrderFromPanels.push(sliderLookup[normalized]);
+            delete sliderLookup[normalized];
+          });
+
+          Object.keys(sliderLookup).forEach(function (normalized) {
+            sliderOrderFromPanels.push(sliderLookup[normalized]);
+          });
+
           settingDimKeys = orderDimensionKeys(orderedDims, orderedDims);
-          var sliderOrderFromPanels = deriveSliderOrderFromDimOrder(
-            settingDimKeys,
-            getKnownSliderDimKeys()
-          );
           newUserSetting.dimOrder = settingDimKeys.slice();
-          newUserSetting.sliderOrder = sliderOrderFromPanels.slice();
+          newUserSetting.sliderOrder = normalizeDimOrder(
+            sliderOrderFromPanels
+          );
           setDimensionOrder(settingDimKeys, {
-            sliderOrder: sliderOrderFromPanels,
+            sliderOrder: newUserSetting.sliderOrder,
             skipSettingPanels: true,
           });
-          return sliderOrderFromPanels.slice();
+          return newUserSetting.sliderOrder.slice();
         }
 
         function initDimSettingSortable() {
