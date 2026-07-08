@@ -1183,10 +1183,10 @@
       return normalizeDimOrder(result);
     }
 
-    function setDimensionOrder(dimOrder, options) {
+    function commitDimensionAndSliderOrder(dimOrder, sliderOrder, options) {
       options = options || {};
       var nextOrder = normalizeDimOrder(dimOrder);
-      var nextSliderOrder = normalizeDimOrder(options.sliderOrder);
+      var nextSliderOrder = normalizeDimOrder(sliderOrder);
       if (nextSliderOrder.length === 0) {
         nextSliderOrder = deriveSliderOrderFromDimOrder(
           nextOrder,
@@ -1214,19 +1214,36 @@
         window.__activeSettingsDraft.sliderOrder = nextSliderOrder.slice();
       }
 
+      var effectivePageSliderOrder =
+        nextSliderOrder.length > 0 ? nextSliderOrder : nextOrder;
+
+      if (effectivePageSliderOrder.length > 0) {
+        applyDimensionOrderToSliders(effectivePageSliderOrder);
+      }
+
       if (!options.skipPageSliders) {
-        var pageSliderOrder = nextSliderOrder.length > 0 ? nextSliderOrder : nextOrder;
-        var appliedSliderOrder = reorderPageSlidersByDimNames(pageSliderOrder);
-        if (appliedSliderOrder.length === 0) {
-          applyDimensionOrderToSliders(pageSliderOrder);
-        }
+        reorderPageSlidersByDimNames(effectivePageSliderOrder);
       }
 
       if (!options.skipSettingPanels) {
         applyDimensionOrderToSettingPanels(nextOrder);
       }
 
-      return nextOrder;
+      return {
+        dimOrder: nextOrder.slice(),
+        sliderOrder: nextSliderOrder.slice(),
+      };
+    }
+
+    function setDimensionOrder(dimOrder, options) {
+      options = options || {};
+      var committedOrder = commitDimensionAndSliderOrder(
+        dimOrder,
+        options.sliderOrder,
+        options
+      );
+
+      return committedOrder.dimOrder;
     }
 
     function syncDimOrderFromPageSliders() {
@@ -1245,10 +1262,16 @@
         getAllOrderableDimKeys()
       );
 
-      return setDimensionOrder(mergedOrder, {
-        skipPageSliders: true,
-        sliderOrder: orderedSliderDims,
-      });
+      var committedOrder = commitDimensionAndSliderOrder(
+        mergedOrder,
+        orderedSliderDims,
+        {
+          skipPageSliders: true,
+          sliderOrder: orderedSliderDims,
+        }
+      );
+
+      return committedOrder.dimOrder;
     }
 
     function initPageSliderSortable() {
@@ -1293,6 +1316,11 @@
     function rerenderPageSlidersFromCurrentOrder() {
       var sliderContainer = d3.select("#inputSliders");
       if (sliderContainer.empty()) return;
+
+      var effectiveSliderOrder = getEffectiveSliderOrder(_userSetting);
+      if (effectiveSliderOrder.length > 0) {
+        applyDimensionOrderToSliders(effectiveSliderOrder);
+      }
 
       var selectedDatum =
         graph &&
@@ -5354,6 +5382,13 @@
         // all the sliders should be disabled on load until the user select one of the options
         //d3.select(".sidebar-brand").text("INPUT SLIDERS");
 
+        if (_userSetting) {
+          var plannedSliderOrder = getEffectiveSliderOrder(_userSetting);
+          if (plannedSliderOrder.length > 0) {
+            applyDimensionOrderToSliders(plannedSliderOrder);
+          }
+        }
+
         // insert divs for sliders
         d3.selectAll("#inputSliders")
           .selectAll("div")
@@ -5425,10 +5460,8 @@
           var initialSliderOrder = getEffectiveSliderOrder(_userSetting);
           setDimensionOrder(_userSetting.dimOrder || [], {
             sliderOrder: initialSliderOrder,
-            skipPageSliders: true,
             skipSettingPanels: true,
           });
-          reorderPageSlidersByDimNames(initialSliderOrder);
         }
         initPageSliderSortable();
         if (typeof applySliderFontOverrides === "function") {
@@ -7577,11 +7610,14 @@
           newUserSetting.sliderOrder = normalizeDimOrder(
             sliderOrderFromPanels
           );
-          setDimensionOrder(settingDimKeys, {
-            sliderOrder: newUserSetting.sliderOrder,
-            skipSettingPanels: true,
-          });
-          rerenderPageSlidersFromCurrentOrder();
+          commitDimensionAndSliderOrder(
+            settingDimKeys,
+            newUserSetting.sliderOrder,
+            {
+              sliderOrder: newUserSetting.sliderOrder,
+              skipSettingPanels: true,
+            }
+          );
           return newUserSetting.sliderOrder.slice();
         }
 
@@ -7816,14 +7852,6 @@
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
-          if (Array.isArray(newUserSetting.dimOrder)) {
-            setDimensionOrder(newUserSetting.dimOrder, {
-              skipDraft: true,
-              sliderOrder: newUserSetting.sliderOrder,
-              skipSettingPanels: true,
-            });
-            rerenderPageSlidersFromCurrentOrder();
-          }
           // force slider/axis labels to refresh immediately
           setDimLabels(newUserSetting.dimLabels || {});
           if (graph) {
@@ -8003,11 +8031,10 @@
           );
         }
         if (userDimOrder.length > 0 || userSliderOrder.length > 0) {
-          setDimensionOrder(userDimOrder, {
+          commitDimensionAndSliderOrder(userDimOrder, userSliderOrder, {
             sliderOrder: userSliderOrder,
             skipSettingPanels: true,
           });
-          rerenderPageSlidersFromCurrentOrder();
         }
         applyLineGradientSetting(userLineGradient, false);
 
