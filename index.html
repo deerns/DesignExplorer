@@ -602,7 +602,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css" rel="stylesheet" />
+    <link href="css/style.css?v=20260708-3" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -878,6 +878,223 @@
       if (typeof applySliderFontOverrides === "function") {
         applySliderFontOverrides(_userSetting || {});
       }
+    }
+
+    function applyDimensionOrderToSettingPanels(dimOrder) {
+      var panelContainer = document.getElementById("dimSettingList");
+      if (!panelContainer) return;
+
+      var panels = Array.prototype.filter.call(
+        panelContainer.children || [],
+        function (child) {
+          return (
+            child &&
+            child.classList &&
+            child.classList.contains("dynamic-dim-panel")
+          );
+        }
+      );
+
+      if (panels.length === 0) return;
+
+      var panelByNormalized = {};
+      var panelDims = [];
+
+      panels.forEach(function (panel) {
+        var dimName = panel.getAttribute("data-dim");
+        if (!dimName) return;
+        panelByNormalized[normalizeDimKey(dimName)] = panel;
+        panelDims.push(dimName);
+      });
+
+      orderDimensionKeys(panelDims, dimOrder).forEach(function (dimName) {
+        var panel = panelByNormalized[normalizeDimKey(dimName)];
+        if (panel) {
+          panelContainer.appendChild(panel);
+        }
+      });
+    }
+
+    function getAllOrderableDimKeys() {
+      var keys = [];
+      var seen = {};
+
+      function addKey(key) {
+        var normalized = normalizeDimKey(key);
+        if (
+          !normalized ||
+          normalized === normalizeDimKey("Rating") ||
+          normalized === normalizeDimKey("Description") ||
+          seen[normalized]
+        ) {
+          return;
+        }
+
+        seen[normalized] = true;
+        keys.push(key);
+      }
+
+      normalizeDimOrder((_userSetting && _userSetting.dimOrder) || []).forEach(
+        addKey
+      );
+
+      if (Array.isArray(slidersInfo)) {
+        slidersInfo.forEach(function (info) {
+          addKey(info && info.name ? info.name : info);
+        });
+      }
+
+      if (typeof ensureAllDimensionsCache === "function") {
+        var allDims = ensureAllDimensionsCache() || {};
+        Object.keys(allDims).forEach(addKey);
+      }
+
+      if (graph && typeof graph.dimensions === "function") {
+        Object.keys(graph.dimensions() || {}).forEach(addKey);
+      }
+
+      return keys;
+    }
+
+    function mergeSliderDimOrderIntoDimOrder(
+      orderedSliderDims,
+      currentDimOrder,
+      allDimKeys
+    ) {
+      var sliderOrder = normalizeDimOrder(orderedSliderDims);
+      if (sliderOrder.length === 0) {
+        return normalizeDimOrder(currentDimOrder);
+      }
+
+      var sliderSet = {};
+      sliderOrder.forEach(function (key) {
+        sliderSet[normalizeDimKey(key)] = true;
+      });
+
+      var knownDimKeys = Array.isArray(allDimKeys) ? allDimKeys.slice() : [];
+      normalizeDimOrder(currentDimOrder).forEach(function (key) {
+        knownDimKeys.push(key);
+      });
+      sliderOrder.forEach(function (key) {
+        knownDimKeys.push(key);
+      });
+
+      var baseOrder = orderDimensionKeys(knownDimKeys, currentDimOrder);
+      var pendingSliderDims = sliderOrder.slice();
+      var result = [];
+      var used = {};
+
+      baseOrder.forEach(function (key) {
+        var normalized = normalizeDimKey(key);
+        if (sliderSet[normalized]) {
+          while (pendingSliderDims.length > 0) {
+            var nextSliderDim = pendingSliderDims.shift();
+            var nextNormalized = normalizeDimKey(nextSliderDim);
+            if (used[nextNormalized]) continue;
+            used[nextNormalized] = true;
+            result.push(nextSliderDim);
+            break;
+          }
+        } else if (!used[normalized]) {
+          used[normalized] = true;
+          result.push(key);
+        }
+      });
+
+      pendingSliderDims.forEach(function (key) {
+        var normalized = normalizeDimKey(key);
+        if (used[normalized]) return;
+        used[normalized] = true;
+        result.push(key);
+      });
+
+      return normalizeDimOrder(result);
+    }
+
+    function setDimensionOrder(dimOrder, options) {
+      options = options || {};
+      var nextOrder = normalizeDimOrder(dimOrder);
+
+      _userSetting = _userSetting || {};
+      _userSetting.dimOrder = nextOrder.slice();
+
+      if (
+        !options.skipDraft &&
+        typeof window !== "undefined" &&
+        window.__activeSettingsDraft
+      ) {
+        window.__activeSettingsDraft.dimOrder = nextOrder.slice();
+      }
+
+      if (!options.skipPageSliders) {
+        applyDimensionOrderToSliders(nextOrder);
+      }
+
+      if (!options.skipSettingPanels) {
+        applyDimensionOrderToSettingPanels(nextOrder);
+      }
+
+      return nextOrder;
+    }
+
+    function syncDimOrderFromPageSliders() {
+      var orderedSliderDims = [];
+
+      d3.selectAll("#inputSliders > .inputSlider").each(function () {
+        var dimName = this.getAttribute("data-dim");
+        if (dimName) {
+          orderedSliderDims.push(dimName);
+        }
+      });
+
+      var mergedOrder = mergeSliderDimOrderIntoDimOrder(
+        orderedSliderDims,
+        (_userSetting && _userSetting.dimOrder) || [],
+        getAllOrderableDimKeys()
+      );
+
+      return setDimensionOrder(mergedOrder, {
+        skipPageSliders: true,
+      });
+    }
+
+    function initPageSliderSortable() {
+      var $sliderContainer = $("#inputSliders");
+      if (
+        !$sliderContainer.length ||
+        typeof $sliderContainer.sortable !== "function"
+      ) {
+        return;
+      }
+
+      if ($sliderContainer.data("ui-sortable")) {
+        $sliderContainer.sortable("destroy");
+      }
+
+      if ($sliderContainer.children(".inputSlider").length < 2) {
+        return;
+      }
+
+      $sliderContainer.sortable({
+        items: "> .inputSlider",
+        handle: ".slider-reorder-handle",
+        cancel: "input,textarea,select,option,.irs,.irs *",
+        axis: "y",
+        tolerance: "pointer",
+        forcePlaceholderSize: true,
+        placeholder: "page-slider-placeholder",
+        start: function (event, ui) {
+          ui.item.addClass("is-dragging");
+          ui.placeholder.height(ui.item.outerHeight());
+        },
+        stop: function (event, ui) {
+          ui.item.removeClass("is-dragging");
+          syncDimOrderFromPageSliders();
+        },
+        update: function () {
+          syncDimOrderFromPageSliders();
+        },
+      });
     }
 
     function ensureAllDimensionsCache() {
@@ -4931,10 +5148,25 @@
           })
           .each(function (d) {
             var wrapper = d3.select(this);
-            wrapper
+            var label = wrapper
               .append("div")
               .attr("class", "inputSliderLabel")
-              .attr("data-dim", d.name)
+              .attr("data-dim", d.name);
+
+            label
+              .append("span")
+              .attr("class", "slider-reorder-handle")
+              .attr("role", "button")
+              .attr("tabindex", "0")
+              .attr("title", "Drag to reorder slider")
+              .attr("aria-label", function () {
+                return "Drag to reorder " + getDimLabel(d.name);
+              })
+              .append("span")
+              .attr("class", "glyphicon glyphicon-menu-hamburger")
+              .attr("aria-hidden", "true");
+
+            label
               .append("span")
               .attr("class", "inputSliderLabelText")
               .text(getDimLabel(d.name));
@@ -4968,6 +5200,12 @@
 
         updateSliderVisibilityFromSettings();
         updatePinnedSliderMarkers();
+        if (_userSetting && Array.isArray(_userSetting.dimOrder)) {
+          setDimensionOrder(_userSetting.dimOrder, {
+            skipSettingPanels: true,
+          });
+        }
+        initPageSliderSortable();
         if (typeof applySliderFontOverrides === "function") {
           applySliderFontOverrides(_userSetting || {});
         }
@@ -6158,6 +6396,9 @@
           labelSize: _userSetting.labelSize || "",
           lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
         };
+        if (typeof window !== "undefined") {
+          window.__activeSettingsDraft = newUserSetting;
+        }
 
         // var userStudyInfo = {
         //     name:"",
@@ -7067,8 +7308,10 @@
 
           settingDimKeys = orderDimensionKeys(orderedDims, orderedDims);
           newUserSetting.dimOrder = settingDimKeys.slice();
-          applyDimensionOrderToSliders(newUserSetting.dimOrder);
-          return newUserSetting.dimOrder;
+          return setDimensionOrder(newUserSetting.dimOrder, {
+            skipDraft: true,
+            skipSettingPanels: true,
+          });
         }
 
         function initDimSettingSortable() {
@@ -7315,6 +7558,9 @@
           );
           syncRadioLabelsFromCurrentInputs();
           d3.select("#showSetting").style("display", "none");
+          if (typeof window !== "undefined") {
+            window.__activeSettingsDraft = null;
+          }
           // final hard refresh to avoid any async overwrite
           setTimeout(function () {
             var hasSecondImg =

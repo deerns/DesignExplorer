@@ -209,12 +209,41 @@ rect.disabled {
 }
 
 .inputSliderLabel {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 4px;
+}
+
+.inputSlider {
+    position: relative;
+}
+
+.inputSlider .slider-reorder-handle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    color: #6b7280;
+    cursor: grab;
+}
+
+.inputSlider.is-dragging .slider-reorder-handle {
+    cursor: grabbing;
 }
 
 .inputSliderLabelText {
     display: inline-block;
+    flex: 1 1 auto;
+}
+
+#inputSliders .page-slider-placeholder {
+    margin-bottom: 12px;
+    border: 1px dashed #7fa6d8;
+    border-radius: 4px;
+    background: rgba(3, 56, 153, 0.06);
 }
 
 #copy-link.btn.btn-xs {
