@@ -927,12 +927,21 @@
     }
 
     function getLiveSliderOrderForSync(setting) {
-      var livePageOrder = getCurrentPageSliderOrder();
-      if (livePageOrder.length > 0) {
-        return livePageOrder;
+      var source = setting || _userSetting || {};
+      var explicitSliderOrder = normalizeDimOrder(source.sliderOrder);
+      if (explicitSliderOrder.length > 0) {
+        return explicitSliderOrder;
       }
 
-      return getEffectiveSliderOrder(setting || _userSetting || {});
+      var derivedOrder = deriveSliderOrderFromDimOrder(
+        source.dimOrder || [],
+        getKnownSliderDimKeys()
+      );
+      if (derivedOrder.length > 0) {
+        return derivedOrder;
+      }
+
+      return getCurrentPageSliderDomOrder();
     }
 
     function getCurrentSettingPanelOrder() {
@@ -1164,15 +1173,34 @@
       if (baseKeys.length === 0) return [];
 
       var effectiveSetting = setting || _userSetting || {};
-      var sliderOrder = getLiveSliderOrderForSync(effectiveSetting);
+      var sliderOrder = normalizeDimOrder(effectiveSetting.sliderOrder);
       var dimOrder = normalizeDimOrder(effectiveSetting.dimOrder);
+      var baseOrder = dimOrder.length > 0 ? dimOrder : baseKeys;
+      if (sliderOrder.length === 0) {
+        sliderOrder = deriveSliderOrderFromDimOrder(baseOrder, baseKeys);
+      }
       var mergedOrder = mergeSliderDimOrderIntoDimOrder(
         sliderOrder,
-        dimOrder.length > 0 ? dimOrder : baseKeys,
+        baseOrder,
         baseKeys
       );
 
       return orderDimensionKeys(baseKeys, mergedOrder);
+    }
+
+    function applyPageSliderOrder(dimOrder) {
+      var normalizedOrder = normalizeDimOrder(dimOrder);
+      if (normalizedOrder.length === 0) return [];
+
+      applyDimensionOrderToSliders(normalizedOrder);
+      var appliedOrder = reorderPageSlidersByDimNames(normalizedOrder);
+      applyVisualSliderOrder(normalizedOrder);
+
+      if (appliedOrder.length > 0) {
+        return normalizeDimOrder(appliedOrder);
+      }
+
+      return getCurrentPageSliderDomOrder();
     }
 
     function getAllOrderableDimKeys() {
@@ -1400,17 +1428,11 @@
       }
 
       if (!options.skipPageSliders) {
-        reorderPageSlidersByDimNames(effectivePageSliderOrder);
-        applyVisualSliderOrder(effectivePageSliderOrder);
+        applyPageSliderOrder(effectivePageSliderOrder);
       }
 
       if (!options.skipSettingPanels) {
-        applyDimensionOrderToSettingPanels(
-          deriveSettingPanelOrder(getAllOrderableDimKeys(), {
-            dimOrder: nextOrder,
-            sliderOrder: nextSliderOrder,
-          })
-        );
+        applyDimensionOrderToSettingPanels(nextOrder);
       }
 
       return {
@@ -1455,12 +1477,7 @@
         }
       );
 
-      applyDimensionOrderToSettingPanels(
-        deriveSettingPanelOrder(getAllOrderableDimKeys(), {
-          dimOrder: committedOrder.dimOrder,
-          sliderOrder: orderedSliderDims,
-        })
-      );
+      applyDimensionOrderToSettingPanels(committedOrder.dimOrder);
       updateSliderOrderDebug("syncDimOrderFromPageSliders");
 
       return committedOrder.dimOrder;
@@ -6782,8 +6799,11 @@
         _userSetting.lineGradient = cloneLineGradientSetting(
           _userSetting.lineGradient
         );
-        var livePageSliderOrder = getCurrentPageSliderOrder();
-        if (livePageSliderOrder.length > 0) {
+        var livePageSliderOrder = getCurrentPageSliderDomOrder();
+        if (
+          _userSetting.sliderOrder.length === 0 &&
+          livePageSliderOrder.length > 0
+        ) {
           _userSetting.sliderOrder = livePageSliderOrder.slice();
           _userSetting.dimOrder = mergeSliderDimOrderIntoDimOrder(
             livePageSliderOrder,
@@ -7806,7 +7826,17 @@
 
           var sliderLookup = {};
           var sliderOrderFromPanels = [];
-          getLiveSliderOrderForSync(newUserSetting).forEach(function (dimName) {
+          var baseSliderOrder = normalizeDimOrder(newUserSetting.sliderOrder);
+          if (baseSliderOrder.length === 0) {
+            baseSliderOrder = normalizeDimOrder(
+              (_userSetting && _userSetting.sliderOrder) || []
+            );
+          }
+          if (baseSliderOrder.length === 0) {
+            baseSliderOrder = getKnownSliderDimKeys();
+          }
+
+          baseSliderOrder.forEach(function (dimName) {
             sliderLookup[normalizeDimKey(dimName)] = dimName;
           });
 
@@ -7841,8 +7871,7 @@
               newUserSetting.sliderOrder
             )
           ) {
-            applyDimensionOrderToSliders(newUserSetting.sliderOrder);
-            reorderPageSlidersByDimNames(newUserSetting.sliderOrder);
+            applyPageSliderOrder(newUserSetting.sliderOrder);
             pageSliderOrderAfterSync = getCurrentPageSliderOrder();
           }
           if (
@@ -8355,6 +8384,10 @@
         }
         if (typeof applySliderFontOverrides === "function") {
           applySliderFontOverrides(_userSetting || {});
+        }
+        var finalSliderOrder = getEffectiveSliderOrder(_userSetting);
+        if (finalSliderOrder.length > 0) {
+          applyPageSliderOrder(finalSliderOrder);
         }
 
         refreshColorDrivenViews();
