@@ -7444,6 +7444,18 @@
 
         // Strict accordion for settings: one open panel, no auto re-toggle.
         var $settingAccordion = $("#dimSettingList");
+        var pendingSettingOrderSync = null;
+
+        function queueSyncDimOrderFromSettingPanels() {
+          if (pendingSettingOrderSync !== null) {
+            clearTimeout(pendingSettingOrderSync);
+          }
+
+          pendingSettingOrderSync = setTimeout(function () {
+            pendingSettingOrderSync = null;
+            syncDimOrderFromSettingPanels();
+          }, 0);
+        }
 
         function syncDimOrderFromSettingPanels() {
           var orderedDims = Array.prototype.filter
@@ -7504,10 +7516,10 @@
             },
             stop: function (event, ui) {
               ui.item.removeClass("is-dragging");
-              syncDimOrderFromSettingPanels();
+              queueSyncDimOrderFromSettingPanels();
             },
             update: function () {
-              syncDimOrderFromSettingPanels();
+              queueSyncDimOrderFromSettingPanels();
             },
           });
         }
