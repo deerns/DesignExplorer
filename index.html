@@ -316,7 +316,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        cursor: pointer;
+        cursor: grab;
       }
       #dimSettingList .panel-title {
         flex: 1 1 auto;
@@ -341,6 +341,9 @@
         outline: none;
       }
       #dimSettingList .dynamic-dim-panel.is-dragging .setting-reorder-handle {
+        cursor: grabbing;
+      }
+      #dimSettingList .dynamic-dim-panel.is-dragging .panel-heading {
         cursor: grabbing;
       }
       #dimSettingList .setting-panel-placeholder {
@@ -1048,6 +1051,22 @@
       }
     }
 
+    function deriveSettingPanelOrder(dimKeys, setting) {
+      var baseKeys = normalizeDimOrder(dimKeys);
+      if (baseKeys.length === 0) return [];
+
+      var effectiveSetting = setting || _userSetting || {};
+      var sliderOrder = getEffectiveSliderOrder(effectiveSetting);
+      var dimOrder = normalizeDimOrder(effectiveSetting.dimOrder);
+      var mergedOrder = mergeSliderDimOrderIntoDimOrder(
+        sliderOrder,
+        dimOrder.length > 0 ? dimOrder : baseKeys,
+        baseKeys
+      );
+
+      return orderDimensionKeys(baseKeys, mergedOrder);
+    }
+
     function getAllOrderableDimKeys() {
       var keys = [];
       var seen = {};
@@ -1278,7 +1297,12 @@
       }
 
       if (!options.skipSettingPanels) {
-        applyDimensionOrderToSettingPanels(nextOrder);
+        applyDimensionOrderToSettingPanels(
+          deriveSettingPanelOrder(getAllOrderableDimKeys(), {
+            dimOrder: nextOrder,
+            sliderOrder: nextSliderOrder,
+          })
+        );
       }
 
       return {
@@ -7052,10 +7076,13 @@
           seenSettingDim[key] = true;
           return true;
         });
-        settingDimKeys = orderDimensionKeys(
-          settingDimKeys,
-          newUserSetting.dimOrder || _userSetting.dimOrder || []
-        );
+        settingDimKeys = deriveSettingPanelOrder(settingDimKeys, {
+          dimOrder: newUserSetting.dimOrder || _userSetting.dimOrder || [],
+          sliderOrder:
+            newUserSetting.sliderOrder ||
+            _userSetting.sliderOrder ||
+            getEffectiveSliderOrder(_userSetting),
+        });
         newUserSetting.dimOrder = settingDimKeys.slice();
 
         //remove current dynamic panels
@@ -7699,12 +7726,13 @@
 
           $settingAccordion.sortable({
             items: "> .dynamic-dim-panel",
-            handle: ".setting-reorder-handle",
-            cancel: "input,textarea,select,option",
+            handle: ".panel-heading",
+            cancel: "input,textarea,select,option,button",
             axis: "y",
             tolerance: "pointer",
             forcePlaceholderSize: true,
             placeholder: "setting-panel-placeholder",
+            distance: 4,
             start: function (event, ui) {
               ui.item.addClass("is-dragging");
               ui.placeholder.height(ui.item.outerHeight());
