@@ -468,15 +468,20 @@ function applySliderFontOverrides(setting) {
 
     cssRules.push(
       wrapperSelector +
-        " .inputSliderLabel," +
-        wrapperSelector +
-        " > span:first-child{" +
-        "font-size:" +
-        baseSliderLabelPx +
-        "px !important;" +
+        " .inputSliderLabel{" +
         "line-height:" +
         resolvedTitleLineHeight +
         " !important;" +
+        "display:block !important;" +
+        "}"
+    );
+
+    cssRules.push(
+      wrapperSelector +
+        " .inputSliderLabelText{" +
+        "font-size:" +
+        baseSliderLabelPx +
+        "px !important;" +
         "display:inline-block !important;" +
         "transform:scale(" +
         resolvedTitleScale +

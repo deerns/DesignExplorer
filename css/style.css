@@ -213,6 +213,10 @@ rect.disabled {
     margin-bottom: 4px;
 }
 
+.inputSliderLabelText {
+    display: inline-block;
+}
+
 #copy-link.btn.btn-xs {
     height: 24px;
     padding: 1px 8px;
