@@ -208,12 +208,18 @@
         padding-right: 6px;
       }
       #settingActions {
-        margin-top: 16px;
-        padding: 10px 0 26px;
+        margin-top: 0;
+        padding: 14px 0 18px;
         display: flex;
         justify-content: center;
         gap: 24px;
         flex: 0 0 auto;
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        background: #ffffff;
+        border-top: 1px solid #dddddd;
+        box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.05);
       }
       #settingActions .btn {
         min-width: 100px;
@@ -602,7 +608,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20260708-3" rel="stylesheet" />
+    <link href="css/style.css?v=20260708-4" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -2652,7 +2658,7 @@
                 type="button"
                 class="btn"
               >
-                Apply
+                Set
               </button>
               <button
                 id="saveUserSetting"
@@ -7458,17 +7464,17 @@
         }
 
         function syncDimOrderFromSettingPanels() {
+          var panelContainer = document.getElementById("dimSettingList");
+          if (!panelContainer) return [];
+
           var orderedDims = Array.prototype.filter
-            .call(
-              document.getElementById("dimSettingList").children || [],
-              function (child) {
-                return (
-                  child &&
-                  child.classList &&
-                  child.classList.contains("dynamic-dim-panel")
-                );
-              }
-            )
+            .call(panelContainer.children || [], function (child) {
+              return (
+                child &&
+                child.classList &&
+                child.classList.contains("dynamic-dim-panel")
+              );
+            })
             .map(function (panel) {
               return panel.getAttribute("data-dim") || "";
             })
@@ -7477,17 +7483,12 @@
             });
 
           settingDimKeys = orderDimensionKeys(orderedDims, orderedDims);
-          _userSetting = _userSetting || {};
-          _userSetting.dimOrder = settingDimKeys.slice();
-          reorderPageSlidersByDimNames(settingDimKeys);
-          rerenderPageSlidersFromCurrentOrder();
-
           newUserSetting.dimOrder = settingDimKeys.slice();
-          return setDimensionOrder(newUserSetting.dimOrder, {
-            skipDraft: true,
-            skipPageSliders: true,
+          setDimensionOrder(settingDimKeys, {
             skipSettingPanels: true,
           });
+          rerenderPageSlidersFromCurrentOrder();
+          return settingDimKeys.slice();
         }
 
         function initDimSettingSortable() {
@@ -7835,7 +7836,7 @@
           }
         });
 
-        // Click on settings backdrop should behave like Apply
+        // Click on settings backdrop should behave like Set
         d3.select("#showSetting").on("click.applyOnBackdrop", function () {
           var e = d3.event;
           if (!e || e.target !== this) return;
