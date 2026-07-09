@@ -5134,6 +5134,16 @@
         };
       }
 
+      function areLineGradientSettingsEqual(first, second) {
+        var normalizedFirst = normalizeLineGradientSetting(first);
+        var normalizedSecond = normalizeLineGradientSetting(second);
+        return (
+          normalizedFirst.enabled === normalizedSecond.enabled &&
+          normalizedFirst.start === normalizedSecond.start &&
+          normalizedFirst.end === normalizedSecond.end
+        );
+      }
+
       function getEffectiveLineGradientColors(setting) {
         var normalized = normalizeLineGradientSetting(setting);
         if (!normalized.enabled) {
@@ -5210,6 +5220,25 @@
         if (rerender) {
           refreshColorDrivenViews();
         }
+      }
+
+      function scheduleLineGradientRender(setting) {
+        var nextSetting = cloneLineGradientSetting(setting);
+
+        if (typeof window !== "undefined" && window.__lineGradientRenderFrame) {
+          cancelAnimationFrame(window.__lineGradientRenderFrame);
+          window.__lineGradientRenderFrame = null;
+        }
+
+        if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+          window.__lineGradientRenderFrame = window.requestAnimationFrame(function () {
+            window.__lineGradientRenderFrame = null;
+            applyLineGradientSetting(nextSetting, true);
+          });
+          return;
+        }
+
+        applyLineGradientSetting(nextSetting, true);
       }
 
       var scatterHeight = d3
@@ -8278,7 +8307,13 @@
           syncLineGradientSettingsUI(nextSetting);
 
           if (applyPreview) {
-            applyLineGradientSetting(nextSetting, true);
+            if (
+              !_userSetting ||
+              !areLineGradientSettingsEqual(_userSetting.lineGradient, nextSetting)
+            ) {
+              _userSetting.lineGradient = cloneLineGradientSetting(nextSetting);
+              scheduleLineGradientRender(nextSetting);
+            }
           }
 
           return nextSetting;
@@ -8290,12 +8325,18 @@
         });
         dimSettingListDiv
           .select("#lineGradientStart")
-          .on("input change", function () {
+          .on("input", function () {
+            syncLineGradientSettingFromInputs(false);
+          })
+          .on("change", function () {
             syncLineGradientSettingFromInputs(true);
           });
         dimSettingListDiv
           .select("#lineGradientEnd")
-          .on("input change", function () {
+          .on("input", function () {
+            syncLineGradientSettingFromInputs(false);
+          })
+          .on("change", function () {
             syncLineGradientSettingFromInputs(true);
           });
 
