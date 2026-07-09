@@ -219,7 +219,6 @@
         z-index: 2;
         background: #ffffff;
         border-top: 1px solid #dddddd;
-        box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.05);
       }
       #settingActions .btn {
         min-width: 100px;
@@ -1490,6 +1489,63 @@
       return keys;
     }
 
+    function getOrderedDisplayDimensionKeys(keys, setting) {
+      var baseKeys = normalizeDimOrder(keys);
+      if (baseKeys.length === 0) return [];
+
+      var source = setting || _userSetting || {};
+      var validLookup = buildNormalizedDimLookup(baseKeys);
+      var filteredDimOrder = filterDimOrderToLookup(
+        source.dimOrder,
+        validLookup
+      );
+      var filteredSliderOrder = filterDimOrderToLookup(
+        getEffectiveSliderOrder(source),
+        validLookup
+      );
+      var mergedOrder = mergeSliderDimOrderIntoDimOrder(
+        filteredSliderOrder,
+        filteredDimOrder,
+        baseKeys
+      );
+
+      return orderDimensionKeys(baseKeys, mergedOrder);
+    }
+
+    function getCurrentVisibleTableData() {
+      if (graph) {
+        if (typeof graph.brushed === "function") {
+          var brushedData = graph.brushed();
+          if (Array.isArray(brushedData)) {
+            return brushedData;
+          }
+        }
+
+        if (typeof graph.data === "function") {
+          var graphData = graph.data();
+          if (Array.isArray(graphData)) {
+            return graphData;
+          }
+        }
+      }
+
+      return Array.isArray(cleanedData) ? cleanedData : [];
+    }
+
+    function refreshOrderedDataViews() {
+      if (typeof drawTable === "function") {
+        drawTable(getCurrentVisibleTableData());
+      }
+
+      if (typeof updateIterationData === "function") {
+        var selectedDatum =
+          typeof getSelectedDatum === "function" ? getSelectedDatum() : null;
+        if (selectedDatum) {
+          updateIterationData([selectedDatum]);
+        }
+      }
+    }
+
     function reorderPageSlidersByDimNames(orderedDimNames) {
       var sliderContainer = document.getElementById("inputSliders");
       if (!sliderContainer) return [];
@@ -1684,6 +1740,8 @@
       if (!options.skipGraphDimensions && nextOrder.length > 0) {
         applyDimensionOrderToGraph(nextOrder);
       }
+
+      refreshOrderedDataViews();
 
       return {
         dimOrder: nextOrder.slice(),
@@ -4606,12 +4664,27 @@
       }
 
       function drawTable(data) {
-        var grid = d3.divgrid().headerFormatter(function (d) {
-          return getDimLabel(d);
-        });
+        var tableData = Array.isArray(data) ? data.slice(0, 20) : [];
+        var tableContainer = d3.select("#tbContainer");
+
+        if (tableData.length === 0) {
+          tableContainer.html("");
+          return;
+        }
+
+        var orderedColumns = getOrderedDisplayDimensionKeys(
+          d3.keys(tableData[0]),
+          _userSetting
+        );
+        var grid = d3
+          .divgrid()
+          .columns(orderedColumns)
+          .headerFormatter(function (d) {
+            return getDimLabel(d);
+          });
         var tableSel = d3
           .select("#tbContainer")
-          .datum(data.slice(0, 20))
+          .datum(tableData)
           .call(grid)
           .selectAll(".row")
           .on({
@@ -5468,6 +5541,7 @@
         if (pinnedData) {
           d3.keys(pinnedData).forEach(addKey);
         }
+        keyOrder = getOrderedDisplayDimensionKeys(keyOrder, _userSetting);
 
         function parseNumericValue(value) {
           if (value === undefined || value === null || value === "") return NaN;
