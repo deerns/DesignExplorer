@@ -269,22 +269,34 @@
       }
       #lineGradientControlsRow {
         gap: 12px;
-        align-items: center;
+        align-items: flex-start;
+      }
+      #lineGradientControlsRow .setting-label {
+        padding-top: 6px;
+      }
+      #lineGradientControlsRow .line-gradient-stack {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 8px;
+        flex: 1 1 320px;
+        min-width: 0;
       }
       #lineGradientControlsRow .line-gradient-control {
-        display: flex;
+        display: grid;
+        grid-template-columns: 40px minmax(0, 170px) 30px;
         align-items: center;
         gap: 8px;
-        flex: 0 1 auto;
+        width: 100%;
         position: relative;
       }
       #lineGradientControlsRow .line-gradient-control label {
         margin: 0;
         font-weight: 600;
+        text-align: left;
       }
       #lineGradientControlsRow .line-gradient-input {
-        width: 92px;
-        min-width: 92px;
+        width: 100%;
+        min-width: 0;
         font-family: Consolas, "Courier New", monospace;
         text-transform: uppercase;
       }
@@ -364,8 +376,8 @@
         min-width: 60px;
       }
       #lineGradientPreview {
-        flex: 1 1 180px;
-        min-width: 180px;
+        width: 100%;
+        min-width: 0;
         height: 30px;
         border-radius: 6px;
         border: 1px solid #cccccc;
@@ -3733,117 +3745,119 @@
                         style="display: none"
                       >
                         <span class="setting-label">Line Gradient:</span>
-                        <div class="line-gradient-control">
-                          <label for="lineGradientStart">Start</label>
-                          <input
-                            id="lineGradientStart"
-                            class="form-control input-sm line-gradient-input"
-                            type="text"
-                            maxlength="7"
-                            spellcheck="false"
-                            autocomplete="off"
-                            placeholder="#102F86"
-                          />
-                          <button
-                            id="lineGradientStartSwatch"
-                            class="line-gradient-swatch"
-                            type="button"
-                            aria-label="Open start color picker"
-                            aria-expanded="false"
-                          ></button>
-                          <div
-                            id="lineGradientStartPicker"
-                            class="line-gradient-picker-popover"
-                            aria-hidden="true"
-                          >
-                            <div class="line-gradient-picker-canvas-wrap">
-                              <canvas
-                                id="lineGradientStartPickerCanvas"
-                                class="line-gradient-picker-canvas"
-                                width="180"
-                                height="120"
-                              ></canvas>
-                              <span
-                                id="lineGradientStartPickerIndicator"
-                                class="line-gradient-picker-indicator"
-                                aria-hidden="true"
-                              ></span>
-                            </div>
+                        <div class="line-gradient-stack">
+                          <div class="line-gradient-control">
+                            <label for="lineGradientStart">Start</label>
                             <input
-                              id="lineGradientStartPickerHue"
-                              class="line-gradient-picker-hue"
-                              type="range"
-                              min="0"
-                              max="360"
-                              step="1"
+                              id="lineGradientStart"
+                              class="form-control input-sm line-gradient-input"
+                              type="text"
+                              maxlength="7"
+                              spellcheck="false"
+                              autocomplete="off"
+                              placeholder="#102F86"
                             />
-                            <div class="line-gradient-picker-actions">
-                              <button
-                                id="lineGradientStartPickerClose"
-                                type="button"
-                                class="btn btn-default btn-xs line-gradient-picker-close"
-                              >
-                                Close
-                              </button>
+                            <button
+                              id="lineGradientStartSwatch"
+                              class="line-gradient-swatch"
+                              type="button"
+                              aria-label="Open start color picker"
+                              aria-expanded="false"
+                            ></button>
+                            <div
+                              id="lineGradientStartPicker"
+                              class="line-gradient-picker-popover"
+                              aria-hidden="true"
+                            >
+                              <div class="line-gradient-picker-canvas-wrap">
+                                <canvas
+                                  id="lineGradientStartPickerCanvas"
+                                  class="line-gradient-picker-canvas"
+                                  width="180"
+                                  height="120"
+                                ></canvas>
+                                <span
+                                  id="lineGradientStartPickerIndicator"
+                                  class="line-gradient-picker-indicator"
+                                  aria-hidden="true"
+                                ></span>
+                              </div>
+                              <input
+                                id="lineGradientStartPickerHue"
+                                class="line-gradient-picker-hue"
+                                type="range"
+                                min="0"
+                                max="360"
+                                step="1"
+                              />
+                              <div class="line-gradient-picker-actions">
+                                <button
+                                  id="lineGradientStartPickerClose"
+                                  type="button"
+                                  class="btn btn-default btn-xs line-gradient-picker-close"
+                                >
+                                  Close
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div class="line-gradient-control">
-                          <label for="lineGradientEnd">End</label>
-                          <input
-                            id="lineGradientEnd"
-                            class="form-control input-sm line-gradient-input"
-                            type="text"
-                            maxlength="7"
-                            spellcheck="false"
-                            autocomplete="off"
-                            placeholder="#2FADDD"
-                          />
-                          <button
-                            id="lineGradientEndSwatch"
-                            class="line-gradient-swatch"
-                            type="button"
-                            aria-label="Open end color picker"
-                            aria-expanded="false"
-                          ></button>
-                          <div
-                            id="lineGradientEndPicker"
-                            class="line-gradient-picker-popover"
-                            aria-hidden="true"
-                          >
-                            <div class="line-gradient-picker-canvas-wrap">
-                              <canvas
-                                id="lineGradientEndPickerCanvas"
-                                class="line-gradient-picker-canvas"
-                                width="180"
-                                height="120"
-                              ></canvas>
-                              <span
-                                id="lineGradientEndPickerIndicator"
-                                class="line-gradient-picker-indicator"
-                                aria-hidden="true"
-                              ></span>
-                            </div>
+                          <div class="line-gradient-control">
+                            <label for="lineGradientEnd">End</label>
                             <input
-                              id="lineGradientEndPickerHue"
-                              class="line-gradient-picker-hue"
-                              type="range"
-                              min="0"
-                              max="360"
-                              step="1"
+                              id="lineGradientEnd"
+                              class="form-control input-sm line-gradient-input"
+                              type="text"
+                              maxlength="7"
+                              spellcheck="false"
+                              autocomplete="off"
+                              placeholder="#2FADDD"
                             />
-                            <div class="line-gradient-picker-actions">
-                              <button
-                                id="lineGradientEndPickerClose"
-                                type="button"
-                                class="btn btn-default btn-xs line-gradient-picker-close"
-                              >
-                                Close
-                              </button>
+                            <button
+                              id="lineGradientEndSwatch"
+                              class="line-gradient-swatch"
+                              type="button"
+                              aria-label="Open end color picker"
+                              aria-expanded="false"
+                            ></button>
+                            <div
+                              id="lineGradientEndPicker"
+                              class="line-gradient-picker-popover"
+                              aria-hidden="true"
+                            >
+                              <div class="line-gradient-picker-canvas-wrap">
+                                <canvas
+                                  id="lineGradientEndPickerCanvas"
+                                  class="line-gradient-picker-canvas"
+                                  width="180"
+                                  height="120"
+                                ></canvas>
+                                <span
+                                  id="lineGradientEndPickerIndicator"
+                                  class="line-gradient-picker-indicator"
+                                  aria-hidden="true"
+                                ></span>
+                              </div>
+                              <input
+                                id="lineGradientEndPickerHue"
+                                class="line-gradient-picker-hue"
+                                type="range"
+                                min="0"
+                                max="360"
+                                step="1"
+                              />
+                              <div class="line-gradient-picker-actions">
+                                <button
+                                  id="lineGradientEndPickerClose"
+                                  type="button"
+                                  class="btn btn-default btn-xs line-gradient-picker-close"
+                                >
+                                  Close
+                                </button>
+                              </div>
                             </div>
                           </div>
+                          <div id="lineGradientPreview"></div>
                         </div>
-                        <div id="lineGradientPreview"></div>
                       </li>
                       <li class="list-group-item form-inline double-input-row password-row">
                         <span class="setting-label">Password:</span>
