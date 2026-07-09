@@ -93,7 +93,10 @@ function overwriteInitialGlobalValues() {
     dimSliderTickSizes: {},
     imageLabels: {},
     hideScatterPlots: false,
-    labelSize: "",
+    labelSize:
+      typeof defaultLabelSizeValue !== "undefined"
+        ? defaultLabelSizeValue
+        : "90%",
     lineGradient: {
       enabled: false,
       start:
@@ -453,7 +456,10 @@ function applySliderFontOverrides(setting) {
   }
 
   if (baseTitleSize === null) {
-    baseTitleSize = 85;
+    baseTitleSize =
+      typeof defaultLabelSizePercent !== "undefined"
+        ? defaultLabelSizePercent
+        : 90;
   }
 
   d3.selectAll("#inputSliders .inputSlider").each(function (d) {
@@ -593,7 +599,7 @@ function applyLabelFontSize(size) {
   // Accept either preset keys or a raw CSS font-size string/number
   var map = {
     largeLabel: "95%",
-    mediumLabel: "85%",
+    mediumLabel: "90%",
     smallLabel: "75%",
   };
 

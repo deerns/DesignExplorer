@@ -941,6 +941,8 @@
     };
 
     var defaultLineGradientColors = ["#102F86", "#2FADDD"];
+    var defaultLabelSizePercent = 90;
+    var defaultLabelSizeValue = defaultLabelSizePercent + "%";
 
     _userSetting =
       typeof _userSetting !== "undefined"
@@ -962,7 +964,7 @@
             dimSliderTickSizes: {},
             imageLabels: {},
             hideScatterPlots: false,
-            labelSize: "",
+            labelSize: defaultLabelSizeValue,
             lineGradient: {
               enabled: false,
               start: defaultLineGradientColors[0],
@@ -8928,7 +8930,7 @@
             _userSetting.hideScatterPlots,
             false
           ),
-          labelSize: _userSetting.labelSize || "",
+          labelSize: _userSetting.labelSize || defaultLabelSizeValue,
           lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
         };
         if (typeof window !== "undefined") {
@@ -8974,8 +8976,7 @@
             var num = normalizeLabelSizeToNumber(computed);
             if (num !== null) return num;
           }
-          // default to medium 85%
-          return 85;
+          return defaultLabelSizePercent;
         }
 
         function syncLabelSizeUI(value) {
@@ -9004,7 +9005,7 @@
         function currentDraftLabelSizePercent() {
           if (newUserSetting.hasOwnProperty("labelSize")) {
             var draft = normalizeLabelSizeToNumber(newUserSetting.labelSize);
-            return draft !== null ? draft : 85;
+            return draft !== null ? draft : defaultLabelSizePercent;
           }
           return currentLabelSizePercent();
         }
@@ -10531,7 +10532,7 @@
           applyLabelFontSize(userLabelSize);
         } else if (!hasLabelSize) {
           delete _userSetting.labelSize;
-          d3.selectAll(".label").style("font-size", "85%");
+          d3.selectAll(".label").style("font-size", defaultLabelSizeValue);
         }
         if (typeof applySliderFontOverrides === "function") {
           applySliderFontOverrides(_userSetting || {});
