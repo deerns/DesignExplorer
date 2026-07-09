@@ -4258,16 +4258,55 @@
         updateScatterSelectionActionButtons();
       }
 
-      function buildScatterSelectionSliderBrushExtents(selectedData) {
+      function buildScatterSelectionSliderBrushExtents(selectedData, meta) {
         var extents = {};
         var currentDims =
           graph && typeof graph.dimensions === "function"
             ? graph.dimensions() || {}
             : {};
-        var sliderKeys = validDimensionKeys(
-          currentDims,
-          getCurrentSliderNameList()
-        );
+
+        if (
+          meta &&
+          meta.x &&
+          meta.y &&
+          Array.isArray(meta.extent) &&
+          meta.extent.length === 2
+        ) {
+          var scatterAxisExtents = {};
+          scatterAxisExtents[meta.x] = [meta.extent[0][0], meta.extent[1][0]];
+          scatterAxisExtents[meta.y] = [meta.extent[0][1], meta.extent[1][1]];
+
+          d3.keys(scatterAxisExtents).forEach(function (dimName) {
+            var dim = currentDims[dimName];
+            var axisExtent = scatterAxisExtents[dimName];
+            if (
+              !dim ||
+              !Array.isArray(axisExtent) ||
+              axisExtent.length < 2
+            ) {
+              return;
+            }
+
+            var start = axisExtent[0];
+            var end = axisExtent[1];
+            if (
+              start === undefined ||
+              start === null ||
+              end === undefined ||
+              end === null
+            ) {
+              return;
+            }
+
+            extents[dimName] = [start, end].sort(d3.ascending);
+          });
+
+          if (Object.keys(extents).length > 0) {
+            return extents;
+          }
+        }
+
+        var sliderKeys = validDimensionKeys(currentDims, getCurrentSliderNameList());
 
         sliderKeys.forEach(function (dimName) {
           var dim = currentDims[dimName];
@@ -4371,7 +4410,10 @@
           return;
         }
 
-        var scatterExtents = buildScatterSelectionSliderBrushExtents(selectedData);
+        var scatterExtents = buildScatterSelectionSliderBrushExtents(
+          selectedData,
+          activeScatterSelectionMeta
+        );
         if (Object.keys(scatterExtents).length === 0) {
           alert(
             "The scatter selection could not be translated to the visible sliders."
