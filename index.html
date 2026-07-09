@@ -5457,9 +5457,10 @@
         if (!input) return;
 
         input.value = getLineGradientPickerHexFromState(config.key);
-        dispatchLineGradientInputEvent(input, "input");
         if (dispatchChangeEvent) {
           dispatchLineGradientInputEvent(input, "change");
+        } else {
+          dispatchLineGradientInputEvent(input, "input");
         }
       }
 
@@ -5596,7 +5597,6 @@
               if (event.button !== 0) return;
               event.preventDefault();
               event.stopPropagation();
-              openLineGradientPicker(config.key);
               updateLineGradientPickerFromPoint(
                 config.key,
                 event.clientX,
@@ -8928,7 +8928,7 @@
         }
 
         function commitLineGradientInputs() {
-          var nextSetting = syncLineGradientSettingFromInputs(true);
+          var nextSetting = syncLineGradientSettingFromInputs(false);
           dimSettingListDiv
             .select("#lineGradientStart")
             .property("value", nextSetting.start);
