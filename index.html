@@ -1550,11 +1550,9 @@
       return true;
     }
 
-    function getOrderedDisplayDimensionKeys(keys, setting, options) {
+    function getOrderedDimensionKeysForSetting(keys, setting) {
       var source = setting || _userSetting || {};
-      var baseKeys = normalizeDimOrder(keys).filter(function (key) {
-        return shouldIncludeDataViewDimension(key, source, options);
-      });
+      var baseKeys = normalizeDimOrder(keys);
       if (baseKeys.length === 0) return [];
 
       var validLookup = buildNormalizedDimLookup(baseKeys);
@@ -1575,6 +1573,15 @@
       return orderDimensionKeys(baseKeys, mergedOrder);
     }
 
+    function getOrderedDisplayDimensionKeys(keys, setting, options) {
+      var source = setting || _userSetting || {};
+      var filteredKeys = normalizeDimOrder(keys).filter(function (key) {
+        return shouldIncludeDataViewDimension(key, source, options);
+      });
+
+      return getOrderedDimensionKeysForSetting(filteredKeys, source);
+    }
+
     function getCurrentVisibleTableData() {
       if (graph) {
         if (typeof graph.brushed === "function") {
@@ -1593,6 +1600,89 @@
       }
 
       return Array.isArray(cleanedData) ? cleanedData : [];
+    }
+
+    function getOrderedLegendDimensions(legendDimensions, setting) {
+      var dims = Array.isArray(legendDimensions) ? legendDimensions.slice() : [];
+      if (dims.length === 0) return [];
+
+      var regularDims = [];
+      var specialDims = [];
+      var dimByNormalized = {};
+
+      dims.forEach(function (dim) {
+        if (!dim || !dim.name) return;
+
+        var normalized = normalizeDimKey(dim.name);
+        if (!normalized || dimByNormalized[normalized]) return;
+
+        dimByNormalized[normalized] = dim;
+
+        if (
+          normalized === normalizeDimKey("Rating") ||
+          normalized === normalizeDimKey("Description")
+        ) {
+          specialDims.push(dim);
+        } else {
+          regularDims.push(dim.name);
+        }
+      });
+
+      var orderedRegularKeys = getOrderedDimensionKeysForSetting(
+        regularDims,
+        setting
+      );
+      var orderedLegendDims = orderedRegularKeys
+        .map(function (dimName) {
+          return dimByNormalized[normalizeDimKey(dimName)];
+        })
+        .filter(function (dim) {
+          return !!dim;
+        });
+
+      return orderedLegendDims.concat(specialDims);
+    }
+
+    function refreshLegendOrder() {
+      if (
+        typeof dimensions === "undefined" ||
+        !Array.isArray(dimensions) ||
+        dimensions.length === 0
+      ) {
+        return;
+      }
+
+      dimensions = getOrderedLegendDimensions(dimensions, _userSetting);
+
+      var legendSvg = d3.select("#legend svg");
+      if (legendSvg.empty()) return;
+
+      var legendGroups = legendSvg.selectAll("g");
+      if (legendGroups.empty()) return;
+
+      var orderLookup = {};
+      dimensions.forEach(function (dim, index) {
+        if (!dim || !dim.name) return;
+        orderLookup[normalizeDimKey(dim.name)] = index;
+      });
+
+      var firstRect = legendSvg.select("g rect");
+      var legendSquareSize = parseFloat(firstRect.attr("width"));
+      if (!isFinite(legendSquareSize) || legendSquareSize <= 0) {
+        legendSquareSize = 16;
+      }
+
+      legendGroups
+        .sort(function (a, b) {
+          return (
+            orderLookup[normalizeDimKey(a && a.name)] -
+            orderLookup[normalizeDimKey(b && b.name)]
+          );
+        })
+        .attr("transform", function (d) {
+          var index = orderLookup[normalizeDimKey(d && d.name)] || 0;
+          return "translate(10," + (legendSquareSize + 3) * index + ")";
+        });
     }
 
     function refreshOrderedDataViews() {
@@ -1804,6 +1894,7 @@
         applyDimensionOrderToGraph(nextOrder);
       }
 
+      refreshLegendOrder();
       refreshOrderedDataViews();
 
       return {
@@ -5417,12 +5508,15 @@
 
         // legend boxes are diminsions of the graph
         //console.log(Object.keys(graph.dimensions()));
-        dimensions = d3.keys(cleanedKeys4pc).map(function (d) {
-          return {
-            name: d,
-            enabled: true,
-          };
-        });
+        dimensions = getOrderedLegendDimensions(
+          d3.keys(cleanedKeys4pc).map(function (d) {
+            return {
+              name: d,
+              enabled: true,
+            };
+          }),
+          _userSetting
+        );
 
         // find size of the square based on the height
         var keyCounts = d3.keys(cleanedKeys4pc).length;
