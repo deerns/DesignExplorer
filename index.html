@@ -4378,71 +4378,35 @@
           );
           return;
         }
-
-        var previousExtents =
-          scatterSelectionApplied &&
-          scatterSelectionPreviousGraphBrushExtents !== null
-            ? cloneBrushExtents(scatterSelectionPreviousGraphBrushExtents)
-            : cloneBrushExtents(graph.brushExtents() || {});
-        var nextExtents = cloneBrushExtents(previousExtents);
-
-        d3.keys(scatterExtents).forEach(function (key) {
-          nextExtents[key] = scatterExtents[key];
-        });
-
-        scatterSelectionPreviousGraphBrushExtents =
-          cloneBrushExtents(previousExtents);
         scatterSelectionApplied = true;
+        scatterSelectionPreviousGraphBrushExtents = null;
 
         isApplyingScatterSelectionBrush = true;
         try {
           graph.brushReset();
-          if (Object.keys(nextExtents).length > 0) {
-            graph.brushExtents(nextExtents);
+          if (Object.keys(scatterExtents).length > 0) {
+            graph.brushExtents(scatterExtents);
           }
         } finally {
           isApplyingScatterSelectionBrush = false;
         }
 
         clearScatterSelectionState({ preserveApplied: true });
-        var currentData = getCurrentGraphDisplayData();
-        updateSlidersTickValues(currentData);
-        enableAllSliders();
-        syncGraphSelectionViews(currentData);
         updateScatterSelectionActionButtons();
       }
 
       function resetScatterSelectionAction() {
-        var previousExtents = cloneBrushExtents(
-          scatterSelectionPreviousGraphBrushExtents || {}
-        );
-        var shouldRestorePrevious = scatterSelectionApplied;
-
         clearScatterSelectionState();
 
-        if (
-          shouldRestorePrevious &&
-          graph &&
-          typeof graph.brushReset === "function"
-        ) {
+        if (graph && typeof graph.brushReset === "function") {
           isApplyingScatterSelectionBrush = true;
           try {
             graph.brushReset();
-            if (
-              Object.keys(previousExtents).length > 0 &&
-              typeof graph.brushExtents === "function"
-            ) {
-              graph.brushExtents(previousExtents);
-            }
           } finally {
             isApplyingScatterSelectionBrush = false;
           }
 
-          var currentData = getCurrentGraphDisplayData();
-          updateSlidersTickValues(currentData);
-          enableAllSliders();
-          syncGraphSelectionViews(currentData);
-        } else if (graph) {
+          updateSlidersTickValues();
           syncGraphSelectionViews(getCurrentGraphDisplayData());
         }
 
@@ -7163,6 +7127,7 @@
           //rc.updateData(graph.brushed());   //-----TODO:here needs a switch for different charts-------
           if (isApplyingScatterSelectionBrush) {
             clearScatterSelectionState({ preserveApplied: true });
+            syncGraphSelectionViews(d);
             return;
           }
 
