@@ -1715,6 +1715,46 @@
       return window.sortBy || "";
     }
 
+    function getNextAvailableThumbnailSortKey(preferredSortBy, orderedKeys, setting) {
+      var visibleOrderedKeys = normalizeDimOrder(orderedKeys);
+      if (visibleOrderedKeys.length === 0) return "";
+
+      var preferredNormalized = normalizeDimKey(preferredSortBy);
+      if (!preferredNormalized) {
+        return visibleOrderedKeys[0];
+      }
+
+      var visibleLookup = buildNormalizedDimLookup(visibleOrderedKeys);
+      if (visibleLookup[preferredNormalized]) {
+        return visibleLookup[preferredNormalized];
+      }
+
+      var fullOrderedKeys = getOrderedDimensionKeysForSetting(
+        getAllOrderableDimKeys(),
+        setting
+      );
+      var preferredIndex = -1;
+
+      for (var i = 0; i < fullOrderedKeys.length; i++) {
+        if (normalizeDimKey(fullOrderedKeys[i]) === preferredNormalized) {
+          preferredIndex = i;
+          break;
+        }
+      }
+
+      if (preferredIndex >= 0) {
+        for (var j = preferredIndex + 1; j < fullOrderedKeys.length; j++) {
+          var nextVisibleKey =
+            visibleLookup[normalizeDimKey(fullOrderedKeys[j])] || "";
+          if (nextVisibleKey) {
+            return nextVisibleKey;
+          }
+        }
+      }
+
+      return visibleOrderedKeys[0];
+    }
+
     function refreshThumbnailSortDropdown(options) {
       options = options || {};
 
@@ -1731,35 +1771,30 @@
         currentSelectValue ||
         getCurrentSortByValue() ||
         pcIsColoredBy;
-      var nextSortBy = orderedKeys[0] || "";
-
-      if (orderedKeys.indexOf(preferredSortBy) !== -1) {
-        nextSortBy = preferredSortBy;
-      }
+      var nextSortBy = getNextAvailableThumbnailSortKey(
+        preferredSortBy,
+        orderedKeys,
+        _userSetting
+      );
 
       var changed = getCurrentSortByValue() !== nextSortBy;
       if (typeof window !== "undefined") {
         window.sortBy = nextSortBy;
       }
 
-      var optionSelection = select
+      select.selectAll("option").remove();
+
+      select
         .selectAll("option")
-        .data(orderedKeys, function (d) {
-          return d;
-        });
-
-      optionSelection.exit().remove();
-
-      optionSelection
+        .data(orderedKeys)
         .enter()
         .append("option")
         .attr("value", function (d) {
           return d;
+        })
+        .text(function (d) {
+          return getDimLabel(d);
         });
-
-      select.selectAll("option").text(function (d) {
-        return getDimLabel(d);
-      });
 
       if (nextSortBy) {
         select.property("value", nextSortBy);
