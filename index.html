@@ -5211,6 +5211,16 @@
 
       function applyLineGradientSetting(setting, rerender) {
         var normalized = normalizeLineGradientSetting(setting);
+
+        if (
+          typeof window !== "undefined" &&
+          window.__lineGradientCommitTimer &&
+          typeof clearTimeout === "function"
+        ) {
+          clearTimeout(window.__lineGradientCommitTimer);
+          window.__lineGradientCommitTimer = null;
+        }
+
         color.range(getEffectiveLineGradientColors(normalized));
         syncLineGradientSettingsUI(normalized);
 
