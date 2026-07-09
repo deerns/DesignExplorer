@@ -731,6 +731,33 @@
     var imageLinkKeys = [];
     var imageKeyAliases = {};
 
+    function resetDatasetScopedUserSettings() {
+      _userSetting = _userSetting || {};
+      _userSetting.studyInfo = {
+        name: "",
+        date: "",
+      };
+      _userSetting.dimScales = {};
+      _userSetting.dimTicks = {};
+      _userSetting.dimMark = {};
+      _userSetting.dimLabels = {};
+      _userSetting.dimLabelsNormalized = {};
+      _userSetting.dimHidden = {};
+      _userSetting.dimHiddenNormalized = {};
+      _userSetting.dimReversed = {};
+      _userSetting.dimReversedNormalized = {};
+      _userSetting.dimOrder = [];
+      _userSetting.sliderOrder = [];
+      _userSetting.dimSliderTitleSizes = {};
+      _userSetting.dimSliderTickSizes = {};
+      _userSetting.imageLabels = {};
+
+      if (typeof window !== "undefined") {
+        window.__activeSettingsDraft = null;
+        window.__allDimensions = {};
+      }
+    }
+
     function getDimLabel(dimName) {
       var dimLabels = _userSetting.dimLabels || {};
       var dimLabelsNorm = _userSetting.dimLabelsNormalized || {};
@@ -5706,6 +5733,7 @@
     <script>
       function loadDataToDesignExplorer(data) {
         overwriteInitialGlobalValues();
+        resetDatasetScopedUserSettings();
         pinnedComparisonData = null;
         activeSelectedData = null;
         isThumbnailDrawerPinned = false;
@@ -9093,26 +9121,58 @@
       function setDimLabels(dimLabels) {
         dimLabels = dimLabels || {};
 
+        var currentDimLookup = {};
+        normalizeDimOrder(d3.keys(cleanedKeys4pc || {})).forEach(function (key) {
+          currentDimLookup[normalizeDimKey(key)] = key;
+        });
+        if (
+          Object.keys(currentDimLookup).length === 0 &&
+          graph &&
+          typeof graph.dimensions === "function"
+        ) {
+          normalizeDimOrder(Object.keys(graph.dimensions() || {})).forEach(
+            function (key) {
+              currentDimLookup[normalizeDimKey(key)] = key;
+            }
+          );
+        }
+
+        var rebuiltDimLabels = {};
         var normalizedMap = {};
 
         d3.keys(dimLabels).forEach(function (d) {
           var val = dimLabels[d];
           var original = (d || "").trim();
+          var datasetKey = currentDimLookup[normalizeDimKey(original)] || original;
+          if (
+            Object.keys(currentDimLookup).length > 0 &&
+            !currentDimLookup[normalizeDimKey(original)]
+          ) {
+            return;
+          }
           var canonical = original
             .replace(/[_\.]/g, " ")
             .replace(/^in:/i, "")
             .replace(/^out:/i, "")
             .trim();
+          if (datasetKey) {
+            canonical = datasetKey
+              .replace(/[_\.]/g, " ")
+              .replace(/^in:/i, "")
+              .replace(/^out:/i, "")
+              .trim();
+          }
           var underscore = canonical.replace(/\s+/g, "_");
 
           // store several aliases -> same label
-          [original, canonical, underscore].forEach(function (k) {
+          [datasetKey, original, canonical, underscore].forEach(function (k) {
             if (!k) return;
-            _userSetting.dimLabels[k] = val;
+            rebuiltDimLabels[k] = val;
             normalizedMap[k.toLowerCase()] = val;
           });
         });
 
+        _userSetting.dimLabels = rebuiltDimLabels;
         _userSetting.dimLabelsNormalized = normalizedMap;
         syncGraphDimensionTitles();
 
