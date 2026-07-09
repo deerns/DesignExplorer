@@ -114,6 +114,53 @@
         display: none !important;
       }
 
+      #scatterSelectionActionRow {
+        display: none;
+        padding: 8px 15px 0 15px;
+      }
+
+      #scatterSelectionActionRow .scatter-selection-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      #scatterSelectionActionRow .scatter-selection-action-btn {
+        background-color: #033899;
+        color: #ffffff;
+        border: none;
+        border-radius: 25px;
+        padding: 6px 18px;
+        font-weight: 500;
+        min-width: 84px;
+      }
+
+      #scatterSelectionActionRow
+        .scatter-selection-action-btn.hidden {
+        display: none !important;
+      }
+
+      #scatterSelectionActionRow
+        .scatter-selection-action-btn:hover,
+      #scatterSelectionActionRow
+        .scatter-selection-action-btn:focus {
+        background-color: #0a48b8;
+        color: #ffffff;
+      }
+
+      #scatterSelectionReset {
+        background-color: #e7efff;
+        border: 1px solid #c8d8fb;
+        color: #033899;
+      }
+
+      #scatterSelectionReset:hover,
+      #scatterSelectionReset:focus {
+        background-color: #d9e6ff;
+        border-color: #b7caf5;
+        color: #033899;
+      }
+
       #navbar-studyInfo {
         display: none;
         flex-direction: column;
@@ -3051,14 +3098,6 @@
             Get Data
           </button>
 
-          <button
-            id="scatterSelectionZoom"
-            class="top-nav-action-btn hidden"
-            type="button"
-          >
-            Zoom
-          </button>
-
           <div id="navbar-studyInfo" aria-live="polite">
             <h4></h4>
             <h6></h6>
@@ -3269,6 +3308,25 @@
                         class="glyphicon glyphicon-triangle-right"
                         aria-hidden="true"
                       ></span>
+                    </button>
+                  </div>
+                </div>
+
+                <div id="scatterSelectionActionRow" class="row-fluid">
+                  <div class="col-xs-12 scatter-selection-actions">
+                    <button
+                      id="scatterSelectionApply"
+                      class="btn btn-xs scatter-selection-action-btn hidden"
+                      type="button"
+                    >
+                      Zoom
+                    </button>
+                    <button
+                      id="scatterSelectionReset"
+                      class="btn btn-xs scatter-selection-action-btn hidden"
+                      type="button"
+                    >
+                      Reset
                     </button>
                   </div>
                 </div>
@@ -4091,20 +4149,44 @@
       var scatterChart;
       var activeScatterSelectionData = [];
       var activeScatterSelectionMeta = null;
+      var scatterSelectionApplied = false;
+      var scatterSelectionPreviousGraphBrushExtents = null;
+      var isApplyingScatterSelectionBrush = false;
 
-      function getCurrentScatterBaseData() {
+      function cloneBrushExtents(extents) {
+        var cloned = {};
+        d3.keys(extents || {}).forEach(function (key) {
+          var extent = extents[key];
+          if (!Array.isArray(extent) || extent.length < 2) return;
+          cloned[key] = [extent[0], extent[1]];
+        });
+        return cloned;
+      }
+
+      function getCurrentGraphBrushedData() {
+        if (!graph || typeof graph.brushed !== "function") {
+          return [];
+        }
+
+        var brushed = graph.brushed();
+        return Array.isArray(brushed) ? brushed.slice() : [];
+      }
+
+      function getCurrentGraphDisplayData() {
+        var brushed = getCurrentGraphBrushedData();
+        if (brushed.length > 0) {
+          return brushed;
+        }
+
         if (!graph || typeof graph.data !== "function") {
           return [];
         }
 
-        if (typeof graph.brushed === "function") {
-          var brushed = graph.brushed();
-          if (Array.isArray(brushed) && brushed.length > 0) {
-            return brushed.slice();
-          }
-        }
-
         return (graph.data() || []).slice();
+      }
+
+      function getCurrentScatterBaseData() {
+        return getCurrentGraphDisplayData();
       }
 
       function getActiveScatterSelectionData() {
@@ -4113,24 +4195,46 @@
           : [];
       }
 
-      function updateScatterSelectionZoomButton() {
-        var button = d3.select("#scatterSelectionZoom");
-        if (button.empty()) return;
-
+      function hasUsableScatterSelection() {
         var selectionData = getActiveScatterSelectionData();
         var baseData = getCurrentScatterBaseData();
-        var hasUsableSelection =
-          selectionData.length > 0 &&
-          (baseData.length === 0 || selectionData.length < baseData.length);
 
-        button.classed("hidden", !hasUsableSelection);
+        return (
+          selectionData.length > 0 &&
+          (baseData.length === 0 || selectionData.length < baseData.length)
+        );
+      }
+
+      function updateScatterSelectionActionButtons() {
+        var row = d3.select("#scatterSelectionActionRow");
+        var applyButton = d3.select("#scatterSelectionApply");
+        var resetButton = d3.select("#scatterSelectionReset");
+
+        if (row.empty() || applyButton.empty() || resetButton.empty()) return;
+
+        var hasUsableSelection = hasUsableScatterSelection();
+        var hasPendingSelection = getActiveScatterSelectionData().length > 0;
+        var showReset = hasPendingSelection || scatterSelectionApplied;
+
+        row.style("display", hasUsableSelection || showReset ? "block" : "none");
+        applyButton.classed("hidden", !hasUsableSelection);
+        resetButton.classed("hidden", !showReset);
+
         if (hasUsableSelection) {
-          button.attr(
+          applyButton.attr(
             "title",
-            "Zoom to scatter selection (" + selectionData.length + " items)"
+            "Apply scatter selection to the sliders (" +
+              getActiveScatterSelectionData().length +
+              " items)"
           );
         } else {
-          button.attr("title", null);
+          applyButton.attr("title", null);
+        }
+
+        if (showReset) {
+          resetButton.attr("title", "Clear the scatter-based slider selection");
+        } else {
+          resetButton.attr("title", null);
         }
       }
 
@@ -4140,45 +4244,212 @@
           : [];
         activeScatterSelectionMeta =
           meta && typeof meta === "object" ? Object.assign({}, meta) : null;
-        updateScatterSelectionZoomButton();
+        updateScatterSelectionActionButtons();
       }
 
-      function clearScatterSelectionState() {
+      function clearScatterSelectionState(options) {
+        options = options || {};
         activeScatterSelectionData = [];
         activeScatterSelectionMeta = null;
-        updateScatterSelectionZoomButton();
+        if (!options.preserveApplied) {
+          scatterSelectionApplied = false;
+          scatterSelectionPreviousGraphBrushExtents = null;
+        }
+        updateScatterSelectionActionButtons();
       }
 
-      function applyScatterSelectionZoom() {
-        if (!graph) return;
+      function buildScatterSelectionSliderBrushExtents(selectedData) {
+        var extents = {};
+        var currentDims =
+          graph && typeof graph.dimensions === "function"
+            ? graph.dimensions() || {}
+            : {};
+        var sliderKeys = validDimensionKeys(
+          currentDims,
+          getCurrentSliderNameList()
+        );
+
+        sliderKeys.forEach(function (dimName) {
+          var dim = currentDims[dimName];
+          if (!dim || !dim.yscale || typeof dim.yscale !== "function") {
+            return;
+          }
+
+          var values = [];
+          selectedData.forEach(function (row) {
+            var value = row ? row[dimName] : undefined;
+            if (value === undefined || value === null || value === "") return;
+            values.push(value);
+          });
+
+          if (values.length === 0) {
+            return;
+          }
+
+          var usesPixelExtent =
+            dim.type === "string" ||
+            typeof dim.yscale.rangePoints === "function";
+
+          if (usesPixelExtent) {
+            var positions = values
+              .map(function (value) {
+                return dim.yscale(value);
+              })
+              .filter(function (value) {
+                return isFinite(value);
+              })
+              .sort(d3.ascending);
+
+            if (positions.length === 0) {
+              return;
+            }
+
+            extents[dimName] = [positions[0], positions[positions.length - 1]];
+            return;
+          }
+
+          var scaleDomain =
+            typeof dim.yscale.domain === "function" ? dim.yscale.domain() : [];
+          var usesDateExtent =
+            values[0] instanceof Date ||
+            (scaleDomain.length > 0 && scaleDomain[0] instanceof Date);
+
+          if (usesDateExtent) {
+            var dateExtent = d3.extent(values);
+            if (
+              dateExtent[0] !== undefined &&
+              dateExtent[1] !== undefined
+            ) {
+              extents[dimName] = dateExtent;
+            }
+            return;
+          }
+
+          var numericValues = values
+            .map(function (value) {
+              return typeof value === "number" ? value : Number(value);
+            })
+            .filter(function (value) {
+              return isFinite(value);
+            });
+
+          if (numericValues.length === values.length && numericValues.length > 0) {
+            extents[dimName] = d3.extent(numericValues);
+            return;
+          }
+
+          var rawExtent = d3.extent(values);
+          if (rawExtent[0] !== undefined && rawExtent[1] !== undefined) {
+            extents[dimName] = rawExtent;
+          }
+        });
+
+        return extents;
+      }
+
+      function syncGraphSelectionViews(data) {
+        var viewData = Array.isArray(data) ? data : getCurrentGraphDisplayData();
+        updateScatterChart();
+        updateImageGrid(viewData, false);
+        drawTable(viewData);
+      }
+
+      function applyScatterSelectionToSliderSelection() {
+        if (
+          !graph ||
+          typeof graph.dimensions !== "function" ||
+          typeof graph.brushReset !== "function" ||
+          typeof graph.brushExtents !== "function"
+        ) {
+          return;
+        }
 
         var selectedData = getActiveScatterSelectionData();
-        if (selectedData.length === 0) {
-          clearScatterSelectionState();
+        if (!hasUsableScatterSelection()) {
+          clearScatterSelectionState({ preserveApplied: scatterSelectionApplied });
           alert("You need to select some data in the scatterplots first!");
           return;
         }
 
-        var currentDims = graph.dimensions() || {};
-        var dimKeys = validDimensionKeys(currentDims, Object.keys(currentDims));
-
-        graph
-          .data(selectedData)
-          .dimensions(toDimensionObject(dimKeys, currentDims))
-          .brushReset()
-          .render()
-          .interactive()
-          .reorderable();
-        if (typeof graph.updateAxes === "function") {
-          graph.updateAxes();
+        var scatterExtents = buildScatterSelectionSliderBrushExtents(selectedData);
+        if (Object.keys(scatterExtents).length === 0) {
+          alert(
+            "The scatter selection could not be translated to the visible sliders."
+          );
+          return;
         }
 
+        var previousExtents =
+          scatterSelectionApplied &&
+          scatterSelectionPreviousGraphBrushExtents !== null
+            ? cloneBrushExtents(scatterSelectionPreviousGraphBrushExtents)
+            : cloneBrushExtents(graph.brushExtents() || {});
+        var nextExtents = cloneBrushExtents(previousExtents);
+
+        d3.keys(scatterExtents).forEach(function (key) {
+          nextExtents[key] = scatterExtents[key];
+        });
+
+        scatterSelectionPreviousGraphBrushExtents =
+          cloneBrushExtents(previousExtents);
+        scatterSelectionApplied = true;
+
+        isApplyingScatterSelectionBrush = true;
+        try {
+          graph.brushReset();
+          if (Object.keys(nextExtents).length > 0) {
+            graph.brushExtents(nextExtents);
+          }
+        } finally {
+          isApplyingScatterSelectionBrush = false;
+        }
+
+        clearScatterSelectionState({ preserveApplied: true });
+        var currentData = getCurrentGraphDisplayData();
+        updateSlidersTickValues(currentData);
+        enableAllSliders();
+        syncGraphSelectionViews(currentData);
+        updateScatterSelectionActionButtons();
+      }
+
+      function resetScatterSelectionAction() {
+        var previousExtents = cloneBrushExtents(
+          scatterSelectionPreviousGraphBrushExtents || {}
+        );
+        var shouldRestorePrevious = scatterSelectionApplied;
+
         clearScatterSelectionState();
-        updateLayoutOnDeselect({ keepSlidersEnabled: true });
-        updateScatterChart();
-        updateImageGrid(selectedData, false);
-        updateSlidersTickValues(selectedData);
-        drawTable(selectedData);
+
+        if (
+          shouldRestorePrevious &&
+          graph &&
+          typeof graph.brushReset === "function"
+        ) {
+          isApplyingScatterSelectionBrush = true;
+          try {
+            graph.brushReset();
+            if (
+              Object.keys(previousExtents).length > 0 &&
+              typeof graph.brushExtents === "function"
+            ) {
+              graph.brushExtents(previousExtents);
+            }
+          } finally {
+            isApplyingScatterSelectionBrush = false;
+          }
+
+          var currentData = getCurrentGraphDisplayData();
+          updateSlidersTickValues(currentData);
+          enableAllSliders();
+          syncGraphSelectionViews(currentData);
+        } else if (graph) {
+          syncGraphSelectionViews(getCurrentGraphDisplayData());
+        }
+
+        if (graph) {
+          d3.select("div#radarChart").selectAll("*").remove();
+          addScatterChart();
+        }
       }
 
       if (typeof window !== "undefined") {
@@ -4196,12 +4467,7 @@
           .select("#radarChart")
           .style("width")
           .replace("px", "");
-        var selectedData;
-        if (graph.brushed().length > 0) {
-          selectedData = graph.brushed();
-        } else {
-          selectedData = graph.data();
-        }
+        var selectedData = getCurrentGraphDisplayData();
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
         sm.cellSize((pcHeight - 60) / 2);
         sm.render();
@@ -4241,8 +4507,7 @@
       }
 
       function updateScatterChart() {
-        clearScatterSelectionState();
-        var data = graph.brushed().length > 0 ? graph.brushed() : graph.data();
+        var data = getCurrentGraphDisplayData();
 
         d3.selectAll(".cell circle")
           .classed("faded", false)
@@ -4632,7 +4897,9 @@
         // unhighlight the radar chart        //-----TODO:here needs a switch for different charts-------//
         //rc.unhighlight();
         unlighlightScatter();
-        clearScatterSelectionState();
+        clearScatterSelectionState({
+          preserveApplied: !!options.preserveScatterSelection,
+        });
 
         //show radar chart
         $("#radarChart").collapse("show");
@@ -6894,15 +7161,31 @@
         // brushing events for parallel coordinates graph
         graph.on("brush", function (d) {
           //rc.updateData(graph.brushed());   //-----TODO:here needs a switch for different charts-------
+          if (isApplyingScatterSelectionBrush) {
+            clearScatterSelectionState({ preserveApplied: true });
+            return;
+          }
+
           clearScatterSelectionState();
-          updateScatterChart();
-          updateImageGrid(d, false);
-          drawTable(d);
+          syncGraphSelectionViews(d);
         });
 
         graph.on("brushend", function (d) {
           // if nothing is highlighted return
           if (typeof graph.highlight()[0] == "undefined") return;
+
+          if (isApplyingScatterSelectionBrush) {
+            if (
+              graph.brushed() == false ||
+              graph.brushed().indexOf(graph.highlight()[0]) == -1
+            ) {
+              updateLayoutOnDeselect({
+                keepSlidersEnabled: true,
+                preserveScatterSelection: true,
+              });
+            }
+            return;
+          }
 
           if (graph.brushed() == false) {
             updateLayoutOnDeselect();
@@ -7262,10 +7545,13 @@
           }
         });
 
-        d3.select("#scatterSelectionZoom").on("click", function () {
-          applyScatterSelectionZoom();
+        d3.select("#scatterSelectionApply").on("click", function () {
+          applyScatterSelectionToSliderSelection();
         });
-        updateScatterSelectionZoomButton();
+        d3.select("#scatterSelectionReset").on("click", function () {
+          resetScatterSelectionAction();
+        });
+        updateScatterSelectionActionButtons();
 
         var fileInput = document.getElementById("csv-file");
 
