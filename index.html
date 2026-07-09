@@ -1699,6 +1699,75 @@
       }
     }
 
+    function getOrderedThumbnailSortKeys(setting) {
+      if (!graph || typeof graph.dimensions !== "function") {
+        return [];
+      }
+
+      return getOrderedDimensionKeysForSetting(
+        Object.keys(graph.dimensions() || {}),
+        setting
+      );
+    }
+
+    function refreshThumbnailSortDropdown(options) {
+      options = options || {};
+
+      var sorting = d3.select(".sorting");
+      if (sorting.empty()) return [];
+
+      var select = sorting.select("select.thumbnail-sort-select");
+      if (select.empty()) return [];
+
+      var orderedKeys = getOrderedThumbnailSortKeys(_userSetting);
+      var currentSelectValue = select.property("value");
+      var preferredSortBy =
+        options.preferredSortBy || currentSelectValue || sortBy || pcIsColoredBy;
+      var nextSortBy = orderedKeys[0] || "";
+
+      if (orderedKeys.indexOf(preferredSortBy) !== -1) {
+        nextSortBy = preferredSortBy;
+      }
+
+      var changed = sortBy !== nextSortBy;
+      sortBy = nextSortBy;
+
+      var optionSelection = select
+        .selectAll("option")
+        .data(orderedKeys, function (d) {
+          return d;
+        });
+
+      optionSelection.exit().remove();
+
+      optionSelection
+        .enter()
+        .append("option")
+        .attr("value", function (d) {
+          return d;
+        });
+
+      select.selectAll("option").text(function (d) {
+        return getDimLabel(d);
+      });
+
+      if (nextSortBy) {
+        select.property("value", nextSortBy);
+      }
+
+      if (
+        changed &&
+        options.syncGrid !== false &&
+        typeof updateImageGrid === "function"
+      ) {
+        var dataForGrid =
+          graph && graph.brushed && graph.brushed() ? graph.brushed() : graph.data();
+        updateImageGrid(dataForGrid, false);
+      }
+
+      return orderedKeys;
+    }
+
     function reorderPageSlidersByDimNames(orderedDimNames) {
       var sliderContainer = document.getElementById("inputSliders");
       if (!sliderContainer) return [];
@@ -1895,6 +1964,10 @@
       }
 
       refreshLegendOrder();
+      refreshThumbnailSortDropdown({
+        preferredSortBy: sortBy,
+        syncGrid: false,
+      });
       refreshOrderedDataViews();
 
       return {
@@ -2452,6 +2525,9 @@
         }
       }
 
+      refreshThumbnailSortDropdown({
+        preferredSortBy: sortBy,
+      });
       refreshOrderedDataViews();
     }
 
@@ -3452,16 +3528,6 @@
                 <div id="settingStudyInfo" class="panel-collapse collapse in">
                   <div class="panel-body">
                     <ul class="list-group">
-                      <li
-                        class="list-group-item form-inline"
-                        id="hideScatterPlotsRow"
-                      >
-                        <span class="setting-label">Hide Scatterplots:</span>
-                        <input
-                          id="hideScatterPlotsInput"
-                          type="checkbox"
-                        />
-                      </li>
                       <li class="list-group-item form-inline">
                         <span class="setting-label">Study Name:</span>
                         <input
@@ -3519,6 +3585,16 @@
                           type="text"
                         />
                         <span id="labelSizeValue"></span>
+                      </li>
+                      <li
+                        class="list-group-item form-inline"
+                        id="hideScatterPlotsRow"
+                      >
+                        <span class="setting-label">Hide Scatterplots:</span>
+                        <input
+                          id="hideScatterPlotsInput"
+                          type="checkbox"
+                        />
                       </li>
                       <li
                         class="list-group-item form-inline"
@@ -5579,7 +5655,6 @@
     <!-- add sorting dropdowns -->
     <script type="text/javascript">
       function addSortDropdowns() {
-        sortBy = d3.keys(graph.dimensions())[0]; // will be used to sort thumbnail images
         ascending = true;
 
         var sorting = d3.select(".sorting");
@@ -5593,33 +5668,25 @@
 
         var select = sorting
           .append("select")
-          .attr("class", "btn btn-default btn-xs");
-
-        // add options based on input and outputs
-        select
-          .selectAll("option")
-          .data(d3.keys(graph.dimensions()))
-          .enter()
-          .append("option")
-          .attr("value", function (d) {
-            return d;
-          })
-          .text(function (d) {
-            return getDimLabel(d);
-          });
+          .attr("class", "btn btn-default btn-xs thumbnail-sort-select");
 
         // add change event to resort images
         select.on("change", function (d) {
           sortBy = d3.select(this).property("value");
 
           // update the value in other dropdown menu
-          d3.selectAll("select option")
+          d3.selectAll(".sorting select option")
             .filter(function (d) {
               return d == sortBy;
             })
             .attr("selected", "true");
 
           updateImageGrid(graph.brushed(), false);
+        });
+
+        refreshThumbnailSortDropdown({
+          preferredSortBy: sortBy,
+          syncGrid: false,
         });
 
         // add option to reverse sorting order
@@ -6069,6 +6136,9 @@
           updateSliderVisibilityFromSettings();
           syncHiddenSettingCheckboxes();
           updateLegendCheckboxVisuals();
+          refreshThumbnailSortDropdown({
+            preferredSortBy: sortBy,
+          });
 
           updateLabels();
           // re-apply custom labels to sliders/scatter after legend toggles
