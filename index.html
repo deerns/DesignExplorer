@@ -1445,6 +1445,11 @@
     }
 
     function getAllOrderableDimKeys() {
+      var currentDatasetKeys = getCurrentDatasetDimKeys();
+      if (currentDatasetKeys.length > 0) {
+        return currentDatasetKeys.slice();
+      }
+
       var keys = [];
       var seen = {};
 
@@ -7657,9 +7662,21 @@
         }
 
         // collect dimensions from full set so hidden dims still appear in settings
+        var currentDatasetDimLookup = buildNormalizedDimLookup(
+          getCurrentDatasetDimKeys()
+        );
         var baseDimsForSettings = ensureAllDimensionsCache();
         if (!baseDimsForSettings || Object.keys(baseDimsForSettings).length === 0) {
           baseDimsForSettings = currentGraph ? currentGraph.dimensions() || {} : {};
+        }
+        if (Object.keys(currentDatasetDimLookup).length > 0) {
+          var filteredBaseDimsForSettings = {};
+          Object.keys(baseDimsForSettings || {}).forEach(function (key) {
+            var canonicalKey = currentDatasetDimLookup[normalizeDimKey(key)];
+            if (!canonicalKey) return;
+            filteredBaseDimsForSettings[canonicalKey] = baseDimsForSettings[key];
+          });
+          baseDimsForSettings = filteredBaseDimsForSettings;
         }
 
         // start from the visible main slider order so settings mirrors the page
@@ -7740,6 +7757,12 @@
           var key = (d || "").toString();
           if (!key || seenSettingDim[key]) return false;
           if (key === "Rating" || key === "Description") return false;
+          if (
+            Object.keys(currentDatasetDimLookup).length > 0 &&
+            !currentDatasetDimLookup[normalizeDimKey(key)]
+          ) {
+            return false;
+          }
           seenSettingDim[key] = true;
           return true;
         });
@@ -7750,6 +7773,15 @@
             _userSetting.sliderOrder ||
             getEffectiveSliderOrder(_userSetting),
         });
+        if (Object.keys(currentDatasetDimLookup).length > 0) {
+          settingDimKeys = settingDimKeys
+            .map(function (key) {
+              return currentDatasetDimLookup[normalizeDimKey(key)] || null;
+            })
+            .filter(function (key, index, arr) {
+              return !!key && arr.indexOf(key) === index;
+            });
+        }
         newUserSetting.dimOrder = settingDimKeys.slice();
 
         //remove current dynamic panels
