@@ -96,6 +96,24 @@
         min-width: 0;
       }
 
+      #topNavLeftGroup .top-nav-action-btn {
+        background-color: #033899;
+        color: #ffffff;
+        border: none;
+        border-radius: 25px;
+        padding: 8px 20px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 40px;
+        white-space: nowrap;
+      }
+
+      #topNavLeftGroup .top-nav-action-btn.hidden {
+        display: none !important;
+      }
+
       #navbar-studyInfo {
         display: none;
         flex-direction: column;
@@ -3028,20 +3046,17 @@
           <!-- Get Data button, 20px to the right -->
           <button
             id="showLoadData"
-            style="
-              background-color: #033899;
-              color: #ffffff;
-              border: none;
-              border-radius: 25px;
-              padding: 8px 20px;
-              font-weight: 500;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 40px;
-            "
+            class="top-nav-action-btn"
           >
             Get Data
+          </button>
+
+          <button
+            id="scatterSelectionZoom"
+            class="top-nav-action-btn hidden"
+            type="button"
+          >
+            Zoom
           </button>
 
           <div id="navbar-studyInfo" aria-live="polite">
@@ -4074,9 +4089,108 @@
     <script type="text/javascript">
       // update radar chart
       var scatterChart;
+      var activeScatterSelectionData = [];
+      var activeScatterSelectionMeta = null;
+
+      function getCurrentScatterBaseData() {
+        if (!graph || typeof graph.data !== "function") {
+          return [];
+        }
+
+        if (typeof graph.brushed === "function") {
+          var brushed = graph.brushed();
+          if (Array.isArray(brushed) && brushed.length > 0) {
+            return brushed.slice();
+          }
+        }
+
+        return (graph.data() || []).slice();
+      }
+
+      function getActiveScatterSelectionData() {
+        return Array.isArray(activeScatterSelectionData)
+          ? activeScatterSelectionData.slice()
+          : [];
+      }
+
+      function updateScatterSelectionZoomButton() {
+        var button = d3.select("#scatterSelectionZoom");
+        if (button.empty()) return;
+
+        var selectionData = getActiveScatterSelectionData();
+        var baseData = getCurrentScatterBaseData();
+        var hasUsableSelection =
+          selectionData.length > 0 &&
+          (baseData.length === 0 || selectionData.length < baseData.length);
+
+        button.classed("hidden", !hasUsableSelection);
+        if (hasUsableSelection) {
+          button.attr(
+            "title",
+            "Zoom to scatter selection (" + selectionData.length + " items)"
+          );
+        } else {
+          button.attr("title", null);
+        }
+      }
+
+      function setScatterSelectionState(selectedData, meta) {
+        activeScatterSelectionData = Array.isArray(selectedData)
+          ? selectedData.slice()
+          : [];
+        activeScatterSelectionMeta =
+          meta && typeof meta === "object" ? Object.assign({}, meta) : null;
+        updateScatterSelectionZoomButton();
+      }
+
+      function clearScatterSelectionState() {
+        activeScatterSelectionData = [];
+        activeScatterSelectionMeta = null;
+        updateScatterSelectionZoomButton();
+      }
+
+      function applyScatterSelectionZoom() {
+        if (!graph) return;
+
+        var selectedData = getActiveScatterSelectionData();
+        if (selectedData.length === 0) {
+          clearScatterSelectionState();
+          alert("You need to select some data in the scatterplots first!");
+          return;
+        }
+
+        var currentDims = graph.dimensions() || {};
+        var dimKeys = validDimensionKeys(currentDims, Object.keys(currentDims));
+
+        graph
+          .data(selectedData)
+          .dimensions(toDimensionObject(dimKeys, currentDims))
+          .brushReset()
+          .render()
+          .interactive()
+          .reorderable();
+        if (typeof graph.updateAxes === "function") {
+          graph.updateAxes();
+        }
+
+        clearScatterSelectionState();
+        updateLayoutOnDeselect({ keepSlidersEnabled: true });
+        updateScatterChart();
+        updateImageGrid(selectedData, false);
+        updateSlidersTickValues(selectedData);
+        drawTable(selectedData);
+      }
+
+      if (typeof window !== "undefined") {
+        window.getCurrentScatterBrushSourceData = getCurrentScatterBaseData;
+        window.handleScatterMatrixSelection = function (selectedData, meta) {
+          setScatterSelectionState(selectedData, meta);
+        };
+      }
 
       // add scatter chart
       function addScatterChart() {
+        clearScatterSelectionState();
         var pcHeight = d3.select("#graph").style("height").replace("px", "");
         var rightChartWidth = d3
           .select("#radarChart")
@@ -4127,6 +4241,7 @@
       }
 
       function updateScatterChart() {
+        clearScatterSelectionState();
         var data = graph.brushed().length > 0 ? graph.brushed() : graph.data();
 
         d3.selectAll(".cell circle")
@@ -4473,7 +4588,8 @@
       // }
 
       // update layout on select
-      function updateLayoutOnDeselect() {
+      function updateLayoutOnDeselect(options) {
+        options = options || {};
         // find height of parallel coordinate
         // to find the height for thumbnail div
         var pcHeight = d3.select("#graph").style("height").replace("px", "");
@@ -4507,11 +4623,16 @@
         graph.unhighlight();
 
         // enable sliders
-        disableAllSliders();
+        if (options.keepSlidersEnabled) {
+          enableAllSliders();
+        } else {
+          disableAllSliders();
+        }
 
         // unhighlight the radar chart        //-----TODO:here needs a switch for different charts-------//
         //rc.unhighlight();
         unlighlightScatter();
+        clearScatterSelectionState();
 
         //show radar chart
         $("#radarChart").collapse("show");
@@ -6773,6 +6894,7 @@
         // brushing events for parallel coordinates graph
         graph.on("brush", function (d) {
           //rc.updateData(graph.brushed());   //-----TODO:here needs a switch for different charts-------
+          clearScatterSelectionState();
           updateScatterChart();
           updateImageGrid(d, false);
           drawTable(d);
@@ -6803,6 +6925,7 @@
           if (newData === false || newData.length === 0) {
             alert("You need to select some data to be kept!");
           } else {
+            clearScatterSelectionState();
             var currentDims = graph.dimensions() || {};
             var dimKeys = Object.keys(currentDims);
             graph
@@ -6818,6 +6941,7 @@
           if (selectedData === false || selectedData.length === 0) {
             alert("You need to select some data to be removed!");
           } else {
+            clearScatterSelectionState();
             // update graph with new data
             var newData = graph.data().filter(function (d) {
               return selectedData.indexOf(d) == -1;
@@ -6828,6 +6952,7 @@
 
         // go back to original
         d3.select("#reset").on("click", function () {
+          clearScatterSelectionState();
           graph.reset();
           updateGraph(cleanedData);
           update_colors(pcIsColoredBy);
@@ -6989,6 +7114,7 @@
       function loadDataToDesignExplorer(data) {
         overwriteInitialGlobalValues();
         resetDatasetScopedUserSettings();
+        clearScatterSelectionState();
         pinnedComparisonData = null;
         activeSelectedData = null;
         isThumbnailDrawerPinned = false;
@@ -7135,6 +7261,11 @@
             folderLinkInput.select();
           }
         });
+
+        d3.select("#scatterSelectionZoom").on("click", function () {
+          applyScatterSelectionZoom();
+        });
+        updateScatterSelectionZoomButton();
 
         var fileInput = document.getElementById("csv-file");
 

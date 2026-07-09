@@ -119,6 +119,10 @@ function overwriteInitialGlobalValues() {
     );
   }
 
+  if (typeof clearScatterSelectionState === "function") {
+    clearScatterSelectionState();
+  }
+
   rcheight = height = d3.select("#graph").style("height").replace("px", "");
 
   selectedDataFormatted = [];

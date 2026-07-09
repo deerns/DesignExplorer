@@ -633,6 +633,8 @@ ScatterMatrix.prototype.__draw = function (
         });
       }
 
+      p.__data_to_draw = data_to_draw;
+
       var cell = d3.select(this);
 
       // Frame
@@ -707,28 +709,79 @@ ScatterMatrix.prototype.__draw = function (
       if (brush.data !== p) {
         cell.call(brush.clear());
         brush.x(x[p.x]).y(y[p.y]).data = p;
+        if (
+          typeof window !== "undefined" &&
+          typeof window.handleScatterMatrixSelection === "function"
+        ) {
+          window.handleScatterMatrixSelection([], {
+            x: p.x,
+            y: p.y,
+            extent: null,
+          });
+        }
       }
     }
 
     // Highlight selected circles
     function brush(p) {
       var e = brush.extent();
-      svg.selectAll(".cell circle").classed("faded", function (d) {
-        return e[0][0] <= d[p.x] &&
+      var sourceData = [];
+      if (
+        typeof window !== "undefined" &&
+        typeof window.getCurrentScatterBrushSourceData === "function"
+      ) {
+        sourceData = window.getCurrentScatterBrushSourceData() || [];
+      }
+      if (!sourceData.length) {
+        sourceData = Array.isArray(p.__data_to_draw) ? p.__data_to_draw : data;
+      }
+
+      var selectedData = sourceData.filter(function (d) {
+        return (
+          e[0][0] <= d[p.x] &&
           d[p.x] <= e[1][0] &&
           e[0][1] <= d[p.y] &&
           d[p.y] <= e[1][1]
-          ? false
-          : true;
+        );
       });
+      var selectedLookup = {};
+      selectedData.forEach(function (d) {
+        selectedLookup[d.scid] = true;
+      });
+
+      svg.selectAll(".cell circle").classed("faded", function (d) {
+        return !selectedLookup[d.scid];
+      });
+
+      if (
+        typeof window !== "undefined" &&
+        typeof window.handleScatterMatrixSelection === "function"
+      ) {
+        window.handleScatterMatrixSelection(selectedData, {
+          x: p.x,
+          y: p.y,
+          extent: e,
+        });
+      }
     }
 
     // If brush is empty, select all circles
     function brushend() {
-      if (brush.empty())
+      if (brush.empty()) {
         svg
           .selectAll(".scatter-matrix-svg .cell circle")
-          .classed("faded", true);
+          .classed("faded", false);
+        if (
+          typeof window !== "undefined" &&
+          typeof window.handleScatterMatrixSelection === "function"
+        ) {
+          window.handleScatterMatrixSelection([], {
+            x: brush.data ? brush.data.x : null,
+            y: brush.data ? brush.data.y : null,
+            extent: null,
+          });
+        }
+      }
     }
 
     function cross(a, b) {
