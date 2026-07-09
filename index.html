@@ -751,6 +751,14 @@
       _userSetting.dimSliderTitleSizes = {};
       _userSetting.dimSliderTickSizes = {};
       _userSetting.imageLabels = {};
+      imageLinkKeys = [];
+      imageKeyAliases = {};
+      if (typeof slidersInfo !== "undefined" && Array.isArray(slidersInfo)) {
+        slidersInfo.length = 0;
+      }
+      if (typeof slidersMapping !== "undefined") {
+        slidersMapping = {};
+      }
 
       if (typeof window !== "undefined") {
         window.__activeSettingsDraft = null;
@@ -4503,6 +4511,11 @@
 
       function prepareSlidersInfo() {
         // modified 6/7/2016 by Mingbo, this is only for input information.
+        slidersInfo = Array.isArray(slidersInfo) ? slidersInfo : [];
+        slidersInfo.length = 0;
+        slidersMapping = {};
+        if (!Array.isArray(inputData) || inputData.length === 0) return;
+
         var sliderNames = d3.keys(inputData[0]);
         var tickValues = {};
         var originalTickValues = {}; // keep track of original values
@@ -5950,6 +5963,8 @@
         // this just runs first onload of the page
         // all the sliders should be disabled on load until the user select one of the options
         //d3.select(".sidebar-brand").text("INPUT SLIDERS");
+
+        d3.select("#inputSliders").selectAll(".inputSlider").remove();
 
         if (_userSetting) {
           var plannedSliderOrder = getEffectiveSliderOrder(_userSetting);
