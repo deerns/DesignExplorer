@@ -3898,6 +3898,12 @@
 
         //show radar chart
         $("#radarChart").collapse("show");
+        if (typeof applyScatterPlotVisibilitySetting === "function") {
+          applyScatterPlotVisibilitySetting(
+            _userSetting && _userSetting.hideScatterPlots,
+            { skipResize: true }
+          );
+        }
 
         isAnyItemSelected = false;
 

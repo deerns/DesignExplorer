@@ -92,6 +92,7 @@ function overwriteInitialGlobalValues() {
     dimSliderTitleSizes: {},
     dimSliderTickSizes: {},
     imageLabels: {},
+    hideScatterPlots: false,
     labelSize: "",
     lineGradient: {
       enabled: false,
