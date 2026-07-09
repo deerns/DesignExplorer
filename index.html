@@ -8561,21 +8561,34 @@
       }
 
       function setSettings(chart, userSetting) {
-        var isThereNewStudyInfo =
-          userSetting.studyInfo &&
-          Object.keys(userSetting.studyInfo).length > 0;
-        var isThereNewDimScales = Object.keys(userSetting.dimScales).length > 0;
-        var userDimTicks = userSetting.dimTicks || {};
-        var userDimLabels = userSetting.dimLabels || {};
-        var userDimHidden = userSetting.dimHidden || {};
-        var userDimReversed = userSetting.dimReversed || {};
+        function asPlainObject(value) {
+          return value && typeof value === "object" && !Array.isArray(value)
+            ? value
+            : {};
+        }
+
+        userSetting = userSetting || {};
+
+        var userStudyInfo = asPlainObject(userSetting.studyInfo);
+        var userDimScales = asPlainObject(userSetting.dimScales);
+        var userDimTicks = asPlainObject(userSetting.dimTicks);
+        var userDimMark = asPlainObject(userSetting.dimMark);
+        var userDimLabels = asPlainObject(userSetting.dimLabels);
+        var userDimHidden = asPlainObject(userSetting.dimHidden);
+        var userDimReversed = asPlainObject(userSetting.dimReversed);
         var userDimOrder = normalizeDimOrder(userSetting.dimOrder);
         var userSliderOrder = normalizeDimOrder(userSetting.sliderOrder);
-        var userDimSliderTitleSizes = userSetting.dimSliderTitleSizes || {};
-        var userDimSliderTickSizes = userSetting.dimSliderTickSizes || {};
-        var userImageLabels = userSetting.imageLabels || {};
+        var userDimSliderTitleSizes = asPlainObject(
+          userSetting.dimSliderTitleSizes
+        );
+        var userDimSliderTickSizes = asPlainObject(
+          userSetting.dimSliderTickSizes
+        );
+        var userImageLabels = asPlainObject(userSetting.imageLabels);
         var userLabelSize = userSetting.labelSize;
         var userLineGradient = cloneLineGradientSetting(userSetting.lineGradient);
+        var isThereNewStudyInfo = Object.keys(userStudyInfo).length > 0;
+        var isThereNewDimScales = Object.keys(userDimScales).length > 0;
         var isThereNewDimTicks = Object.keys(userDimTicks).length > 0;
         var isThereNewDimLabels = Object.keys(userDimLabels).length > 0;
         var hasLabelSize =
@@ -8608,11 +8621,11 @@
         applyLineGradientSetting(userLineGradient, false);
 
         if (isThereNewStudyInfo) {
-          setStudyInfo(userSetting.studyInfo);
+          setStudyInfo(userStudyInfo);
         }
 
         if (isThereNewDimScales) {
-          setAllScales(chart, userSetting.dimScales);
+          setAllScales(chart, userDimScales);
         }
 
         if (isThereNewDimTicks) {
@@ -8630,7 +8643,7 @@
         //set target mark must be after graph.updateAxes();
         reversedChanged =
           setDimReversed(chart, userDimReversed, true) || reversedChanged;
-        setAllTargetMarks(chart, userSetting.dimMark);
+        setAllTargetMarks(chart, userDimMark);
 
         if (isThereNewDimLabels || userDimLabels) {
           setDimLabels(userDimLabels);
@@ -9258,6 +9271,10 @@
             : {};
         }
 
+        function hasOwnKey(obj, key) {
+          return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
+        }
+
         if (isExplicitPath) {
           jsonFileLink = settingFilePath;
         } else {
@@ -9286,6 +9303,40 @@
             }
             return;
           }
+
+          var hasStudyInfo =
+            hasOwnKey(d, "studyInfo") ||
+            hasOwnKey(d, "studyName") ||
+            hasOwnKey(d, "name") ||
+            hasOwnKey(d, "studyDate") ||
+            hasOwnKey(d, "date");
+          var hasDimLabels =
+            hasOwnKey(d, "dimLabels") ||
+            hasOwnKey(d, "labels") ||
+            hasOwnKey(d, "dimensionLabels") ||
+            hasOwnKey(d, "dimLabel");
+          var hasDimScales = hasOwnKey(d, "dimScales");
+          var hasDimTicks = hasOwnKey(d, "dimTicks");
+          var hasDimMark = hasOwnKey(d, "dimMark");
+          var hasDimHidden =
+            hasOwnKey(d, "dimHidden") ||
+            hasOwnKey(d, "hiddenDims") ||
+            hasOwnKey(d, "hiddenDimensions");
+          var hasDimReversed =
+            hasOwnKey(d, "dimReversed") ||
+            hasOwnKey(d, "reversedDims") ||
+            hasOwnKey(d, "dimFlip");
+          var hasDimOrder = hasOwnKey(d, "dimOrder");
+          var hasSliderOrder = hasOwnKey(d, "sliderOrder");
+          var hasDimSliderTitleSizes = hasOwnKey(d, "dimSliderTitleSizes");
+          var hasDimSliderTickSizes = hasOwnKey(d, "dimSliderTickSizes");
+          var hasImageLabels = hasOwnKey(d, "imageLabels");
+          var hasLineGradient =
+            hasOwnKey(d, "lineGradient") ||
+            hasOwnKey(d, "lineGradientEnabled") ||
+            hasOwnKey(d, "lineGradientStart") ||
+            hasOwnKey(d, "lineGradientEnd");
+          var hasLabelSize = hasOwnKey(d, "labelSize");
 
           var loadedStudyInfo = asPlainObject(d.studyInfo);
           if (Object.keys(loadedStudyInfo).length === 0) {
@@ -9345,75 +9396,70 @@
             }
           }
 
+          var currentDimOrder = normalizeDimOrder(_userSetting.dimOrder);
+          var currentSliderOrder = normalizeDimOrder(_userSetting.sliderOrder);
           // Merge with current settings to keep optional fields
           var mergedSetting = Object.assign({}, _userSetting, d);
-          mergedSetting.studyInfo = Object.assign(
-            {},
-            _userSetting.studyInfo || {},
-            loadedStudyInfo || {}
-          );
-          mergedSetting.dimLabels = Object.assign(
-            {},
-            _userSetting.dimLabels || {},
-            loadedDimLabels || {}
-          );
-          mergedSetting.dimScales = Object.assign(
-            {},
-            _userSetting.dimScales || {},
-            loadedDimScales || {}
-          );
-          mergedSetting.dimTicks = Object.assign(
-            {},
-            _userSetting.dimTicks || {},
-            loadedDimTicks || {}
-          );
-          mergedSetting.dimMark = Object.assign(
-            {},
-            _userSetting.dimMark || {},
-            loadedDimMark || {}
-          );
-          mergedSetting.dimHidden = Object.assign(
-            {},
-            _userSetting.dimHidden || {},
-            loadedDimHidden || {}
-          );
-          mergedSetting.dimReversed = Object.assign(
-            {},
-            _userSetting.dimReversed || {},
-            loadedDimReversed || {}
-          );
-          mergedSetting.dimOrder =
-            loadedDimOrder.length > 0
-              ? loadedDimOrder.slice()
-              : normalizeDimOrder(_userSetting.dimOrder);
-          mergedSetting.sliderOrder =
-            loadedSliderOrder.length > 0
-              ? loadedSliderOrder.slice()
-              : deriveSliderOrderFromDimOrder(
-                  mergedSetting.dimOrder,
-                  normalizeDimOrder(_userSetting.sliderOrder)
-                );
-          mergedSetting.dimSliderTitleSizes = Object.assign(
-            {},
-            _userSetting.dimSliderTitleSizes || {},
-            loadedDimSliderTitleSizes || {}
-          );
-          mergedSetting.dimSliderTickSizes = Object.assign(
-            {},
-            _userSetting.dimSliderTickSizes || {},
-            loadedDimSliderTickSizes || {}
-          );
-          mergedSetting.imageLabels = Object.assign(
-            {},
-            _userSetting.imageLabels || {},
-            loadedImageLabels || {}
-          );
-          mergedSetting.lineGradient =
-            Object.keys(rawLoadedLineGradient).length > 0
-              ? normalizeLineGradientSetting(rawLoadedLineGradient)
-              : cloneLineGradientSetting(_userSetting.lineGradient);
+          mergedSetting.studyInfo = hasStudyInfo
+            ? Object.assign({}, _userSetting.studyInfo || {}, loadedStudyInfo || {})
+            : Object.assign({}, _userSetting.studyInfo || {});
+          mergedSetting.dimLabels = hasDimLabels
+            ? Object.assign({}, _userSetting.dimLabels || {}, loadedDimLabels || {})
+            : Object.assign({}, _userSetting.dimLabels || {});
+          mergedSetting.dimScales = hasDimScales
+            ? Object.assign({}, _userSetting.dimScales || {}, loadedDimScales || {})
+            : Object.assign({}, _userSetting.dimScales || {});
+          mergedSetting.dimTicks = hasDimTicks
+            ? Object.assign({}, _userSetting.dimTicks || {}, loadedDimTicks || {})
+            : Object.assign({}, _userSetting.dimTicks || {});
+          mergedSetting.dimMark = hasDimMark
+            ? Object.assign({}, _userSetting.dimMark || {}, loadedDimMark || {})
+            : Object.assign({}, _userSetting.dimMark || {});
+          mergedSetting.dimHidden = hasDimHidden
+            ? Object.assign({}, _userSetting.dimHidden || {}, loadedDimHidden || {})
+            : Object.assign({}, _userSetting.dimHidden || {});
+          mergedSetting.dimReversed = hasDimReversed
+            ? Object.assign(
+                {},
+                _userSetting.dimReversed || {},
+                loadedDimReversed || {}
+              )
+            : Object.assign({}, _userSetting.dimReversed || {});
+          mergedSetting.dimOrder = hasDimOrder
+            ? loadedDimOrder.slice()
+            : hasSliderOrder && loadedSliderOrder.length > 0
+            ? loadedSliderOrder.slice()
+            : currentDimOrder.slice();
+          mergedSetting.sliderOrder = hasSliderOrder
+            ? loadedSliderOrder.slice()
+            : hasDimOrder
+            ? deriveSliderOrderFromDimOrder(
+                mergedSetting.dimOrder,
+                currentSliderOrder
+              )
+            : currentSliderOrder.slice();
+          mergedSetting.dimSliderTitleSizes = hasDimSliderTitleSizes
+            ? Object.assign(
+                {},
+                _userSetting.dimSliderTitleSizes || {},
+                loadedDimSliderTitleSizes || {}
+              )
+            : Object.assign({}, _userSetting.dimSliderTitleSizes || {});
+          mergedSetting.dimSliderTickSizes = hasDimSliderTickSizes
+            ? Object.assign(
+                {},
+                _userSetting.dimSliderTickSizes || {},
+                loadedDimSliderTickSizes || {}
+              )
+            : Object.assign({}, _userSetting.dimSliderTickSizes || {});
+          mergedSetting.imageLabels = hasImageLabels
+            ? Object.assign({}, _userSetting.imageLabels || {}, loadedImageLabels || {})
+            : Object.assign({}, _userSetting.imageLabels || {});
+          mergedSetting.lineGradient = hasLineGradient
+            ? normalizeLineGradientSetting(rawLoadedLineGradient)
+            : cloneLineGradientSetting(_userSetting.lineGradient);
           mergedSetting.labelSize =
-            d.labelSize !== undefined && d.labelSize !== null
+            hasLabelSize && d.labelSize !== null
               ? d.labelSize
               : _userSetting.labelSize;
 
