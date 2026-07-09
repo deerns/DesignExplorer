@@ -281,13 +281,18 @@
         margin: 0;
         font-weight: 600;
       }
-      #lineGradientControlsRow input[type="color"] {
-        width: 42px;
+      #lineGradientControlsRow .line-gradient-input {
+        width: 92px;
+        min-width: 92px;
+        font-family: Consolas, "Courier New", monospace;
+        text-transform: uppercase;
+      }
+      #lineGradientControlsRow .line-gradient-swatch {
+        width: 30px;
         height: 30px;
-        padding: 0;
-        border: 0;
-        background: none;
-        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid #cccccc;
+        flex: 0 0 30px;
       }
       #lineGradientPreview {
         flex: 1 1 180px;
@@ -3661,11 +3666,37 @@
                         <span class="setting-label">Line Gradient:</span>
                         <div class="line-gradient-control">
                           <label for="lineGradientStart">Start</label>
-                          <input id="lineGradientStart" type="color" />
+                          <input
+                            id="lineGradientStart"
+                            class="form-control input-sm line-gradient-input"
+                            type="text"
+                            maxlength="7"
+                            spellcheck="false"
+                            autocomplete="off"
+                            placeholder="#102F86"
+                          />
+                          <span
+                            id="lineGradientStartSwatch"
+                            class="line-gradient-swatch"
+                            aria-hidden="true"
+                          ></span>
                         </div>
                         <div class="line-gradient-control">
                           <label for="lineGradientEnd">End</label>
-                          <input id="lineGradientEnd" type="color" />
+                          <input
+                            id="lineGradientEnd"
+                            class="form-control input-sm line-gradient-input"
+                            type="text"
+                            maxlength="7"
+                            spellcheck="false"
+                            autocomplete="off"
+                            placeholder="#2FADDD"
+                          />
+                          <span
+                            id="lineGradientEndSwatch"
+                            class="line-gradient-swatch"
+                            aria-hidden="true"
+                          ></span>
                         </div>
                         <div id="lineGradientPreview"></div>
                       </li>
@@ -5112,6 +5143,15 @@
         return fallback;
       }
 
+      function resolveLineGradientInputColor(value, lastValidColor, defaultColor) {
+        var raw = value === undefined || value === null ? "" : String(value).trim();
+        if (!raw) {
+          return defaultColor;
+        }
+
+        return normalizeHexColor(raw, lastValidColor);
+      }
+
       function normalizeLineGradientSetting(setting) {
         var raw =
           setting && typeof setting === "object" && !Array.isArray(setting)
@@ -5168,8 +5208,20 @@
         var normalized = normalizeLineGradientSetting(setting);
         controlsRow = controlsRow || d3.select("#lineGradientControlsRow");
         preview = preview || d3.select("#lineGradientPreview");
+        var startSwatch = d3.select("#lineGradientStartSwatch");
+        var endSwatch = d3.select("#lineGradientEndSwatch");
         if (!controlsRow.empty()) {
           controlsRow.style("display", normalized.enabled ? "flex" : "none");
+        }
+        if (!startSwatch.empty()) {
+          startSwatch
+            .style("background-color", normalized.start)
+            .attr("title", normalized.start);
+        }
+        if (!endSwatch.empty()) {
+          endSwatch
+            .style("background-color", normalized.end)
+            .attr("title", normalized.end);
         }
         if (!preview.empty()) {
           preview
@@ -5215,15 +5267,6 @@
         var normalized = normalizeLineGradientSetting(setting);
         syncUi = syncUi !== false;
 
-        if (
-          typeof window !== "undefined" &&
-          window.__lineGradientCommitTimer &&
-          typeof clearTimeout === "function"
-        ) {
-          clearTimeout(window.__lineGradientCommitTimer);
-          window.__lineGradientCommitTimer = null;
-        }
-
         color.range(getEffectiveLineGradientColors(normalized));
         if (syncUi) {
           syncLineGradientSettingsUI(normalized);
@@ -5260,69 +5303,6 @@
         }
 
         applyLineGradientSetting(nextSetting, true, false);
-      }
-
-      function queueCommittedLineGradientApply(setting, sourceInput) {
-        var nextSetting = cloneLineGradientSetting(setting);
-        var didCommit = false;
-
-        function commitGradientChange() {
-          if (didCommit) return;
-          didCommit = true;
-
-          if (
-            typeof window !== "undefined" &&
-            typeof window.removeEventListener === "function"
-          ) {
-            window.removeEventListener("focus", commitGradientChange, true);
-          }
-
-          if (
-            sourceInput &&
-            typeof sourceInput.blur === "function" &&
-            typeof document !== "undefined" &&
-            document.activeElement === sourceInput
-          ) {
-            sourceInput.blur();
-          }
-
-          if (
-            typeof window !== "undefined" &&
-            window.__lineGradientCommitTimer &&
-            typeof clearTimeout === "function"
-          ) {
-            clearTimeout(window.__lineGradientCommitTimer);
-            window.__lineGradientCommitTimer = null;
-          }
-
-          scheduleLiveLineGradientApply(nextSetting);
-        }
-
-        if (
-          typeof window !== "undefined" &&
-          window.__lineGradientCommitTimer &&
-          typeof clearTimeout === "function"
-        ) {
-          clearTimeout(window.__lineGradientCommitTimer);
-          window.__lineGradientCommitTimer = null;
-        }
-
-        if (
-          typeof window !== "undefined" &&
-          typeof window.setTimeout === "function"
-        ) {
-          if (typeof window.addEventListener === "function") {
-            window.addEventListener("focus", commitGradientChange, true);
-          }
-          // Let the native color picker fully release pointer state first.
-          window.__lineGradientCommitTimer = window.setTimeout(
-            commitGradientChange,
-            200
-          );
-          return;
-        }
-
-        commitGradientChange();
       }
 
       var scatterHeight = d3
@@ -8379,12 +8359,29 @@
         }
 
         function syncLineGradientSettingFromInputs(applyLivePreview) {
+          var currentSetting = normalizeLineGradientSetting(
+            newUserSetting.lineGradient
+          );
+          var startRaw = dimSettingListDiv
+            .select("#lineGradientStart")
+            .property("value");
+          var endRaw = dimSettingListDiv
+            .select("#lineGradientEnd")
+            .property("value");
           var nextSetting = normalizeLineGradientSetting({
             enabled: dimSettingListDiv
               .select("#lineGradientEnabled")
               .property("checked"),
-            start: dimSettingListDiv.select("#lineGradientStart").property("value"),
-            end: dimSettingListDiv.select("#lineGradientEnd").property("value"),
+            start: resolveLineGradientInputColor(
+              startRaw,
+              currentSetting.start,
+              defaultLineGradientColors[0]
+            ),
+            end: resolveLineGradientInputColor(
+              endRaw,
+              currentSetting.end,
+              defaultLineGradientColors[1]
+            ),
           });
 
           newUserSetting.lineGradient = cloneLineGradientSetting(nextSetting);
@@ -8397,6 +8394,17 @@
           return nextSetting;
         }
 
+        function commitLineGradientInputs() {
+          var nextSetting = syncLineGradientSettingFromInputs(true);
+          dimSettingListDiv
+            .select("#lineGradientStart")
+            .property("value", nextSetting.start);
+          dimSettingListDiv
+            .select("#lineGradientEnd")
+            .property("value", nextSetting.end);
+          syncLineGradientSettingsUI(nextSetting);
+        }
+
         syncLineGradientSettingsUI(newUserSetting.lineGradient);
         dimSettingListDiv.select("#lineGradientEnabled").on("change", function () {
           syncLineGradientSettingFromInputs(true);
@@ -8404,20 +8412,18 @@
         dimSettingListDiv
           .select("#lineGradientStart")
           .on("input", function () {
-            syncLineGradientSettingFromInputs(false);
+            syncLineGradientSettingFromInputs(true);
           })
           .on("change", function () {
-            var nextSetting = syncLineGradientSettingFromInputs(false);
-            queueCommittedLineGradientApply(nextSetting, this);
+            commitLineGradientInputs();
           });
         dimSettingListDiv
           .select("#lineGradientEnd")
           .on("input", function () {
-            syncLineGradientSettingFromInputs(false);
+            syncLineGradientSettingFromInputs(true);
           })
           .on("change", function () {
-            var nextSetting = syncLineGradientSettingFromInputs(false);
-            queueCommittedLineGradientApply(nextSetting, this);
+            commitLineGradientInputs();
           });
 
         // show only the number of image label inputs that match available images/labels
