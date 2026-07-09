@@ -296,10 +296,6 @@
         border-radius: 6px;
         border: 1px solid #cccccc;
       }
-      #lineGradientControlsRow .line-gradient-pick-btn {
-        padding: 4px 8px;
-        line-height: 1.2;
-      }
 
       /* match settings panel primary color to project blue */
       #dimSettingList .panel-primary {
@@ -3666,24 +3662,10 @@
                         <div class="line-gradient-control">
                           <label for="lineGradientStart">Start</label>
                           <input id="lineGradientStart" type="color" />
-                          <button
-                            id="lineGradientStartPick"
-                            type="button"
-                            class="btn btn-default btn-xs line-gradient-pick-btn"
-                          >
-                            Pick
-                          </button>
                         </div>
                         <div class="line-gradient-control">
                           <label for="lineGradientEnd">End</label>
                           <input id="lineGradientEnd" type="color" />
-                          <button
-                            id="lineGradientEndPick"
-                            type="button"
-                            class="btn btn-default btn-xs line-gradient-pick-btn"
-                          >
-                            Pick
-                          </button>
                         </div>
                         <div id="lineGradientPreview"></div>
                       </li>
@@ -5263,6 +5245,33 @@
         }
 
         applyLineGradientSetting(nextSetting, true);
+      }
+
+      function queueCommittedLineGradientApply(setting) {
+        var nextSetting = cloneLineGradientSetting(setting);
+
+        if (
+          typeof window !== "undefined" &&
+          window.__lineGradientCommitTimer &&
+          typeof clearTimeout === "function"
+        ) {
+          clearTimeout(window.__lineGradientCommitTimer);
+          window.__lineGradientCommitTimer = null;
+        }
+
+        if (
+          typeof window !== "undefined" &&
+          typeof window.setTimeout === "function"
+        ) {
+          // Let the native color picker fully release pointer state first.
+          window.__lineGradientCommitTimer = window.setTimeout(function () {
+            window.__lineGradientCommitTimer = null;
+            scheduleLiveLineGradientApply(nextSetting);
+          }, 50);
+          return;
+        }
+
+        scheduleLiveLineGradientApply(nextSetting);
       }
 
       var scatterHeight = d3
@@ -8337,34 +8346,6 @@
           return nextSetting;
         }
 
-        function bindLineGradientEyeDropper(buttonSelector, inputSelector) {
-          var button = dimSettingListDiv.select(buttonSelector);
-          if (button.empty()) return;
-
-          if (
-            typeof window === "undefined" ||
-            typeof window.EyeDropper !== "function"
-          ) {
-            button.style("display", "none");
-            return;
-          }
-
-          button.on("click", async function () {
-            try {
-              var eyeDropper = new window.EyeDropper();
-              var result = await eyeDropper.open();
-              if (!result || !result.sRGBHex) return;
-
-              dimSettingListDiv
-                .select(inputSelector)
-                .property("value", normalizeHexColor(result.sRGBHex, "#000000"));
-              syncLineGradientSettingFromInputs(true);
-            } catch (err) {
-              // Ignore abort/cancel from the native eyedropper.
-            }
-          });
-        }
-
         syncLineGradientSettingsUI(newUserSetting.lineGradient);
         dimSettingListDiv.select("#lineGradientEnabled").on("change", function () {
           syncLineGradientSettingFromInputs(true);
@@ -8372,27 +8353,27 @@
         dimSettingListDiv
           .select("#lineGradientStart")
           .on("input", function () {
-            syncLineGradientSettingFromInputs(true);
+            syncLineGradientSettingFromInputs(false);
           })
           .on("change", function () {
-            syncLineGradientSettingFromInputs(true);
+            var nextSetting = syncLineGradientSettingFromInputs(false);
+            if (this && typeof this.blur === "function") {
+              this.blur();
+            }
+            queueCommittedLineGradientApply(nextSetting);
           });
         dimSettingListDiv
           .select("#lineGradientEnd")
           .on("input", function () {
-            syncLineGradientSettingFromInputs(true);
+            syncLineGradientSettingFromInputs(false);
           })
           .on("change", function () {
-            syncLineGradientSettingFromInputs(true);
+            var nextSetting = syncLineGradientSettingFromInputs(false);
+            if (this && typeof this.blur === "function") {
+              this.blur();
+            }
+            queueCommittedLineGradientApply(nextSetting);
           });
-        bindLineGradientEyeDropper(
-          "#lineGradientStartPick",
-          "#lineGradientStart"
-        );
-        bindLineGradientEyeDropper(
-          "#lineGradientEndPick",
-          "#lineGradientEnd"
-        );
 
         // show only the number of image label inputs that match available images/labels
         var imgCount = Math.max(
