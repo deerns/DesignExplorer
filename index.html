@@ -720,6 +720,7 @@
             dimSliderTitleSizes: {},
             dimSliderTickSizes: {},
             imageLabels: {},
+            hideScatterPlots: false,
             labelSize: "",
             lineGradient: {
               enabled: false,
@@ -1016,45 +1017,6 @@
         getCurrentSettingPanelOrder(),
         getCurrentSliderNameList()
       );
-    }
-
-    function updateSliderOrderDebug(context, draftSetting) {
-      var debugNode = document.getElementById("sliderOrderDebug");
-      if (!debugNode) return;
-
-      var sliderInfoOrder = normalizeDimOrder(
-        (slidersInfo || []).map(function (info) {
-          return info && info.name ? info.name : info;
-        })
-      );
-      var activeDraft =
-        draftSetting ||
-        (typeof window !== "undefined" && window.__activeSettingsDraft
-          ? window.__activeSettingsDraft
-          : null) ||
-        {};
-
-      debugNode.textContent = [
-        "context: " + (context || ""),
-        "main.dom: " + getCurrentPageSliderDomOrder().join(" | "),
-        "main.visual: " + getCurrentPageSliderVisualOrder().join(" | "),
-        "graph: " + getCurrentGraphDimensionOrder().join(" | "),
-        "settings: " + getCurrentSettingPanelOrder().join(" | "),
-        "settings.slidersOnly: " + getCurrentSettingSliderOrder().join(" | "),
-        "_userSetting.sliderOrder: " +
-          normalizeDimOrder((_userSetting && _userSetting.sliderOrder) || []).join(
-            " | "
-          ),
-        "_userSetting.dimOrder: " +
-          normalizeDimOrder((_userSetting && _userSetting.dimOrder) || []).join(
-            " | "
-          ),
-        "draft.sliderOrder: " +
-          normalizeDimOrder(activeDraft.sliderOrder || []).join(" | "),
-        "draft.dimOrder: " +
-          normalizeDimOrder(activeDraft.dimOrder || []).join(" | "),
-        "slidersInfo: " + sliderInfoOrder.join(" | "),
-      ].join("\n");
     }
 
     function applyVisualSliderOrder(dimOrder) {
@@ -1590,7 +1552,6 @@
       );
 
       applyDimensionOrderToSettingPanels(committedOrder.dimOrder);
-      updateSliderOrderDebug("syncDimOrderFromPageSliders");
 
       return committedOrder.dimOrder;
     }
@@ -1751,7 +1712,6 @@
       commitDimensionAndSliderOrder(graphOrder, sliderOrder, {
         skipGraphDimensions: true,
       });
-      updateSliderOrderDebug("syncDimOrderFromGraphAxes");
       return graphOrder.slice();
     }
 
@@ -1804,9 +1764,6 @@
           forceMainSliderSync(snapshot, {
             skipSettingsPanels: true,
           });
-          if (typeof updateSliderOrderDebug === "function") {
-            updateSliderOrderDebug("scheduleMainSliderSyncPasses:" + delay, snapshot);
-          }
         }, delay);
       });
     }
@@ -3089,11 +3046,6 @@
               unless save the setting file with data.csv on the cloud.
             </h6>
 
-            <pre
-              id="sliderOrderDebug"
-              style="margin: 0 0 16px 0; padding: 12px; background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; font-size: 11px; line-height: 1.4; white-space: pre-wrap"
-            ></pre>
-
             <div class="panel-group" id="dimSettingList">
               <!--placeholder for scale setting list-->
               <div class="panel panel-primary">
@@ -3110,6 +3062,16 @@
                 <div id="settingStudyInfo" class="panel-collapse collapse in">
                   <div class="panel-body">
                     <ul class="list-group">
+                      <li
+                        class="list-group-item form-inline"
+                        id="hideScatterPlotsRow"
+                      >
+                        <span class="setting-label">Hide Scatterplots:</span>
+                        <input
+                          id="hideScatterPlotsInput"
+                          type="checkbox"
+                        />
+                      </li>
                       <li class="list-group-item form-inline">
                         <span class="setting-label">Study Name:</span>
                         <input
@@ -3424,6 +3386,136 @@
       var isScatterToggled = true;
       var isLeftChartFullScreenToggled = false;
       var isRightChartFullScreenToggled = false;
+
+      function normalizeBooleanSetting(value, fallback) {
+        if (value === undefined || value === null) {
+          return !!fallback;
+        }
+        if (value === true || value === false) {
+          return value;
+        }
+        if (typeof value === "number") {
+          return value !== 0;
+        }
+        if (typeof value === "string") {
+          var normalized = value.trim().toLowerCase();
+          if (
+            normalized === "true" ||
+            normalized === "1" ||
+            normalized === "yes" ||
+            normalized === "on"
+          ) {
+            return true;
+          }
+          if (
+            normalized === "false" ||
+            normalized === "0" ||
+            normalized === "no" ||
+            normalized === "off" ||
+            normalized === ""
+          ) {
+            return false;
+          }
+        }
+        return !!value;
+      }
+
+      function isScatterPlotsHidden(settingOrValue) {
+        var value = settingOrValue;
+        if (
+          settingOrValue &&
+          typeof settingOrValue === "object" &&
+          !Array.isArray(settingOrValue)
+        ) {
+          value = settingOrValue.hideScatterPlots;
+        }
+        return normalizeBooleanSetting(value, false);
+      }
+
+      function getPcChartBaseWidth() {
+        if (windowWidth < 1200) {
+          return windowWidth - 30;
+        }
+        if (isLeftChartFullScreenToggled || isScatterPlotsHidden(_userSetting)) {
+          return windowWidth - 30;
+        }
+        return windowWidth * 0.75 - 30;
+      }
+
+      function clearRightChartFullscreenState() {
+        var wasRightChartFullScreenToggled = isRightChartFullScreenToggled;
+        isRightChartFullScreenToggled = false;
+        d3.selectAll(
+          "#ScChartWrapper," +
+            ".chartSide," +
+            ".col-lg-3 .row-fluid," +
+            ".thumbnailSide," +
+            "#copyRightButton, " +
+            ".scatter-matrix-container circle," +
+            " #PcChartWrapper, " +
+            "#thumbnails-btm_container, " +
+            "#thumbnails-btm_container #thumbnails-btm, " +
+            " #zoomedArea"
+        ).classed("rightChartFullScreenToggled", false);
+
+        if (!wasRightChartFullScreenToggled || isLeftChartFullScreenToggled) {
+          return;
+        }
+
+        if (
+          graph &&
+          typeof graph.highlighted === "function" &&
+          graph.highlighted().length > 0
+        ) {
+          d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
+            "height",
+            zoomedHeight + "px"
+          );
+        } else {
+          d3.select("#thumbnails-btm_container").style(
+            "height",
+            zoomedHeight + "px"
+          );
+        }
+      }
+
+      function syncScatterPlotLayout(skipResize) {
+        var hideScatterPlots = isScatterPlotsHidden(_userSetting);
+        var showScatterWrapper =
+          !hideScatterPlots && !isLeftChartFullScreenToggled;
+
+        d3.select("#ScChartWrapper").style(
+          "display",
+          showScatterWrapper ? "block" : "none"
+        );
+
+        d3.select("#PcChartWrapper")
+          .classed("col-lg-9", showScatterWrapper)
+          .classed("col-lg-12", !showScatterWrapper);
+
+        var scatterSettingInput = d3.select("#hideScatterPlotsInput");
+        if (!scatterSettingInput.empty()) {
+          scatterSettingInput.property("checked", hideScatterPlots);
+        }
+
+        if (!skipResize && graph) {
+          reDrawPcChart();
+        }
+      }
+
+      function applyScatterPlotVisibilitySetting(settingOrValue, options) {
+        options = options || {};
+        _userSetting = _userSetting || {};
+
+        var hideScatterPlots = isScatterPlotsHidden(settingOrValue);
+        _userSetting.hideScatterPlots = hideScatterPlots;
+
+        if (hideScatterPlots) {
+          clearRightChartFullscreenState();
+        }
+
+        syncScatterPlotLayout(!!options.skipResize);
+      }
 
       // side bar for sliders
       $("#menu-toggle").off("click").prop("disabled", false).click(function (e) {
@@ -4582,8 +4674,7 @@
       function reDrawPcChart() {
         calWidthAndHeight();
 
-        var newGraphWidth = windowWidth * 0.75 - 30; // (col-lg-9 x0.73) - (boside padding 15*2)
-        // var newGraphWidth = windowWidth-scatterWidth-90;
+        var newGraphWidth = getPcChartBaseWidth();
         var newGraphHeight = graphHeight;
 
         if (newGraphHeight < scatterHeight) {
@@ -4592,11 +4683,7 @@
 
         if (isLeftChartFullScreenToggled) {
           newGraphHeight = (windowHeight - 85) * 0.5 - 50;
-          newGraphWidth = windowWidth - 30;
-        }
-
-        if (windowWidth < 1200) {
-          newGraphWidth = windowWidth - 30;
+          newGraphWidth = getPcChartBaseWidth();
         }
 
         resizePcChart(newGraphWidth, newGraphHeight);
@@ -5572,24 +5659,11 @@
         d3.select("#pcFullScreen-toggle").on("click", function () {
           isLeftChartFullScreenToggled = !isLeftChartFullScreenToggled;
 
-          d3.select(".col-lg-3") //hide right side
-            .transition()
-            .delay(200)
-            .style("display", function () {
-              if (isLeftChartFullScreenToggled) {
-                return "none";
-              } else {
-                return "block";
-              }
-            });
-
-          d3.select("#PcChartWrapper")
-            .classed("col-lg-9", !isLeftChartFullScreenToggled)
-            .classed("col-lg-12", isLeftChartFullScreenToggled);
+          syncScatterPlotLayout(true);
 
           if (isLeftChartFullScreenToggled) {
             var newpcHeight = (windowHeight - 109) * 0.5 - 50;
-            var newpcWidth = windowWidth - 30;
+            var newpcWidth = getPcChartBaseWidth();
 
             resizePcChart(newpcWidth, newpcHeight);
 
@@ -5607,13 +5681,7 @@
           } else {
             // set left chart full screen
             var oldpcHeight = graphHeight;
-            var oldpcWidth = 0;
-            // var oldpcWidth = d3.select("#graph").style("width").replace("px", "");
-            if (windowWidth < 1200) {
-              oldpcWidth = windowWidth - 70;
-            } else {
-              oldpcWidth = windowWidth * 0.75 - 30;
-            }
+            var oldpcWidth = getPcChartBaseWidth();
 
             //back to normal size mode
             resizePcChart(oldpcWidth, oldpcHeight);
@@ -7052,6 +7120,10 @@
         _userSetting.dimOrder = normalizeDimOrder(_userSetting.dimOrder);
         _userSetting.sliderOrder = normalizeDimOrder(_userSetting.sliderOrder);
         _userSetting.imageLabels = _userSetting.imageLabels || {};
+        _userSetting.hideScatterPlots = normalizeBooleanSetting(
+          _userSetting.hideScatterPlots,
+          false
+        );
         _userSetting.lineGradient = cloneLineGradientSetting(
           _userSetting.lineGradient
         );
@@ -7139,6 +7211,10 @@
             _userSetting.dimSliderTickSizes || {}
           ),
           imageLabels: effectiveImageLabels,
+          hideScatterPlots: normalizeBooleanSetting(
+            _userSetting.hideScatterPlots,
+            false
+          ),
           labelSize: _userSetting.labelSize || "",
           lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
         };
@@ -7499,6 +7575,13 @@
         dimSettingListDiv.selectAll(".dynamic-dim-panel").remove();
 
         //Add this study/project info
+        dimSettingListDiv
+          .select("#hideScatterPlotsInput")
+          .property("checked", !!newUserSetting.hideScatterPlots)
+          .on("change", function () {
+            newUserSetting.hideScatterPlots = !!this.checked;
+            applyScatterPlotVisibilitySetting(newUserSetting.hideScatterPlots);
+          });
         dimSettingListDiv
           .select("#studyNameInput")
           .property("value", newUserSetting.studyInfo.name)
@@ -8141,7 +8224,6 @@
           ) {
             rerenderPageSlidersFromCurrentOrder();
           }
-          updateSliderOrderDebug("syncDimOrderFromSettingPanels", newUserSetting);
           return newUserSetting.sliderOrder.slice();
         }
 
@@ -8268,7 +8350,6 @@
           }
         }
         syncDimOrderFromSettingPanels();
-        updateSliderOrderDebug("dataSetting:init", newUserSetting);
         syncAllDimSliderTitleSizeControls();
         settingDimKeys.forEach(function (dimName) {
           syncDimSliderTickSizeControl(dimName);
@@ -8408,13 +8489,15 @@
           } else {
             delete newUserSetting.labelSize;
           }
+          newUserSetting.hideScatterPlots = d3
+            .select("#hideScatterPlotsInput")
+            .property("checked");
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
           forceMainSliderSync(newUserSetting, {
             skipSettingsPanels: true,
           });
-          updateSliderOrderDebug("setUserSetting:afterSetSettings", newUserSetting);
           // force slider/axis labels to refresh immediately
           setDimLabels(newUserSetting.dimLabels || {});
           if (graph) {
@@ -8552,6 +8635,9 @@
           } else {
             delete newUserSetting.labelSize;
           }
+          newUserSetting.hideScatterPlots = d3
+            .select("#hideScatterPlotsInput")
+            .property("checked");
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           // refresh radio labels immediately even before saving
@@ -8585,6 +8671,10 @@
           userSetting.dimSliderTickSizes
         );
         var userImageLabels = asPlainObject(userSetting.imageLabels);
+        var userHideScatterPlots = normalizeBooleanSetting(
+          userSetting.hideScatterPlots,
+          _userSetting && _userSetting.hideScatterPlots
+        );
         var userLabelSize = userSetting.labelSize;
         var userLineGradient = cloneLineGradientSetting(userSetting.lineGradient);
         var isThereNewStudyInfo = Object.keys(userStudyInfo).length > 0;
@@ -8606,6 +8696,7 @@
           {},
           userDimSliderTickSizes
         );
+        _userSetting.hideScatterPlots = userHideScatterPlots;
         if (userSliderOrder.length === 0) {
           userSliderOrder = deriveSliderOrderFromDimOrder(
             userDimOrder,
@@ -8693,12 +8784,7 @@
           );
         }
 
-        if (typeof updateSliderOrderDebug === "function") {
-          updateSliderOrderDebug("setSettings:afterForceMainSync", {
-            dimOrder: _userSetting.dimOrder || [],
-            sliderOrder: _userSetting.sliderOrder || [],
-          });
-        }
+        applyScatterPlotVisibilitySetting(userHideScatterPlots);
 
         refreshColorDrivenViews();
 
@@ -9230,6 +9316,10 @@
         globalUserSetting.lineGradient = cloneLineGradientSetting(
           newUserSetting.lineGradient || globalUserSetting.lineGradient
         );
+        globalUserSetting.hideScatterPlots = normalizeBooleanSetting(
+          newUserSetting.hideScatterPlots,
+          globalUserSetting.hideScatterPlots
+        );
         if (newUserSetting.hasOwnProperty("labelSize")) {
           if (
             newUserSetting.labelSize === null ||
@@ -9331,6 +9421,10 @@
           var hasDimSliderTitleSizes = hasOwnKey(d, "dimSliderTitleSizes");
           var hasDimSliderTickSizes = hasOwnKey(d, "dimSliderTickSizes");
           var hasImageLabels = hasOwnKey(d, "imageLabels");
+          var hasHideScatterPlots =
+            hasOwnKey(d, "hideScatterPlots") ||
+            hasOwnKey(d, "scatterHidden") ||
+            hasOwnKey(d, "scatterplotsHidden");
           var hasLineGradient =
             hasOwnKey(d, "lineGradient") ||
             hasOwnKey(d, "lineGradientEnabled") ||
@@ -9395,6 +9489,11 @@
               };
             }
           }
+          var loadedHideScatterPlots = hasOwnKey(d, "hideScatterPlots")
+            ? d.hideScatterPlots
+            : hasOwnKey(d, "scatterHidden")
+            ? d.scatterHidden
+            : d.scatterplotsHidden;
 
           var currentDimOrder = normalizeDimOrder(_userSetting.dimOrder);
           var currentSliderOrder = normalizeDimOrder(_userSetting.sliderOrder);
@@ -9455,6 +9554,9 @@
           mergedSetting.imageLabels = hasImageLabels
             ? Object.assign({}, _userSetting.imageLabels || {}, loadedImageLabels || {})
             : Object.assign({}, _userSetting.imageLabels || {});
+          mergedSetting.hideScatterPlots = hasHideScatterPlots
+            ? normalizeBooleanSetting(loadedHideScatterPlots, false)
+            : normalizeBooleanSetting(_userSetting.hideScatterPlots, false);
           mergedSetting.lineGradient = hasLineGradient
             ? normalizeLineGradientSetting(rawLoadedLineGradient)
             : cloneLineGradientSetting(_userSetting.lineGradient);
