@@ -1710,6 +1710,11 @@
       );
     }
 
+    function getCurrentSortByValue() {
+      if (typeof window === "undefined") return "";
+      return window.sortBy || "";
+    }
+
     function refreshThumbnailSortDropdown(options) {
       options = options || {};
 
@@ -1722,15 +1727,20 @@
       var orderedKeys = getOrderedThumbnailSortKeys(_userSetting);
       var currentSelectValue = select.property("value");
       var preferredSortBy =
-        options.preferredSortBy || currentSelectValue || sortBy || pcIsColoredBy;
+        options.preferredSortBy ||
+        currentSelectValue ||
+        getCurrentSortByValue() ||
+        pcIsColoredBy;
       var nextSortBy = orderedKeys[0] || "";
 
       if (orderedKeys.indexOf(preferredSortBy) !== -1) {
         nextSortBy = preferredSortBy;
       }
 
-      var changed = sortBy !== nextSortBy;
-      sortBy = nextSortBy;
+      var changed = getCurrentSortByValue() !== nextSortBy;
+      if (typeof window !== "undefined") {
+        window.sortBy = nextSortBy;
+      }
 
       var optionSelection = select
         .selectAll("option")
@@ -1965,7 +1975,7 @@
 
       refreshLegendOrder();
       refreshThumbnailSortDropdown({
-        preferredSortBy: sortBy,
+        preferredSortBy: getCurrentSortByValue(),
         syncGrid: false,
       });
       refreshOrderedDataViews();
@@ -2526,7 +2536,7 @@
       }
 
       refreshThumbnailSortDropdown({
-        preferredSortBy: sortBy,
+        preferredSortBy: getCurrentSortByValue(),
       });
       refreshOrderedDataViews();
     }
@@ -5037,6 +5047,8 @@
       var opacity = 0.4;
 
       var pcIsColoredBy;
+      var sortBy = "";
+      var ascending = true;
 
       var color = d3.scale
         .linear()
@@ -5685,7 +5697,7 @@
         });
 
         refreshThumbnailSortDropdown({
-          preferredSortBy: sortBy,
+          preferredSortBy: getCurrentSortByValue(),
           syncGrid: false,
         });
 
@@ -6137,7 +6149,7 @@
           syncHiddenSettingCheckboxes();
           updateLegendCheckboxVisuals();
           refreshThumbnailSortDropdown({
-            preferredSortBy: sortBy,
+            preferredSortBy: getCurrentSortByValue(),
           });
 
           updateLabels();
