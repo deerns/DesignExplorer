@@ -610,7 +610,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20260708-5" rel="stylesheet" />
+    <link href="css/style.css?v=20260709-1" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -1489,11 +1489,74 @@
       return keys;
     }
 
-    function getOrderedDisplayDimensionKeys(keys, setting) {
-      var baseKeys = normalizeDimOrder(keys);
-      if (baseKeys.length === 0) return [];
+    function isImageLikeDataKey(dimName) {
+      var rawKey = (dimName || "").toString().trim();
+      if (!rawKey) return false;
+
+      var normalized = normalizeDimKey(rawKey);
+      if (!normalized) return false;
+      if (/^img[\s_-]*\d*$/i.test(rawKey)) return true;
+
+      var knownImageKeys = [];
+      (imageLinkKeys || []).forEach(function (key) {
+        knownImageKeys.push(key);
+      });
+      Object.keys(imageKeyAliases || {}).forEach(function (aliasKey) {
+        knownImageKeys.push(aliasKey);
+        knownImageKeys.push(imageKeyAliases[aliasKey]);
+      });
+
+      for (var i = 0; i < knownImageKeys.length; i++) {
+        if (normalizeDimKey(knownImageKeys[i]) === normalized) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function shouldIncludeDataViewDimension(dimName, setting, options) {
+      var rawKey = (dimName || "").toString().trim();
+      if (!rawKey) return false;
 
       var source = setting || _userSetting || {};
+      var opts = options || {};
+      var lowerKey = rawKey.toLowerCase();
+      var dimHiddenMap = source.dimHidden || {};
+      var dimHiddenNormalized =
+        source.dimHiddenNormalized || buildDimHiddenNormalizedMap(dimHiddenMap);
+
+      if (
+        opts.excludeHidden !== false &&
+        isDimHiddenBySetting(rawKey, dimHiddenMap, dimHiddenNormalized)
+      ) {
+        return false;
+      }
+
+      if (
+        opts.excludeImageLike !== false &&
+        isImageLikeDataKey(rawKey)
+      ) {
+        return false;
+      }
+
+      if (
+        opts.excludeInternal !== false &&
+        (lowerKey.indexOf("threed") === 0 || lowerKey.indexOf("scid") === 0)
+      ) {
+        return false;
+      }
+
+      return true;
+    }
+
+    function getOrderedDisplayDimensionKeys(keys, setting, options) {
+      var source = setting || _userSetting || {};
+      var baseKeys = normalizeDimOrder(keys).filter(function (key) {
+        return shouldIncludeDataViewDimension(key, source, options);
+      });
+      if (baseKeys.length === 0) return [];
+
       var validLookup = buildNormalizedDimLookup(baseKeys);
       var filteredDimOrder = filterDimOrderToLookup(
         source.dimOrder,
@@ -2297,6 +2360,8 @@
           updateSlidersValue(graph.highlight()[0]);
         }
       }
+
+      refreshOrderedDataViews();
     }
 
     // render image toggles near the 2d viewer when multiple images exist
@@ -4674,8 +4739,17 @@
 
         var orderedColumns = getOrderedDisplayDimensionKeys(
           d3.keys(tableData[0]),
-          _userSetting
+          _userSetting,
+          {
+            excludeHidden: true,
+            excludeImageLike: true,
+            excludeInternal: true,
+          }
         );
+        if (orderedColumns.length === 0) {
+          tableContainer.html("");
+          return;
+        }
         var grid = d3
           .divgrid()
           .columns(orderedColumns)
@@ -5541,7 +5615,11 @@
         if (pinnedData) {
           d3.keys(pinnedData).forEach(addKey);
         }
-        keyOrder = getOrderedDisplayDimensionKeys(keyOrder, _userSetting);
+        keyOrder = getOrderedDisplayDimensionKeys(keyOrder, _userSetting, {
+          excludeHidden: true,
+          excludeImageLike: true,
+          excludeInternal: true,
+        });
 
         function parseNumericValue(value) {
           if (value === undefined || value === null || value === "") return NaN;

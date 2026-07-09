@@ -472,7 +472,11 @@ g.cell text {
 
 
 
-#tbContainer { padding-left: 60px;}
+#tbContainer {
+    padding-left: 24px;
+    --tb-col-width: 140px;
+    --tb-first-col-width: 220px;
+}
 /* .row, .header {clear: left;font-size: 12px;line-height: 18px;height: 18px;} */
 #tbContainer .row:nth-child(odd) { background: rgba(0,0,0,0.03); }
 #tbContainer .header {
@@ -506,4 +510,12 @@ g.cell text {
   transition: all 0.2s;
 }
 
-.col-0 { width: 180px; }
+#tbContainer .cell {
+  width: var(--tb-col-width);
+  min-width: var(--tb-col-width);
+}
+
+#tbContainer .col-0 {
+  width: var(--tb-first-col-width);
+  min-width: var(--tb-first-col-width);
+}
