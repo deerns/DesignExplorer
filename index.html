@@ -5149,14 +5149,16 @@
         var endInput = d3.select("#lineGradientEnd");
         var controlsRow = d3.select("#lineGradientControlsRow");
         var preview = d3.select("#lineGradientPreview");
+        var activeElement =
+          typeof document !== "undefined" ? document.activeElement : null;
 
-        if (!toggle.empty()) {
+        if (!toggle.empty() && toggle.node() !== activeElement) {
           toggle.property("checked", normalized.enabled);
         }
-        if (!startInput.empty()) {
+        if (!startInput.empty() && startInput.node() !== activeElement) {
           startInput.property("value", normalized.start);
         }
-        if (!endInput.empty()) {
+        if (!endInput.empty() && endInput.node() !== activeElement) {
           endInput.property("value", normalized.end);
         }
         syncLineGradientPreviewUI(normalized, controlsRow, preview);
@@ -5209,8 +5211,9 @@
         }
       }
 
-      function applyLineGradientSetting(setting, rerender) {
+      function applyLineGradientSetting(setting, rerender, syncUi) {
         var normalized = normalizeLineGradientSetting(setting);
+        syncUi = syncUi !== false;
 
         if (
           typeof window !== "undefined" &&
@@ -5222,7 +5225,9 @@
         }
 
         color.range(getEffectiveLineGradientColors(normalized));
-        syncLineGradientSettingsUI(normalized);
+        if (syncUi) {
+          syncLineGradientSettingsUI(normalized);
+        }
 
         if (rerender) {
           refreshColorDrivenViews();
@@ -5248,17 +5253,50 @@
           window.__lineGradientPreviewFrame = window.requestAnimationFrame(
             function () {
               window.__lineGradientPreviewFrame = null;
-              applyLineGradientSetting(nextSetting, true);
+              applyLineGradientSetting(nextSetting, true, false);
             }
           );
           return;
         }
 
-        applyLineGradientSetting(nextSetting, true);
+        applyLineGradientSetting(nextSetting, true, false);
       }
 
-      function queueCommittedLineGradientApply(setting) {
+      function queueCommittedLineGradientApply(setting, sourceInput) {
         var nextSetting = cloneLineGradientSetting(setting);
+        var didCommit = false;
+
+        function commitGradientChange() {
+          if (didCommit) return;
+          didCommit = true;
+
+          if (
+            typeof window !== "undefined" &&
+            typeof window.removeEventListener === "function"
+          ) {
+            window.removeEventListener("focus", commitGradientChange, true);
+          }
+
+          if (
+            sourceInput &&
+            typeof sourceInput.blur === "function" &&
+            typeof document !== "undefined" &&
+            document.activeElement === sourceInput
+          ) {
+            sourceInput.blur();
+          }
+
+          if (
+            typeof window !== "undefined" &&
+            window.__lineGradientCommitTimer &&
+            typeof clearTimeout === "function"
+          ) {
+            clearTimeout(window.__lineGradientCommitTimer);
+            window.__lineGradientCommitTimer = null;
+          }
+
+          scheduleLiveLineGradientApply(nextSetting);
+        }
 
         if (
           typeof window !== "undefined" &&
@@ -5273,15 +5311,18 @@
           typeof window !== "undefined" &&
           typeof window.setTimeout === "function"
         ) {
+          if (typeof window.addEventListener === "function") {
+            window.addEventListener("focus", commitGradientChange, true);
+          }
           // Let the native color picker fully release pointer state first.
-          window.__lineGradientCommitTimer = window.setTimeout(function () {
-            window.__lineGradientCommitTimer = null;
-            scheduleLiveLineGradientApply(nextSetting);
-          }, 50);
+          window.__lineGradientCommitTimer = window.setTimeout(
+            commitGradientChange,
+            200
+          );
           return;
         }
 
-        scheduleLiveLineGradientApply(nextSetting);
+        commitGradientChange();
       }
 
       var scatterHeight = d3
@@ -8367,10 +8408,7 @@
           })
           .on("change", function () {
             var nextSetting = syncLineGradientSettingFromInputs(false);
-            if (this && typeof this.blur === "function") {
-              this.blur();
-            }
-            queueCommittedLineGradientApply(nextSetting);
+            queueCommittedLineGradientApply(nextSetting, this);
           });
         dimSettingListDiv
           .select("#lineGradientEnd")
@@ -8379,10 +8417,7 @@
           })
           .on("change", function () {
             var nextSetting = syncLineGradientSettingFromInputs(false);
-            if (this && typeof this.blur === "function") {
-              this.blur();
-            }
-            queueCommittedLineGradientApply(nextSetting);
+            queueCommittedLineGradientApply(nextSetting, this);
           });
 
         // show only the number of image label inputs that match available images/labels
