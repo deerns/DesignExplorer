@@ -5134,16 +5134,6 @@
         };
       }
 
-      function areLineGradientSettingsEqual(first, second) {
-        var normalizedFirst = normalizeLineGradientSetting(first);
-        var normalizedSecond = normalizeLineGradientSetting(second);
-        return (
-          normalizedFirst.enabled === normalizedSecond.enabled &&
-          normalizedFirst.start === normalizedSecond.start &&
-          normalizedFirst.end === normalizedSecond.end
-        );
-      }
-
       function getEffectiveLineGradientColors(setting) {
         var normalized = normalizeLineGradientSetting(setting);
         if (!normalized.enabled) {
@@ -5220,25 +5210,6 @@
         if (rerender) {
           refreshColorDrivenViews();
         }
-      }
-
-      function scheduleLineGradientRender(setting) {
-        var nextSetting = cloneLineGradientSetting(setting);
-
-        if (typeof window !== "undefined" && window.__lineGradientRenderFrame) {
-          cancelAnimationFrame(window.__lineGradientRenderFrame);
-          window.__lineGradientRenderFrame = null;
-        }
-
-        if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
-          window.__lineGradientRenderFrame = window.requestAnimationFrame(function () {
-            window.__lineGradientRenderFrame = null;
-            applyLineGradientSetting(nextSetting, true);
-          });
-          return;
-        }
-
-        applyLineGradientSetting(nextSetting, true);
       }
 
       var scatterHeight = d3
@@ -8294,7 +8265,7 @@
           };
         }
 
-        function syncLineGradientSettingFromInputs(applyPreview) {
+        function syncLineGradientSettingFromInputs() {
           var nextSetting = normalizeLineGradientSetting({
             enabled: dimSettingListDiv
               .select("#lineGradientEnabled")
@@ -8306,38 +8277,34 @@
           newUserSetting.lineGradient = cloneLineGradientSetting(nextSetting);
           syncLineGradientSettingsUI(nextSetting);
 
-          if (applyPreview) {
-            if (
-              !_userSetting ||
-              !areLineGradientSettingsEqual(_userSetting.lineGradient, nextSetting)
-            ) {
-              _userSetting.lineGradient = cloneLineGradientSetting(nextSetting);
-              scheduleLineGradientRender(nextSetting);
-            }
-          }
-
           return nextSetting;
         }
 
         syncLineGradientSettingsUI(newUserSetting.lineGradient);
         dimSettingListDiv.select("#lineGradientEnabled").on("change", function () {
-          syncLineGradientSettingFromInputs(true);
+          syncLineGradientSettingFromInputs();
         });
         dimSettingListDiv
           .select("#lineGradientStart")
           .on("input", function () {
-            syncLineGradientSettingFromInputs(false);
+            syncLineGradientSettingFromInputs();
           })
           .on("change", function () {
-            syncLineGradientSettingFromInputs(true);
+            syncLineGradientSettingFromInputs();
+            if (typeof this.blur === "function") {
+              this.blur();
+            }
           });
         dimSettingListDiv
           .select("#lineGradientEnd")
           .on("input", function () {
-            syncLineGradientSettingFromInputs(false);
+            syncLineGradientSettingFromInputs();
           })
           .on("change", function () {
-            syncLineGradientSettingFromInputs(true);
+            syncLineGradientSettingFromInputs();
+            if (typeof this.blur === "function") {
+              this.blur();
+            }
           });
 
         // show only the number of image label inputs that match available images/labels
@@ -9332,7 +9299,7 @@
             skipSettingPanels: true,
           });
         }
-        applyLineGradientSetting(userLineGradient, false);
+        applyLineGradientSetting(userLineGradient, true);
 
         if (isThereNewStudyInfo) {
           setStudyInfo(userStudyInfo);
