@@ -871,6 +871,142 @@
       return normalizeDimOrder(keys);
     }
 
+    function getCurrentDatasetDimKeys() {
+      var keys = [];
+      var seen = {};
+
+      function addKey(key) {
+        var normalized = normalizeDimKey(key);
+        if (
+          !normalized ||
+          normalized === normalizeDimKey("Rating") ||
+          normalized === normalizeDimKey("Description") ||
+          seen[normalized]
+        ) {
+          return;
+        }
+        seen[normalized] = true;
+        keys.push(String(key).trim());
+      }
+
+      normalizeDimOrder(d3.keys(cleanedKeys4pc || {})).forEach(addKey);
+
+      if (keys.length === 0 && graph && typeof graph.dimensions === "function") {
+        normalizeDimOrder(Object.keys(graph.dimensions() || {})).forEach(addKey);
+      }
+
+      return keys;
+    }
+
+    function getCurrentDatasetSliderKeys() {
+      var keys = [];
+      var seen = {};
+
+      function addKey(key) {
+        var normalized = normalizeDimKey(key);
+        if (!normalized || seen[normalized]) return;
+        seen[normalized] = true;
+        keys.push(String(key).trim());
+      }
+
+      if (Array.isArray(slidersInfo) && slidersInfo.length > 0) {
+        slidersInfo.forEach(function (info) {
+          addKey(info && info.name ? info.name : info);
+        });
+      } else if (Array.isArray(inputData) && inputData.length > 0) {
+        normalizeDimOrder(d3.keys(inputData[0] || {})).forEach(addKey);
+      } else {
+        d3.selectAll("#inputSliders > .inputSlider").each(function () {
+          addKey(this.getAttribute("data-dim"));
+        });
+      }
+
+      return normalizeDimOrder(keys);
+    }
+
+    function buildNormalizedDimLookup(keys) {
+      var lookup = {};
+      normalizeDimOrder(keys).forEach(function (key) {
+        lookup[normalizeDimKey(key)] = String(key).trim();
+      });
+      return lookup;
+    }
+
+    function filterDimScopedSettingMap(map, validLookup) {
+      var result = {};
+      d3.keys(map || {}).forEach(function (key) {
+        var canonicalKey = validLookup[normalizeDimKey(key)];
+        if (!canonicalKey) return;
+        result[canonicalKey] = map[key];
+      });
+      return result;
+    }
+
+    function filterDimOrderToLookup(dimOrder, validLookup) {
+      var result = [];
+      var seen = {};
+
+      normalizeDimOrder(dimOrder).forEach(function (key) {
+        var canonicalKey = validLookup[normalizeDimKey(key)];
+        var normalized = normalizeDimKey(canonicalKey);
+        if (!canonicalKey || seen[normalized]) return;
+        seen[normalized] = true;
+        result.push(canonicalKey);
+      });
+
+      return result;
+    }
+
+    function sanitizeSettingForCurrentData(setting) {
+      var source = setting || {};
+      var validDimLookup = buildNormalizedDimLookup(getCurrentDatasetDimKeys());
+      var validSliderLookup = buildNormalizedDimLookup(getCurrentDatasetSliderKeys());
+      var sanitized = Object.assign({}, source);
+
+      sanitized.dimScales = filterDimScopedSettingMap(
+        source.dimScales,
+        validDimLookup
+      );
+      sanitized.dimTicks = filterDimScopedSettingMap(
+        source.dimTicks,
+        validDimLookup
+      );
+      sanitized.dimMark = filterDimScopedSettingMap(
+        source.dimMark,
+        validDimLookup
+      );
+      sanitized.dimLabels = filterDimScopedSettingMap(
+        source.dimLabels,
+        validDimLookup
+      );
+      sanitized.dimHidden = filterDimScopedSettingMap(
+        source.dimHidden,
+        validDimLookup
+      );
+      sanitized.dimReversed = filterDimScopedSettingMap(
+        source.dimReversed,
+        validDimLookup
+      );
+      sanitized.dimSliderTitleSizes = filterDimScopedSettingMap(
+        source.dimSliderTitleSizes,
+        validDimLookup
+      );
+      sanitized.dimSliderTickSizes = filterDimScopedSettingMap(
+        source.dimSliderTickSizes,
+        validDimLookup
+      );
+      sanitized.dimOrder = filterDimOrderToLookup(
+        source.dimOrder,
+        validDimLookup
+      );
+      sanitized.sliderOrder = filterDimOrderToLookup(
+        source.sliderOrder,
+        validSliderLookup
+      );
+
+      return sanitized;
+    }
+
     function deriveSliderOrderFromDimOrder(dimOrder, fallbackOrder) {
       var baseSliderOrder = normalizeDimOrder(fallbackOrder);
       if (baseSliderOrder.length === 0) {
@@ -7141,6 +7277,8 @@
 
         d3.select("#showSetting").style("display", "flex");
 
+        _userSetting = sanitizeSettingForCurrentData(_userSetting || {});
+
         var currentGraph =
           chart && typeof chart.dimensions === "function"
             ? chart
@@ -8696,7 +8834,7 @@
             : {};
         }
 
-        userSetting = userSetting || {};
+        userSetting = sanitizeSettingForCurrentData(userSetting || {});
 
         var userStudyInfo = asPlainObject(userSetting.studyInfo);
         var userDimScales = asPlainObject(userSetting.dimScales);
@@ -9639,6 +9777,7 @@
             hasLabelSize && d.labelSize !== null
               ? d.labelSize
               : _userSetting.labelSize;
+          mergedSetting = sanitizeSettingForCurrentData(mergedSetting);
 
           // update the global _userSetting
           _userSetting = mergedSetting;
