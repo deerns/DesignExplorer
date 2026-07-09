@@ -303,6 +303,30 @@ ScatterMatrix.prototype.render = function () {
   });
 };
 
+ScatterMatrix.prototype.clearSelection = function () {
+  if (this.__cell && this.__brush) {
+    this.__cell.call(this.__brush.clear());
+    this.__brush.data = null;
+  }
+
+  d3.select(this.__dom_id)
+    .selectAll(".scatter-matrix-svg .cell circle")
+    .classed("faded", false);
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.handleScatterMatrixSelection === "function"
+  ) {
+    window.handleScatterMatrixSelection([], {
+      x: null,
+      y: null,
+      extent: null,
+    });
+  }
+
+  return this;
+};
+
 // NOTE: unique id for each Circle
 function getCircleID(d) {
   var id = "scatter_" + d.scid;
@@ -572,6 +596,9 @@ ScatterMatrix.prototype.__draw = function (
         return "translate(" + d.i * size + "," + d.j * size + ")";
       })
       .each(plot);
+
+    self.__brush = brush;
+    self.__cell = cell;
 
     // Add titles for y variables
     cell
