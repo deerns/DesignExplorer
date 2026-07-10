@@ -14,6 +14,7 @@ body {
     width: 100%;
     padding-left: 0 !important;
     overflow-x: hidden;
+    transition: none !important;
 }
 
 #sidebar-wrapper {
@@ -25,12 +26,17 @@ body {
     height: calc(100vh - 90px);
     max-height: calc(100vh - 90px);
     min-height: 0;
-    overflow-x: hidden;
+    overflow-y: auto;
+    overflow-x: visible;
+    background: #ffffff;
+    z-index: 3;
+    transition: none !important;
 }
 
 #wrapper.toggled #sidebar-wrapper {
     flex-basis: 0;
     width: 0;
+    overflow: hidden;
 }
 
 #page-content-wrapper {
@@ -39,6 +45,9 @@ body {
     min-width: 0;
     flex: 1 1 auto;
     padding: 15px;
+    overflow-x: hidden;
+    z-index: 1;
+    transition: none !important;
 }
 
 #wrapper.toggled #page-content-wrapper {
@@ -47,7 +56,8 @@ body {
 
 .sidebar-nav {
     position: relative;
-    width: 100%;
+    width: var(--de-sidebar-width);
+    max-width: 100%;
 }
 
 #chartLayoutRow {
@@ -60,6 +70,7 @@ body {
 #ScChartWrapper {
     float: none;
     min-width: 0;
+    overflow: hidden;
 }
 
 #PcChartWrapper {
@@ -87,7 +98,7 @@ body {
 }
 
 #radarChart {
-    overflow-x: auto;
+    overflow: hidden;
 }
 
 .modal-content, #viewer2d, #viewer3d{
@@ -550,6 +561,10 @@ g.cell text {
 @media (max-width: 991px) {
     #wrapper {
         flex-direction: column;
+    }
+
+    .sidebar-nav {
+        width: 100%;
     }
 
     #sidebar-wrapper {

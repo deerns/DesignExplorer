@@ -4672,6 +4672,12 @@
         return windowWidth * 0.75 - 30;
       }
 
+      function shouldShowScatterPlots() {
+        return (
+          !isScatterPlotsHidden(_userSetting) && !isLeftChartFullScreenToggled
+        );
+      }
+
       function clearRightChartFullscreenState() {
         var wasRightChartFullScreenToggled = isRightChartFullScreenToggled;
         isRightChartFullScreenToggled = false;
@@ -4711,8 +4717,7 @@
 
       function syncScatterPlotLayout(skipResize) {
         var hideScatterPlots = isScatterPlotsHidden(_userSetting);
-        var showScatterWrapper =
-          !hideScatterPlots && !isLeftChartFullScreenToggled;
+        var showScatterWrapper = !hideScatterPlots && !isLeftChartFullScreenToggled;
         var chartLayoutRow = d3.select("#chartLayoutRow");
 
         d3.select("#ScChartWrapper").style(
@@ -4735,6 +4740,7 @@
 
         if (!skipResize && graph) {
           reDrawPcChart();
+          refreshScatterChartLayout();
         }
       }
 
@@ -4754,41 +4760,54 @@
 
       var pendingPcLayoutRefresh = null;
 
+      function refreshScatterChartLayout() {
+        if (!graph || !shouldShowScatterPlots()) return;
+
+        var radarChart = d3.select("#radarChart");
+        if (radarChart.empty()) return;
+
+        radarChart.selectAll("*").remove();
+        addScatterChart();
+      }
+
       function schedulePcLayoutRefresh() {
         if (pendingPcLayoutRefresh !== null) {
-          clearTimeout(pendingPcLayoutRefresh);
+          if (
+            typeof window !== "undefined" &&
+            typeof window.cancelAnimationFrame === "function"
+          ) {
+            window.cancelAnimationFrame(pendingPcLayoutRefresh);
+          } else {
+            clearTimeout(pendingPcLayoutRefresh);
+          }
           pendingPcLayoutRefresh = null;
         }
+
+        var runRefresh = function () {
+          pendingPcLayoutRefresh = null;
+          if (graph) {
+            reDrawPcChart();
+            refreshScatterChartLayout();
+          }
+          if (typeof updatePinnedSliderMarkers === "function") {
+            updatePinnedSliderMarkers();
+          }
+        };
 
         if (
           typeof window !== "undefined" &&
           typeof window.requestAnimationFrame === "function"
         ) {
-          window.requestAnimationFrame(function () {
-            reDrawPcChart();
-          });
+          pendingPcLayoutRefresh = window.requestAnimationFrame(runRefresh);
         } else {
-          setTimeout(function () {
-            reDrawPcChart();
-          }, 0);
+          pendingPcLayoutRefresh = setTimeout(runRefresh, 0);
         }
-
-        pendingPcLayoutRefresh = setTimeout(function () {
-          pendingPcLayoutRefresh = null;
-          reDrawPcChart();
-          if (typeof updatePinnedSliderMarkers === "function") {
-            updatePinnedSliderMarkers();
-          }
-        }, 520);
       }
 
       // side bar for sliders
       $("#menu-toggle").off("click").prop("disabled", false).click(function (e) {
         isToggled = !isToggled;
-        d3.select("#wrapper")
-          .classed("toggled", isToggled)
-          .transition()
-          .duration(300); //length of toggle animation
+        d3.select("#wrapper").classed("toggled", isToggled);
         schedulePcLayoutRefresh();
       });
 
@@ -6428,7 +6447,7 @@
         .select("#ScChartWrapper")
         .style("height")
         .replace("px", "");
-      window.addEventListener("resize", reDrawPcChart);
+      window.addEventListener("resize", schedulePcLayoutRefresh);
 
       //redraw the charts when window size changes
       function reDrawPcChart() {
@@ -7449,6 +7468,7 @@
             var newpcWidth = getPcChartBaseWidth();
 
             resizePcChart(newpcWidth, newpcHeight);
+            refreshScatterChartLayout();
 
             if (graph.highlighted().length > 0) {
               d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
@@ -7468,6 +7488,7 @@
 
             //back to normal size mode
             resizePcChart(oldpcWidth, oldpcHeight);
+            refreshScatterChartLayout();
 
             if (graph.highlighted().length > 0) {
               d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(

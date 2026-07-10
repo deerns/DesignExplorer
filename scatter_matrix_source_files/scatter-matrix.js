@@ -230,25 +230,27 @@ ScatterMatrix.prototype.render = function () {
     var isRightChartFullScreenToggled = false;
     var windowHeight = window.innerHeight;
     var originalCellSize = self.__cell_size;
-    $("#scatter-fullscreen-toggle").click(function (e) {
-      isRightChartFullScreenToggled = !isRightChartFullScreenToggled;
-      if (isRightChartFullScreenToggled) {
-        self.__cell_size = (windowHeight - 250) / 2;
-        d3.selectAll(".cell circle").attr("r", "3");
-      } else {
-        self.__cell_size = originalCellSize;
-        d3.selectAll(".cell circle").attr("r", "1");
-      }
+    $("#scatter-fullscreen-toggle")
+      .off("click.scatterMatrixFullscreen")
+      .on("click.scatterMatrixFullscreen", function (e) {
+        isRightChartFullScreenToggled = !isRightChartFullScreenToggled;
+        if (isRightChartFullScreenToggled) {
+          self.__cell_size = (windowHeight - 250) / 2;
+          d3.selectAll(".cell circle").attr("r", "3");
+        } else {
+          self.__cell_size = originalCellSize;
+          d3.selectAll(".cell circle").attr("r", "1");
+        }
 
-      self.__draw(
-        self.__cell_size,
-        svg,
-        color_variable,
-        selected_colors,
-        to_include,
-        drill_variables
-      );
-    });
+        self.__draw(
+          self.__cell_size,
+          svg,
+          color_variable,
+          selected_colors,
+          to_include,
+          drill_variables
+        );
+      });
 
     var variable_li = variable_control
       .append("p")
