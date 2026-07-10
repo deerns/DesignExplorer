@@ -4470,15 +4470,27 @@
       }
 
       function captureScatterChartState() {
-        var selectedVariables = [];
+        var selectedVariables =
+          scatterChart &&
+          Array.isArray(scatterChart.__selected_variables) &&
+          scatterChart.__selected_variables.length > 0
+            ? scatterChart.__selected_variables.slice()
+            : [];
 
-        d3.selectAll(".scatter-matrix-variable-control li").each(function (d) {
-          var checkbox = d3.select(this).select("input").node();
-          if (!checkbox || !checkbox.checked || d === undefined || d === null) {
-            return;
-          }
-          selectedVariables.push(String(d));
-        });
+        if (selectedVariables.length === 0) {
+          d3.selectAll(".scatter-matrix-variable-control li").each(function (d) {
+            var checkbox = d3.select(this).select("input").node();
+            if (
+              !checkbox ||
+              !checkbox.checked ||
+              d === undefined ||
+              d === null
+            ) {
+              return;
+            }
+            selectedVariables.push(String(d));
+          });
+        }
 
         return {
           selectedVariables: selectedVariables,

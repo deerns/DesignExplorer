@@ -151,6 +151,7 @@ ScatterMatrix.prototype.render = function () {
     if (to_include.length === 0) {
       to_include = self.__numeric_variables.slice(0, 1);
     }
+    self.__selected_variables = to_include.slice();
 
     var color_variable = undefined;
     var selected_colors = undefined;
@@ -198,6 +199,7 @@ ScatterMatrix.prototype.render = function () {
               new_selected_colors.push(d);
             }
             selected_colors = new_selected_colors;
+            self.__selected_variables = to_include.slice();
             self.__draw(
               self.__cell_size,
               svg,
@@ -323,6 +325,7 @@ ScatterMatrix.prototype.render = function () {
           new_to_include.push(d);
         }
         to_include = new_to_include;
+        self.__selected_variables = to_include.slice();
         self.__draw(
           self.__cell_size,
           svg,
@@ -395,6 +398,9 @@ ScatterMatrix.prototype.__draw = function (
   };
   this.onData(function () {
     var data = self.__data;
+    self.__selected_variables = Array.isArray(to_include)
+      ? to_include.slice()
+      : [];
 
     // filter data by selected colors
     if (color_variable && selected_colors) {
