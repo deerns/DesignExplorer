@@ -4469,6 +4469,22 @@
         };
       }
 
+      function captureScatterChartState() {
+        var selectedVariables = [];
+
+        d3.selectAll(".scatter-matrix-variable-control li").each(function (d) {
+          var checkbox = d3.select(this).select("input").node();
+          if (!checkbox || !checkbox.checked || d === undefined || d === null) {
+            return;
+          }
+          selectedVariables.push(String(d));
+        });
+
+        return {
+          selectedVariables: selectedVariables,
+        };
+      }
+
       // add scatter chart
       function addScatterChart() {
         clearScatterSelectionState();
@@ -4491,6 +4507,14 @@
         scatterMatrixWidth = Math.max(scatterMatrixWidth, 180);
         var selectedData = getCurrentGraphDisplayData();
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
+        if (
+          typeof window !== "undefined" &&
+          window.__pendingScatterChartState &&
+          Array.isArray(window.__pendingScatterChartState.selectedVariables)
+        ) {
+          sm.__initial_selected_variables =
+            window.__pendingScatterChartState.selectedVariables.slice();
+        }
         sm.cellSize(Math.max((scatterMatrixWidth - 50) / 2, 60));
         sm.render();
 
@@ -4512,9 +4536,17 @@
           "height",
           pcHeight - 30 + "px"
         );
+        d3.select(".scatter-matrix-control").classed(
+          "toggled",
+          isScatterToggled
+        );
 
         scatterChart = sm;
         updatePinnedScatterDot();
+
+        if (typeof window !== "undefined") {
+          window.__pendingScatterChartState = null;
+        }
 
         //return sm;
       }
@@ -4678,6 +4710,48 @@
         );
       }
 
+      function refreshSidebarControlLayout(forceLegendRebuild) {
+        if (forceLegendRebuild) {
+          d3.select("#legend").selectAll("*").remove();
+        }
+        if (
+          typeof drawLegend === "function" &&
+          d3.select("#legend svg").empty() &&
+          cleanedKeys4pc &&
+          Object.keys(cleanedKeys4pc).length > 0
+        ) {
+          drawLegend();
+        }
+
+        d3.selectAll("#legend text.legend-label").text(function (d) {
+          return d && d.name ? getDimLabel(d.name) : d;
+        });
+        d3.selectAll("#legend text.legend-check").style("fill", "#033899");
+
+        d3.selectAll("#inputSliders .inputSlider .inputSliderLabelText").text(
+          function () {
+            var parent = this.parentNode;
+            var dimName = parent ? parent.getAttribute("data-dim") : "";
+            return getDimLabel(dimName);
+          }
+        );
+
+        d3.selectAll("#inputSliders > .inputSlider input").each(function () {
+          if (!this.id) return;
+          var sliderInstance = $("#" + this.id).data("ionRangeSlider");
+          if (sliderInstance && typeof sliderInstance.update === "function") {
+            sliderInstance.update({});
+          }
+        });
+
+        if (typeof applySliderFontOverrides === "function") {
+          applySliderFontOverrides(_userSetting || {});
+        }
+        if (typeof updatePinnedSliderMarkers === "function") {
+          updatePinnedSliderMarkers();
+        }
+      }
+
       function clearRightChartFullscreenState() {
         var wasRightChartFullScreenToggled = isRightChartFullScreenToggled;
         isRightChartFullScreenToggled = false;
@@ -4742,6 +4816,7 @@
           reDrawPcChart();
           refreshScatterChartLayout();
         }
+        refreshSidebarControlLayout();
       }
 
       function applyScatterPlotVisibilitySetting(settingOrValue, options) {
@@ -4766,6 +4841,9 @@
         var radarChart = d3.select("#radarChart");
         if (radarChart.empty()) return;
 
+        if (typeof window !== "undefined") {
+          window.__pendingScatterChartState = captureScatterChartState();
+        }
         radarChart.selectAll("*").remove();
         addScatterChart();
       }
@@ -4785,12 +4863,10 @@
 
         var runRefresh = function () {
           pendingPcLayoutRefresh = null;
+          refreshSidebarControlLayout();
           if (graph) {
             reDrawPcChart();
             refreshScatterChartLayout();
-          }
-          if (typeof updatePinnedSliderMarkers === "function") {
-            updatePinnedSliderMarkers();
           }
         };
 
@@ -4808,6 +4884,7 @@
       $("#menu-toggle").off("click").prop("disabled", false).click(function (e) {
         isToggled = !isToggled;
         d3.select("#wrapper").classed("toggled", isToggled);
+        refreshSidebarControlLayout(!isToggled);
         schedulePcLayoutRefresh();
       });
 
@@ -6675,6 +6752,7 @@
         graph.on("render", function () {
           syncGraphDimensionTitles();
           updateLabels();
+          refreshSidebarControlLayout();
           if (typeof applySliderFontOverrides === "function") {
             applySliderFontOverrides(_userSetting || {});
           }
@@ -6686,6 +6764,8 @@
         graph.on("highlight.pinnedReference", drawPinnedReferenceLineInPc);
         graph.on("axesreorder.orderSync", function (orderedKeys) {
           syncDimOrderFromGraphAxes(orderedKeys);
+          refreshScatterChartLayout();
+          refreshSidebarControlLayout();
         });
 
         // Keep dimReversed setting in sync with native axis double-click flips.

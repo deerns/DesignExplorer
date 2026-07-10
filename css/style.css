@@ -4,101 +4,40 @@ body {
     font-size: 12px;
 }
 
-:root {
-    --de-sidebar-width: 250px;
-}
-
-#wrapper {
-    display: flex;
-    align-items: flex-start;
-    width: 100%;
-    padding-left: 0 !important;
-    overflow-x: hidden;
+#wrapper,
+#sidebar-wrapper,
+#page-content-wrapper {
     transition: none !important;
-}
-
-#sidebar-wrapper {
-    position: relative;
-    left: auto;
-    margin-left: 0;
-    flex: 0 0 var(--de-sidebar-width);
-    width: var(--de-sidebar-width);
-    height: calc(100vh - 90px);
-    max-height: calc(100vh - 90px);
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: visible;
-    background: #ffffff;
-    z-index: 3;
-    transition: none !important;
-}
-
-#wrapper.toggled #sidebar-wrapper {
-    flex-basis: 0;
-    width: 0;
-    overflow: hidden;
 }
 
 #page-content-wrapper {
-    position: relative;
-    width: auto;
-    min-width: 0;
-    flex: 1 1 auto;
-    padding: 15px;
     overflow-x: hidden;
-    z-index: 1;
-    transition: none !important;
-}
-
-#wrapper.toggled #page-content-wrapper {
-    margin-right: 0;
-}
-
-.sidebar-nav {
-    position: relative;
-    width: var(--de-sidebar-width);
-    max-width: 100%;
-}
-
-#chartLayoutRow {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
 }
 
 #PcChartWrapper,
-#ScChartWrapper {
-    float: none;
+#ScChartWrapper,
+#graph,
+#graph.parcoords {
     min-width: 0;
-    overflow: hidden;
-}
-
-#PcChartWrapper {
-    flex: 1 1 640px;
     max-width: 100%;
-}
-
-#ScChartWrapper {
-    flex: 0 1 320px;
-    max-width: 100%;
-}
-
-#chartLayoutRow.scatter-hidden #PcChartWrapper {
-    flex-basis: 100%;
 }
 
 #chartLayoutRow.scatter-hidden #ScChartWrapper {
     display: none !important;
 }
 
-#graph,
-#graph.parcoords,
 #radarChart {
-    max-width: 100%;
+    overflow: visible;
 }
 
-#radarChart {
-    overflow: hidden;
+#legend text.legend-label,
+#inputSliders .inputSliderLabelText {
+    fill: #222222;
+    color: #222222;
+}
+
+#legend text.legend-check {
+    fill: #033899;
 }
 
 .modal-content, #viewer2d, #viewer3d{
@@ -556,37 +495,6 @@ g.cell text {
     position: absolute;
     right: 50px;
     text-align: right;
-}
-
-@media (max-width: 991px) {
-    #wrapper {
-        flex-direction: column;
-    }
-
-    .sidebar-nav {
-        width: 100%;
-    }
-
-    #sidebar-wrapper {
-        width: 100%;
-        flex-basis: auto;
-        height: auto;
-        max-height: 40vh;
-    }
-
-    #wrapper.toggled #sidebar-wrapper {
-        display: none;
-    }
-
-    #page-content-wrapper {
-        width: 100%;
-        padding: 10px 5px;
-    }
-
-    #PcChartWrapper,
-    #ScChartWrapper {
-        flex-basis: 100%;
-    }
 }
 
 #vis .imgSwitch select{

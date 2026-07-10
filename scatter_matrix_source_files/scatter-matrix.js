@@ -80,6 +80,39 @@ ScatterMatrix.prototype.render = function () {
       }
     }
 
+    var graphOrder =
+      typeof window !== "undefined" &&
+      typeof window.getCurrentGraphDimensionOrder === "function"
+        ? window.getCurrentGraphDimensionOrder()
+        : typeof getCurrentGraphDimensionOrder === "function"
+        ? getCurrentGraphDimensionOrder()
+        : [];
+    if (Array.isArray(graphOrder) && graphOrder.length > 0) {
+      var numericLookup = {};
+      self.__numeric_variables.forEach(function (name) {
+        numericLookup[name] = true;
+      });
+
+      var orderedNumeric = [];
+      graphOrder.forEach(function (name) {
+        if (numericLookup[name]) {
+          orderedNumeric.push(name);
+          delete numericLookup[name];
+        }
+      });
+
+      self.__numeric_variables.forEach(function (name) {
+        if (numericLookup[name]) {
+          orderedNumeric.push(name);
+          delete numericLookup[name];
+        }
+      });
+
+      if (orderedNumeric.length > 0) {
+        self.__numeric_variables = orderedNumeric;
+      }
+    }
+
     var scid = 0;
     data.forEach(function (d) {
       d.scid = scid;
@@ -107,7 +140,17 @@ ScatterMatrix.prototype.render = function () {
       .attr("class", "scatter-matrix-drill-control");
 
     // shared control states
-    var to_include = self.__numeric_variables.slice(-3, -1);
+    var to_include = Array.isArray(self.__initial_selected_variables)
+      ? self.__initial_selected_variables.filter(function (name) {
+          return self.__numeric_variables.indexOf(name) >= 0;
+        })
+      : [];
+    if (to_include.length === 0) {
+      to_include = self.__numeric_variables.slice(-3, -1);
+    }
+    if (to_include.length === 0) {
+      to_include = self.__numeric_variables.slice(0, 1);
+    }
 
     var color_variable = undefined;
     var selected_colors = undefined;
