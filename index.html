@@ -4485,6 +4485,87 @@
         };
       }
 
+      function captureScatterLayoutState() {
+        var svgWrapper = d3.select("#radarChart .scatter-matrix-svg");
+        var innerSvg = svgWrapper.select("svg");
+        var control = d3.select("#radarChart .scatter-matrix-control");
+
+        if (svgWrapper.empty() || innerSvg.empty()) return null;
+
+        var wrapperWidth = parseFloat(svgWrapper.style("width"));
+        if (!isFinite(wrapperWidth) || wrapperWidth <= 0) {
+          wrapperWidth = svgWrapper.node().getBoundingClientRect().width;
+        }
+
+        var innerWidth = parseFloat(innerSvg.attr("width"));
+        var innerHeight = parseFloat(innerSvg.attr("height"));
+        var controlHeight = parseFloat(control.style("height"));
+        var cellSize =
+          scatterChart && isFinite(scatterChart.__cell_size)
+            ? scatterChart.__cell_size
+            : null;
+
+        return {
+          wrapperWidth: isFinite(wrapperWidth) ? wrapperWidth : null,
+          innerWidth: isFinite(innerWidth) ? innerWidth : null,
+          innerHeight: isFinite(innerHeight) ? innerHeight : null,
+          controlHeight: isFinite(controlHeight) ? controlHeight : null,
+          cellSize: isFinite(cellSize) ? cellSize : null,
+        };
+      }
+
+      function applyPendingScatterLayoutState() {
+        if (
+          typeof window === "undefined" ||
+          !window.__pendingScatterLayoutState
+        ) {
+          return false;
+        }
+
+        var state = window.__pendingScatterLayoutState;
+        var svgWrapper = d3.select("#radarChart .scatter-matrix-svg");
+        var innerSvg = svgWrapper.select("svg");
+        var control = d3.select("#radarChart .scatter-matrix-control");
+
+        if (svgWrapper.empty() || innerSvg.empty()) {
+          return false;
+        }
+
+        var containerWidth = getContainerContentWidth("#ScChartWrapper");
+        var wrapperWidth = state.wrapperWidth;
+        if (
+          isFinite(containerWidth) &&
+          containerWidth > 0 &&
+          isFinite(wrapperWidth) &&
+          wrapperWidth > containerWidth - 10
+        ) {
+          wrapperWidth = Math.max(containerWidth - 10, 180);
+        }
+
+        if (isFinite(wrapperWidth) && wrapperWidth > 0) {
+          svgWrapper.style("width", wrapperWidth + "px");
+        }
+        if (isFinite(state.innerWidth) && state.innerWidth > 0) {
+          innerSvg.attr("width", state.innerWidth);
+        }
+        if (isFinite(state.innerHeight) && state.innerHeight > 0) {
+          innerSvg.attr("height", state.innerHeight);
+        }
+        if (isFinite(state.controlHeight) && state.controlHeight > 0) {
+          control.style("height", state.controlHeight + "px");
+        }
+        if (
+          scatterChart &&
+          isFinite(state.cellSize) &&
+          typeof state.cellSize === "number"
+        ) {
+          scatterChart.__cell_size = state.cellSize;
+        }
+
+        window.__pendingScatterLayoutState = null;
+        return true;
+      }
+
       // add scatter chart
       function addScatterChart() {
         clearScatterSelectionState();
@@ -4505,6 +4586,18 @@
           );
         }
         scatterMatrixWidth = Math.max(scatterMatrixWidth, 180);
+        var preservedScatterLayout =
+          typeof window !== "undefined" ? window.__pendingScatterLayoutState : null;
+        if (
+          preservedScatterLayout &&
+          isFinite(preservedScatterLayout.wrapperWidth) &&
+          preservedScatterLayout.wrapperWidth > 0
+        ) {
+          scatterMatrixWidth = Math.min(
+            scatterMatrixWidth,
+            preservedScatterLayout.wrapperWidth
+          );
+        }
         var selectedData = getCurrentGraphDisplayData();
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
         if (
@@ -4515,7 +4608,18 @@
           sm.__initial_selected_variables =
             window.__pendingScatterChartState.selectedVariables.slice();
         }
-        sm.cellSize(Math.max((scatterMatrixWidth - 50) / 2, 60));
+        var scatterCellSize = Math.max((scatterMatrixWidth - 50) / 2, 60);
+        if (
+          preservedScatterLayout &&
+          isFinite(preservedScatterLayout.cellSize) &&
+          preservedScatterLayout.cellSize > 0
+        ) {
+          scatterCellSize = Math.min(
+            scatterCellSize,
+            preservedScatterLayout.cellSize
+          );
+        }
+        sm.cellSize(scatterCellSize);
         sm.render();
 
         // apply custom labels to scatter after render if available (with retry)
@@ -4542,6 +4646,7 @@
         );
 
         scatterChart = sm;
+        applyPendingScatterLayoutState();
         updatePinnedScatterDot();
 
         if (typeof window !== "undefined") {
@@ -4828,6 +4933,15 @@
         _userSetting = _userSetting || {};
 
         var hideScatterPlots = isScatterPlotsHidden(settingOrValue);
+        if (typeof window !== "undefined") {
+          if (hideScatterPlots && shouldShowScatterPlots()) {
+            window.__scatterLayoutBeforeHide = captureScatterLayoutState();
+          } else if (!hideScatterPlots && window.__scatterLayoutBeforeHide) {
+            window.__pendingScatterLayoutState =
+              window.__scatterLayoutBeforeHide;
+            window.__scatterLayoutBeforeHide = null;
+          }
+        }
         _userSetting.hideScatterPlots = hideScatterPlots;
 
         if (hideScatterPlots) {
@@ -4854,6 +4968,7 @@
           "toggled",
           isScatterToggled
         );
+        applyPendingScatterLayoutState();
         updateScatterChart();
         if (_userSetting && _userSetting.dimLabels) {
           refreshScatterLabelsWithRetry(0);
