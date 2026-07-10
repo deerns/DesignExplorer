@@ -24,17 +24,6 @@ body {
     padding-left: 12px;
 }
 
-#mainVerticalResizeBar::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 1px;
-    background: #d8dde6;
-    transform: translateY(-50%);
-}
-
 #mainVerticalResizeGrip {
     position: relative;
     z-index: 1;
