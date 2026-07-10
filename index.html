@@ -3409,7 +3409,7 @@
               </div>
               <div class="pull-right" id="vis">
                 <form>
-                  <label id="IMG1Label"
+                  <label id="IMG1Label" class="hidden"
                     ><input
                       type="checkbox"
                       class="toggleView"
@@ -3423,7 +3423,7 @@
 
                   <!-- show 2D image on load-->
 
-                  <label id="IMG2Label"
+                  <label id="IMG2Label" class="hidden"
                     ><input
                       type="checkbox"
                       class="toggleView"
@@ -3433,7 +3433,7 @@
                     />
                     <span id="IMG2LabelText">#2</span></label
                   >
-                  <label id="IMG3Label"
+                  <label id="IMG3Label" class="hidden"
                     ><input
                       type="checkbox"
                       class="toggleView"
@@ -3443,7 +3443,7 @@
                     />
                     <span id="IMG3LabelText">#3</span></label
                   >
-                  <label id="threeDLabel"
+                  <label id="threeDLabel" class="hidden"
                     ><input
                       type="radio"
                       class="toggleView"
@@ -5805,6 +5805,7 @@
       }
 
       function updateImageRadioLabels(imgCount) {
+        var hasPrimaryImg = imgCount > 0;
         var hasSecondImg = imgCount > 1;
         var hasThirdImg = imgCount > 2;
         var hasMultiple2d = hasSecondImg || hasThirdImg;
@@ -5815,6 +5816,10 @@
         set2dToggleInputMode(hasMultiple2d);
 
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
+        d3.select("#IMG1Label").classed("hidden", !hasPrimaryImg);
+        if (!hasPrimaryImg) {
+          d3.select("#IMG_1").property("checked", false);
+        }
 
         d3.select("#IMG2Label").classed("hidden", !hasSecondImg);
         if (hasSecondImg) {
@@ -5829,7 +5834,11 @@
           d3.select("#IMG_3").property("checked", false);
         }
 
-        if (currentView !== "3D" && !d3.select("#IMG_1").property("checked")) {
+        if (
+          hasPrimaryImg &&
+          currentView !== "3D" &&
+          !d3.select("#IMG_1").property("checked")
+        ) {
           var anyChecked = false;
           d3.selectAll("input.toggleView").filter(function () {
             return this.value && this.value.indexOf("2D_") === 0;
@@ -5879,12 +5888,14 @@
       }
 
       function refreshImageRadioTexts() {
+        var hasPrimaryImg = !d3.select("#IMG1Label").classed("hidden");
         var hasSecondImg = !d3.select("#IMG2Label").classed("hidden");
         var hasThirdImg = !d3.select("#IMG3Label").classed("hidden");
         set2dToggleInputMode(hasSecondImg || hasThirdImg);
         var defaultLabel1 = hasSecondImg || hasThirdImg ? "#1" : "2D";
         var defaultLabel2 = "#2";
         var defaultLabel3 = "#3";
+        d3.select("#IMG1Label").classed("hidden", !hasPrimaryImg);
         $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
         $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
         $("#IMG3LabelText").text(getImageLabel("IMG_3", defaultLabel3));
@@ -5976,6 +5987,7 @@
         updateImageRadioLabels(count);
 
         // hard set the DOM text from the latest inputs (fallback to defaults and effective labels)
+        var hasPrimaryImg = (imageLinkKeys.length || 0) > 0;
         var hasSecondImg = count > 1;
         var hasThirdImg = count > 2;
         var defaultLabel1 = hasSecondImg ? "#1" : "2D";
@@ -5992,6 +6004,7 @@
           : resolveImageLabelFromMap(effectiveLabels, "IMG_3", defaultLabel3);
 
         $("#IMG1LabelText").text(finalLabel1);
+        d3.select("#IMG1Label").classed("hidden", !hasPrimaryImg);
         if (hasSecondImg) {
           $("#IMG2LabelText").text(finalLabel2);
           d3.select("#IMG2Label").classed("hidden", false);
@@ -6012,6 +6025,7 @@
         var liveImg1 = ($("#img1LabelInput").val() || "").trim();
         var liveImg2 = ($("#img2LabelInput").val() || "").trim();
         var liveImg3 = ($("#img3LabelInput").val() || "").trim();
+        var hasPrimaryImg = imageLinkKeys.length > 0;
         var hasSecondImg = imageLinkKeys.length > 1;
         var hasThirdImg = imageLinkKeys.length > 2;
 
@@ -6033,6 +6047,7 @@
             : getImageLabel("IMG_3", defaultLabel3);
 
         $("#IMG1LabelText").text(label1);
+        d3.select("#IMG1Label").classed("hidden", !hasPrimaryImg);
 
         if (hasSecondImg) {
           d3.select("#IMG2Label").classed("hidden", false);
