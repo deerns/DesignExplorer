@@ -4922,17 +4922,11 @@
           if (showScatterWrapper) {
             if (
               typeof window !== "undefined" &&
-              window.__pendingScatterLayoutState
+              window.__scatterNeedsShowRefresh
             ) {
-              if (typeof window.requestAnimationFrame === "function") {
-                window.requestAnimationFrame(function () {
-                  refreshScatterChartLayout();
-                });
-              } else {
-                setTimeout(function () {
-                  refreshScatterChartLayout();
-                }, 0);
-              }
+              d3.select("#radarChart").selectAll("*").remove();
+              scatterChart = null;
+              scheduleScatterChartRefreshAfterShow();
             } else if (!syncExistingScatterChartState()) {
               refreshScatterChartLayout();
             }
@@ -4948,12 +4942,14 @@
         var hideScatterPlots = isScatterPlotsHidden(settingOrValue);
         if (typeof window !== "undefined") {
           if (hideScatterPlots && shouldShowScatterPlots()) {
-            window.__scatterLayoutBeforeHide = captureScatterLayoutState();
-          } else if (!hideScatterPlots && window.__scatterLayoutBeforeHide) {
-            window.__pendingScatterLayoutState =
-              window.__scatterLayoutBeforeHide;
-            window.__scatterLayoutBeforeHide = null;
+            window.__scatterStateBeforeHide = captureScatterChartState();
+          } else if (!hideScatterPlots && window.__scatterStateBeforeHide) {
+            window.__pendingScatterChartState = window.__scatterStateBeforeHide;
+            window.__scatterStateBeforeHide = null;
           }
+          window.__pendingScatterLayoutState = null;
+          window.__scatterLayoutBeforeHide = null;
+          window.__scatterNeedsShowRefresh = !hideScatterPlots;
         }
         _userSetting.hideScatterPlots = hideScatterPlots;
 
@@ -4965,6 +4961,48 @@
       }
 
       var pendingPcLayoutRefresh = null;
+      var pendingScatterShowRefresh = null;
+
+      function scheduleScatterChartRefreshAfterShow() {
+        if (!graph || !shouldShowScatterPlots()) return;
+
+        if (pendingScatterShowRefresh !== null) {
+          if (
+            typeof window !== "undefined" &&
+            typeof window.cancelAnimationFrame === "function"
+          ) {
+            window.cancelAnimationFrame(pendingScatterShowRefresh);
+          } else {
+            clearTimeout(pendingScatterShowRefresh);
+          }
+          pendingScatterShowRefresh = null;
+        }
+
+        d3.select("#radarChart").style("visibility", "hidden");
+
+        var runRefresh = function () {
+          pendingScatterShowRefresh = null;
+          if (!graph || !shouldShowScatterPlots()) return;
+          refreshScatterChartLayout();
+          d3.select("#radarChart").style("visibility", null);
+          if (typeof window !== "undefined") {
+            window.__scatterNeedsShowRefresh = false;
+          }
+        };
+
+        if (
+          typeof window !== "undefined" &&
+          typeof window.requestAnimationFrame === "function"
+        ) {
+          pendingScatterShowRefresh = window.requestAnimationFrame(function () {
+            pendingScatterShowRefresh = window.requestAnimationFrame(
+              runRefresh
+            );
+          });
+        } else {
+          pendingScatterShowRefresh = setTimeout(runRefresh, 30);
+        }
+      }
 
       function syncExistingScatterChartState() {
         if (
@@ -5002,7 +5040,10 @@
         var radarChart = d3.select("#radarChart");
         if (radarChart.empty()) return;
 
-        if (typeof window !== "undefined") {
+        if (
+          typeof window !== "undefined" &&
+          !window.__pendingScatterChartState
+        ) {
           window.__pendingScatterChartState = captureScatterChartState();
         }
         radarChart.selectAll("*").remove();
