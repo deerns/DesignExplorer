@@ -4920,7 +4920,20 @@
         if (!skipResize && graph) {
           reDrawPcChart();
           if (showScatterWrapper) {
-            if (!syncExistingScatterChartState()) {
+            if (
+              typeof window !== "undefined" &&
+              window.__pendingScatterLayoutState
+            ) {
+              if (typeof window.requestAnimationFrame === "function") {
+                window.requestAnimationFrame(function () {
+                  refreshScatterChartLayout();
+                });
+              } else {
+                setTimeout(function () {
+                  refreshScatterChartLayout();
+                }, 0);
+              }
+            } else if (!syncExistingScatterChartState()) {
               refreshScatterChartLayout();
             }
           }
@@ -4954,6 +4967,12 @@
       var pendingPcLayoutRefresh = null;
 
       function syncExistingScatterChartState() {
+        if (
+          typeof window !== "undefined" &&
+          window.__pendingScatterLayoutState
+        ) {
+          return false;
+        }
         if (!scatterChart) return false;
 
         var radarChart = d3.select("#radarChart");
