@@ -4814,7 +4814,11 @@
 
         if (!skipResize && graph) {
           reDrawPcChart();
-          refreshScatterChartLayout();
+          if (showScatterWrapper) {
+            if (!syncExistingScatterChartState()) {
+              refreshScatterChartLayout();
+            }
+          }
         }
         refreshSidebarControlLayout();
       }
@@ -4834,6 +4838,29 @@
       }
 
       var pendingPcLayoutRefresh = null;
+
+      function syncExistingScatterChartState() {
+        if (!scatterChart) return false;
+
+        var radarChart = d3.select("#radarChart");
+        if (
+          radarChart.empty() ||
+          radarChart.select(".scatter-matrix-container").empty()
+        ) {
+          return false;
+        }
+
+        d3.select(".scatter-matrix-control").classed(
+          "toggled",
+          isScatterToggled
+        );
+        updateScatterChart();
+        if (_userSetting && _userSetting.dimLabels) {
+          refreshScatterLabelsWithRetry(0);
+        }
+        updatePinnedScatterDot();
+        return true;
+      }
 
       function refreshScatterChartLayout() {
         if (!graph || !shouldShowScatterPlots()) return;
