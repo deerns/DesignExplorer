@@ -11219,6 +11219,13 @@
         }
 
         applyScatterPlotVisibilitySetting(userHideScatterPlots);
+        if (
+          isThereNewDimScales &&
+          typeof refreshScatterChartLayout === "function" &&
+          shouldShowScatterPlots()
+        ) {
+          refreshScatterChartLayout();
+        }
 
         refreshColorDrivenViews();
 

@@ -454,6 +454,53 @@ ScatterMatrix.prototype.__draw = function (
     // Get x and y scales for each numeric variable
     var x = {},
       y = {};
+
+    function getConfiguredDomain(trait) {
+      var domain = null;
+
+      if (typeof graph !== "undefined" && graph && typeof graph.dimensions === "function") {
+        var targetKey =
+          typeof resolveDimKey === "function" ? resolveDimKey(trait, graph) : trait;
+        var dims = graph.dimensions() || {};
+        var dim = dims[targetKey];
+        if (dim && dim.yscale && typeof dim.yscale.domain === "function") {
+          var graphDomain = dim.yscale.domain();
+          if (Array.isArray(graphDomain) && graphDomain.length >= 2) {
+            var graphMin = Number(graphDomain[0]);
+            var graphMax = Number(graphDomain[1]);
+            if (isFinite(graphMin) && isFinite(graphMax)) {
+              domain = [graphMin, graphMax];
+            }
+          }
+        }
+      }
+
+      if (
+        !domain &&
+        typeof _userSetting !== "undefined" &&
+        _userSetting &&
+        _userSetting.dimScales
+      ) {
+        var scale = _userSetting.dimScales[trait];
+        if (!scale && typeof normalizeDimKey === "function") {
+          var norm = normalizeDimKey(trait);
+          var match = Object.keys(_userSetting.dimScales || {}).find(function (k) {
+            return normalizeDimKey(k) === norm;
+          });
+          scale = match ? _userSetting.dimScales[match] : null;
+        }
+        if (Array.isArray(scale) && scale.length >= 2) {
+          var scaleMin = Number(scale[0]);
+          var scaleMax = Number(scale[1]);
+          if (isFinite(scaleMin) && isFinite(scaleMax)) {
+            domain = [scaleMin, scaleMax];
+          }
+        }
+      }
+
+      return domain;
+    }
+
     variables_to_draw.forEach(function (trait) {
       // Coerce values to numbers.
       data.forEach(function (d) {
@@ -463,7 +510,7 @@ ScatterMatrix.prototype.__draw = function (
       var value = function (d) {
           return d[trait];
         },
-        domain = [d3.min(data, value), d3.max(data, value)],
+        domain = getConfiguredDomain(trait) || [d3.min(data, value), d3.max(data, value)],
         range_x = [padding / 2, size - padding / 2],
         range_y = [padding / 2, size - padding / 2];
 
