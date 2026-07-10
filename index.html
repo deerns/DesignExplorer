@@ -852,7 +852,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20260709-1" rel="stylesheet" />
+    <link href="css/style.css?v=20260710-1" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -913,7 +913,7 @@
     <script src="./js/divgrid.js"></script>
     <!-- Design Explorer Scripts -->
     <script
-      src="./js/designExplorer.js?v=20260708-2"
+      src="./js/designExplorer.js?v=20260710-1"
       type="text/javascript"
       language="javascript"
     ></script>
@@ -3348,6 +3348,14 @@
               </div>
             </div>
           </div>
+          <div class="col-lg-12" id="mainVerticalResizeBar">
+            <button
+              type="button"
+              id="mainVerticalResizeGrip"
+              title="Sleep om de bovenste grafieken hoger of lager te maken"
+              aria-label="Resize top charts vertically"
+            ></button>
+          </div>
           <div class="row-fluid col-lg-12">
             <!-- Zoomed div for zoomed in areas -->
             <div class="col-lg-9" id="zoomedArea" style="height: 0px">
@@ -4827,6 +4835,227 @@
         );
       }
 
+      function syncBottomPanelHeights() {
+        var zoomedAreaHeight = parseFloat(
+          d3.select("#zoomedArea").style("height")
+        );
+        var hasZoomedArea = isFinite(zoomedAreaHeight) && zoomedAreaHeight > 1;
+
+        if (hasZoomedArea) {
+          d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
+            "height",
+            zoomedHeight + "px"
+          );
+        } else {
+          d3.select("#thumbnails-btm_container").style(
+            "height",
+            zoomedHeight + "px"
+          );
+        }
+      }
+
+      function syncMainVerticalResizeHandleState() {
+        var resizeBar = d3.select("#mainVerticalResizeBar");
+        var resizeGrip = d3.select("#mainVerticalResizeGrip");
+        if (resizeBar.empty() || resizeGrip.empty()) return;
+
+        var graphHeightValue = parseFloat(d3.select("#graph").style("height"));
+        var isDisabled =
+          !graph ||
+          !Array.isArray(cleanedData) ||
+          cleanedData.length === 0 ||
+          isLeftChartFullScreenToggled ||
+          !isFinite(graphHeightValue) ||
+          graphHeightValue <= 1;
+
+        resizeBar.classed("is-disabled", isDisabled);
+        resizeGrip
+          .property("disabled", isDisabled)
+          .attr("aria-disabled", isDisabled ? "true" : "false");
+      }
+
+      function applyMainVerticalSplitLayout(options) {
+        options = options || {};
+        calWidthAndHeight();
+
+        if (graph) {
+          var targetWidth = getPcChartBaseWidth();
+          var targetHeight = isLeftChartFullScreenToggled
+            ? (windowHeight - 85) * 0.5 - 50
+            : graphHeight;
+
+          resizePcChart(targetWidth, targetHeight, {
+            immediate: !!options.immediate,
+          });
+        } else {
+          d3.select("#graph").style("height", graphHeight + "px");
+        }
+
+        syncBottomPanelHeights();
+
+        if (shouldShowScatterPlots()) {
+          if (options.skipScatterRefresh) {
+            syncExistingScatterChartState();
+          } else {
+            refreshScatterChartLayout();
+          }
+        }
+
+        refreshSidebarControlLayout();
+        syncMainVerticalResizeHandleState();
+      }
+
+      var pendingMainVerticalResizeFrame = null;
+      var pendingMainVerticalResizeHeight = null;
+
+      function applyPendingMainVerticalDragLayout(skipScatterRefresh) {
+        if (pendingMainVerticalResizeHeight === null) {
+          return false;
+        }
+
+        if (pendingMainVerticalResizeFrame !== null) {
+          if (
+            typeof window !== "undefined" &&
+            typeof window.cancelAnimationFrame === "function"
+          ) {
+            window.cancelAnimationFrame(pendingMainVerticalResizeFrame);
+          } else {
+            clearTimeout(pendingMainVerticalResizeFrame);
+          }
+          pendingMainVerticalResizeFrame = null;
+        }
+
+        var nextTopHeight = pendingMainVerticalResizeHeight;
+        pendingMainVerticalResizeHeight = null;
+        setMainVerticalLayoutTopHeight(nextTopHeight);
+        applyMainVerticalSplitLayout({
+          immediate: true,
+          skipScatterRefresh: !!skipScatterRefresh,
+        });
+        return true;
+      }
+
+      function scheduleMainVerticalDragLayout(nextTopHeight) {
+        pendingMainVerticalResizeHeight = nextTopHeight;
+        if (pendingMainVerticalResizeFrame !== null) {
+          return;
+        }
+
+        var runLayout = function () {
+          pendingMainVerticalResizeFrame = null;
+          applyPendingMainVerticalDragLayout(true);
+        };
+
+        if (
+          typeof window !== "undefined" &&
+          typeof window.requestAnimationFrame === "function"
+        ) {
+          pendingMainVerticalResizeFrame =
+            window.requestAnimationFrame(runLayout);
+        } else {
+          pendingMainVerticalResizeFrame = setTimeout(runLayout, 0);
+        }
+      }
+
+      function initMainVerticalResizeHandle() {
+        var resizeGrip = document.getElementById("mainVerticalResizeGrip");
+        if (!resizeGrip || resizeGrip.__mainVerticalResizeBound) {
+          return;
+        }
+
+        function isResizeDisabled() {
+          return resizeGrip.disabled;
+        }
+
+        function getClientY(event) {
+          if (event.touches && event.touches.length > 0) {
+            return event.touches[0].clientY;
+          }
+          if (event.changedTouches && event.changedTouches.length > 0) {
+            return event.changedTouches[0].clientY;
+          }
+          return event.clientY;
+        }
+
+        function stepMainVerticalLayout(step) {
+          var nextTopHeight = getMainVerticalLayoutTopHeight() + step;
+          setMainVerticalLayoutTopHeight(nextTopHeight);
+          applyMainVerticalSplitLayout({ immediate: true });
+        }
+
+        function startDrag(startEvent) {
+          if (isResizeDisabled()) {
+            return;
+          }
+
+          var dragState = {
+            startY: getClientY(startEvent),
+            startTopHeight: getMainVerticalLayoutTopHeight(),
+          };
+
+          document.body.classList.add("is-main-vertical-resizing");
+
+          function handleMove(moveEvent) {
+            if (moveEvent.cancelable) {
+              moveEvent.preventDefault();
+            }
+            var deltaY = getClientY(moveEvent) - dragState.startY;
+            scheduleMainVerticalDragLayout(dragState.startTopHeight + deltaY);
+          }
+
+          function stopDrag() {
+            document.body.classList.remove("is-main-vertical-resizing");
+            document.removeEventListener("mousemove", handleMove);
+            document.removeEventListener("mouseup", stopDrag);
+            document.removeEventListener("touchmove", handleMove);
+            document.removeEventListener("touchend", stopDrag);
+            document.removeEventListener("touchcancel", stopDrag);
+
+            if (!applyPendingMainVerticalDragLayout(false)) {
+              applyMainVerticalSplitLayout({ immediate: true });
+            }
+          }
+
+          document.addEventListener("mousemove", handleMove);
+          document.addEventListener("mouseup", stopDrag);
+          document.addEventListener("touchmove", handleMove, { passive: false });
+          document.addEventListener("touchend", stopDrag);
+          document.addEventListener("touchcancel", stopDrag);
+        }
+
+        resizeGrip.addEventListener("mousedown", function (event) {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          startDrag(event);
+        });
+
+        resizeGrip.addEventListener(
+          "touchstart",
+          function (event) {
+            if (event.cancelable) {
+              event.preventDefault();
+            }
+            startDrag(event);
+          },
+          { passive: false }
+        );
+
+        resizeGrip.addEventListener("keydown", function (event) {
+          if (isResizeDisabled()) return;
+
+          if (event.key === "ArrowUp" || event.keyCode === 38) {
+            event.preventDefault();
+            stepMainVerticalLayout(-20);
+          } else if (event.key === "ArrowDown" || event.keyCode === 40) {
+            event.preventDefault();
+            stepMainVerticalLayout(20);
+          }
+        });
+
+        resizeGrip.__mainVerticalResizeBound = true;
+        syncMainVerticalResizeHandleState();
+      }
+
       function refreshSidebarControlLayout(forceLegendRebuild) {
         if (forceLegendRebuild) {
           d3.select("#legend").selectAll("*").remove();
@@ -5160,6 +5389,7 @@
             zoomedHeight + "px"
           );
         }
+        syncMainVerticalResizeHandleState();
       });
 
       function resizeScChart(newWidth, newHeight) {
@@ -5390,6 +5620,7 @@
             zoomedHeight + "px"
           );
         }
+        syncMainVerticalResizeHandleState();
       });
     </script>
 
@@ -6772,22 +7003,8 @@
         }
 
         resizePcChart(newGraphWidth, newGraphHeight);
-
-        var zoomedAreaHeight = d3
-          .select("#zoomedArea")
-          .style("height")
-          .replace("px", "");
-        if (zoomedAreaHeight > 1) {
-          d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
-            "height",
-            zoomedHeight + "px"
-          );
-        } else {
-          d3.select("#thumbnails-btm_container").style(
-            "height",
-            zoomedHeight + "px"
-          );
-        }
+        syncBottomPanelHeights();
+        syncMainVerticalResizeHandleState();
         //console.log(graphHeight+"x"+zoomedHeight);
       }
 
@@ -7558,14 +7775,24 @@
     <!-- set up events between charts and graphs -->
     <script type="text/javascript">
       // change the chart size;
-      function resizePcChart(newWidth, newHeight) {
+      function resizePcChart(newWidth, newHeight, options) {
+        options = options || {};
         if (!graph) return;
         //resize #graph
-        d3.select("#graph.parcoords")
-          .transition()
-          .duration(500)
-          .style("height", newHeight + "px")
-          .style("width", newWidth + "px");
+        var graphSelection = d3.select("#graph.parcoords");
+        graphSelection.interrupt();
+
+        if (options.immediate) {
+          graphSelection
+            .style("height", newHeight + "px")
+            .style("width", newWidth + "px");
+        } else {
+          graphSelection
+            .transition()
+            .duration(500)
+            .style("height", newHeight + "px")
+            .style("width", newWidth + "px");
+        }
 
         //redraw pcChart
         var highlightedData = graph.highlighted();
@@ -7811,6 +8038,7 @@
               );
             }
           }
+          syncMainVerticalResizeHandleState();
         });
       }
     </script>
@@ -7875,6 +8103,7 @@
         // set up events between graphs
         setupEvents();
         updateViewer2dCompareState(null);
+        syncMainVerticalResizeHandleState();
 
         //lazy load
         // $(function() {
@@ -7975,6 +8204,8 @@
           resetScatterSelectionAction();
         });
         updateScatterSelectionActionButtons();
+        initMainVerticalResizeHandle();
+        syncMainVerticalResizeHandleState();
 
         var fileInput = document.getElementById("csv-file");
 

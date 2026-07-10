@@ -38,13 +38,85 @@ function unloadPageContent() {
   d3.select("div#viewer3d").selectAll("*").remove(); //remove any object inside 3D viewer
 }
 
+var mainVerticalLayoutState = {
+  topRatio: 1 / 3,
+  topControlsHeight: 24,
+  minGraphHeight: 120,
+  minBottomHeight: 150,
+};
+
+function getMainVerticalLayoutBounds(totalHeight) {
+  var resolvedTotalHeight =
+    isFinite(totalHeight) && totalHeight > 0
+      ? totalHeight
+      : Math.max((window.innerHeight || 0) - 115, 0);
+  var minTopHeight =
+    mainVerticalLayoutState.topControlsHeight +
+    mainVerticalLayoutState.minGraphHeight;
+  var minBottomHeight = mainVerticalLayoutState.minBottomHeight;
+
+  if (minTopHeight + minBottomHeight > resolvedTotalHeight) {
+    minBottomHeight = Math.max(
+      100,
+      Math.min(minBottomHeight, resolvedTotalHeight * 0.35)
+    );
+    minTopHeight = Math.max(
+      mainVerticalLayoutState.topControlsHeight + 80,
+      resolvedTotalHeight - minBottomHeight
+    );
+  }
+
+  return {
+    minTop: minTopHeight,
+    maxTop: Math.max(minTopHeight, resolvedTotalHeight - minBottomHeight),
+  };
+}
+
+function getMainVerticalLayoutTopHeight() {
+  return (
+    (isFinite(graphHeight) ? graphHeight : 0) +
+    mainVerticalLayoutState.topControlsHeight
+  );
+}
+
+function setMainVerticalLayoutTopHeight(nextTopHeight) {
+  var totalHeight = Math.max((window.innerHeight || 0) - 115, 0);
+  var bounds = getMainVerticalLayoutBounds(totalHeight);
+  var resolvedTopHeight = Math.max(
+    bounds.minTop,
+    Math.min(bounds.maxTop, nextTopHeight)
+  );
+
+  mainVerticalLayoutState.topRatio =
+    totalHeight > 0 ? resolvedTopHeight / totalHeight : mainVerticalLayoutState.topRatio;
+
+  return resolvedTopHeight;
+}
+
 function calWidthAndHeight() {
-  (windowWidth = window.innerWidth),
-    (windowHeight = window.innerHeight),
-    (cleanHeight = windowHeight - 115), // 2
-    (cleanWidth = windowWidth - 100),
-    (graphHeight = cleanHeight / 3 - 24), //remove 22+2 top tool button
-    (zoomedHeight = (cleanHeight * 2) / 3); //remove 22+2 top tool button
+  windowWidth = window.innerWidth;
+  windowHeight = window.innerHeight;
+  cleanHeight = windowHeight - 115; // 2
+  cleanWidth = windowWidth - 100;
+
+  var bounds = getMainVerticalLayoutBounds(cleanHeight);
+  var desiredTopHeight = cleanHeight * mainVerticalLayoutState.topRatio;
+  if (!isFinite(desiredTopHeight) || desiredTopHeight <= 0) {
+    desiredTopHeight = cleanHeight / 3;
+  }
+
+  var topHeight = Math.max(
+    bounds.minTop,
+    Math.min(bounds.maxTop, desiredTopHeight)
+  );
+
+  mainVerticalLayoutState.topRatio =
+    cleanHeight > 0 ? topHeight / cleanHeight : 1 / 3;
+  graphHeight = Math.max(
+    topHeight - mainVerticalLayoutState.topControlsHeight,
+    80
+  ); // remove 22+2 top tool button
+  zoomedHeight = Math.max(cleanHeight - topHeight, 0);
 }
 
 function overwriteInitialGlobalValues() {

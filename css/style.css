@@ -14,6 +14,72 @@ body {
     overflow-x: hidden;
 }
 
+#mainVerticalResizeBar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    height: 18px;
+    margin: 8px 0 4px;
+    padding-left: 12px;
+}
+
+#mainVerticalResizeBar::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: #d8dde6;
+    transform: translateY(-50%);
+}
+
+#mainVerticalResizeGrip {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 46px;
+    height: 10px;
+    padding: 0;
+    border: 1px solid #b7c3d6;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    cursor: row-resize;
+    touch-action: none;
+    appearance: none;
+}
+
+#mainVerticalResizeGrip:focus {
+    outline: 2px solid rgba(3, 56, 153, 0.35);
+    outline-offset: 2px;
+}
+
+#mainVerticalResizeGrip::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 16px;
+    height: 2px;
+    border-radius: 999px;
+    background: #7f8da3;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 -4px 0 #7f8da3, 0 4px 0 #7f8da3;
+}
+
+#mainVerticalResizeBar.is-disabled #mainVerticalResizeGrip {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+body.is-main-vertical-resizing,
+body.is-main-vertical-resizing * {
+    cursor: row-resize !important;
+    user-select: none;
+}
+
 #PcChartWrapper,
 #ScChartWrapper,
 #graph,
