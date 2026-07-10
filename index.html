@@ -3153,7 +3153,7 @@
         <div class="container-fluid">
           <!--Here starts the Charts row-->
           <div class="col-lg-12">
-            <div class="row">
+            <div class="row" id="chartLayoutRow">
               <!--here starts the parallel coordinates row-->
               <div id="PcChartWrapper" class="col-lg-9">
                 <div class="row">
@@ -4477,9 +4477,21 @@
           .select("#radarChart")
           .style("width")
           .replace("px", "");
+        var scatterContainerWidth = parseFloat(rightChartWidth);
+        if (!isFinite(scatterContainerWidth) || scatterContainerWidth <= 0) {
+          scatterContainerWidth = getContainerContentWidth("#ScChartWrapper");
+        }
+        var scatterMatrixWidth = parseFloat(pcHeight) - 10;
+        if (isFinite(scatterContainerWidth) && scatterContainerWidth > 0) {
+          scatterMatrixWidth = Math.min(
+            scatterMatrixWidth,
+            scatterContainerWidth - 10
+          );
+        }
+        scatterMatrixWidth = Math.max(scatterMatrixWidth, 180);
         var selectedData = getCurrentGraphDisplayData();
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
-        sm.cellSize((pcHeight - 60) / 2);
+        sm.cellSize(Math.max((scatterMatrixWidth - 50) / 2, 60));
         sm.render();
 
         // apply custom labels to scatter after render if available (with retry)
@@ -4491,7 +4503,10 @@
 
         // adjust the chart style
         //var chartWidth = d3.select(".scatter-matrix-svg svg").style("width").replace("px", "");
-        d3.select(".scatter-matrix-svg").style("width", pcHeight - 10 + "px");
+        d3.select(".scatter-matrix-svg").style(
+          "width",
+          scatterMatrixWidth + "px"
+        );
 
         d3.select(".scatter-matrix-control").style(
           "height",
@@ -4615,7 +4630,39 @@
         return normalizeBooleanSetting(value, false);
       }
 
+      function getContainerContentWidth(selector) {
+        var node = d3.select(selector).node();
+        if (
+          !node ||
+          typeof node.getBoundingClientRect !== "function" ||
+          typeof window === "undefined"
+        ) {
+          return null;
+        }
+
+        var bounds = node.getBoundingClientRect();
+        var computedStyle =
+          typeof window.getComputedStyle === "function"
+            ? window.getComputedStyle(node)
+            : null;
+        var paddingLeft = computedStyle
+          ? parseFloat(computedStyle.paddingLeft) || 0
+          : 0;
+        var paddingRight = computedStyle
+          ? parseFloat(computedStyle.paddingRight) || 0
+          : 0;
+        var availableWidth = bounds.width - paddingLeft - paddingRight;
+
+        return isFinite(availableWidth) && availableWidth > 0
+          ? availableWidth
+          : null;
+      }
+
       function getPcChartBaseWidth() {
+        var measuredWidth = getContainerContentWidth("#PcChartWrapper");
+        if (measuredWidth !== null) {
+          return Math.max(measuredWidth - 20, 280);
+        }
         if (windowWidth < 1200) {
           return windowWidth - 30;
         }
@@ -4666,11 +4713,16 @@
         var hideScatterPlots = isScatterPlotsHidden(_userSetting);
         var showScatterWrapper =
           !hideScatterPlots && !isLeftChartFullScreenToggled;
+        var chartLayoutRow = d3.select("#chartLayoutRow");
 
         d3.select("#ScChartWrapper").style(
           "display",
           showScatterWrapper ? "block" : "none"
         );
+
+        if (!chartLayoutRow.empty()) {
+          chartLayoutRow.classed("scatter-hidden", !showScatterWrapper);
+        }
 
         d3.select("#PcChartWrapper")
           .classed("col-lg-9", showScatterWrapper)
@@ -4700,6 +4752,36 @@
         syncScatterPlotLayout(!!options.skipResize);
       }
 
+      var pendingPcLayoutRefresh = null;
+
+      function schedulePcLayoutRefresh() {
+        if (pendingPcLayoutRefresh !== null) {
+          clearTimeout(pendingPcLayoutRefresh);
+          pendingPcLayoutRefresh = null;
+        }
+
+        if (
+          typeof window !== "undefined" &&
+          typeof window.requestAnimationFrame === "function"
+        ) {
+          window.requestAnimationFrame(function () {
+            reDrawPcChart();
+          });
+        } else {
+          setTimeout(function () {
+            reDrawPcChart();
+          }, 0);
+        }
+
+        pendingPcLayoutRefresh = setTimeout(function () {
+          pendingPcLayoutRefresh = null;
+          reDrawPcChart();
+          if (typeof updatePinnedSliderMarkers === "function") {
+            updatePinnedSliderMarkers();
+          }
+        }, 520);
+      }
+
       // side bar for sliders
       $("#menu-toggle").off("click").prop("disabled", false).click(function (e) {
         isToggled = !isToggled;
@@ -4707,7 +4789,7 @@
           .classed("toggled", isToggled)
           .transition()
           .duration(300); //length of toggle animation
-        setTimeout(updatePinnedSliderMarkers, 320);
+        schedulePcLayoutRefresh();
       });
 
       $("#scatter-menu-toggle, .scatter-matrix-control").click(function (e) {
