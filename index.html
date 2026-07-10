@@ -4952,16 +4952,31 @@
         _userSetting = _userSetting || {};
 
         var hideScatterPlots = isScatterPlotsHidden(settingOrValue);
+        var scatterWrapper = d3.select("#ScChartWrapper");
+        var wasScatterWrapperVisible =
+          !scatterWrapper.empty() &&
+          scatterWrapper.style("display") !== "none";
+        var wasShowingScatterPlots =
+          wasScatterWrapperVisible && !isLeftChartFullScreenToggled;
+        var wasScatterHidden = !wasShowingScatterPlots;
+        var willShowScatterPlots =
+          !hideScatterPlots && !isLeftChartFullScreenToggled;
+
         if (typeof window !== "undefined") {
-          if (hideScatterPlots && shouldShowScatterPlots()) {
+          if (hideScatterPlots && wasShowingScatterPlots) {
             window.__scatterStateBeforeHide = captureScatterChartState();
-          } else if (!hideScatterPlots && window.__scatterStateBeforeHide) {
+          } else if (
+            willShowScatterPlots &&
+            wasScatterHidden &&
+            window.__scatterStateBeforeHide
+          ) {
             window.__pendingScatterChartState = window.__scatterStateBeforeHide;
             window.__scatterStateBeforeHide = null;
           }
           window.__pendingScatterLayoutState = null;
           window.__scatterLayoutBeforeHide = null;
-          window.__scatterNeedsShowRefresh = !hideScatterPlots;
+          window.__scatterNeedsShowRefresh =
+            wasScatterHidden && willShowScatterPlots;
         }
         _userSetting.hideScatterPlots = hideScatterPlots;
 
