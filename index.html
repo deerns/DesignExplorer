@@ -640,7 +640,8 @@
       }
 
       #mainVerticalResizeBar.is-disabled #mainVerticalResizeGrip,
-      #mainVerticalResizeGrip:disabled {
+      #mainVerticalResizeGrip:disabled,
+      #mainVerticalResizeGrip[aria-disabled="true"] {
         cursor: not-allowed;
         opacity: 0.45;
       }
@@ -3403,8 +3404,8 @@
             <button
               type="button"
               id="mainVerticalResizeGrip"
-              title="Sleep om de bovenste grafieken hoger of lager te maken"
-              aria-label="Resize top charts vertically"
+              title="Drag to resize the top charts"
+              aria-label="Drag to resize the top charts vertically"
             ></button>
           </div>
           <div class="row-fluid col-lg-12">
@@ -4905,36 +4906,42 @@
         }
       }
 
+      function getMainVerticalResizeDisabledReason() {
+        if (!graph || !Array.isArray(cleanedData) || cleanedData.length === 0) {
+          return "Load data to enable top chart resizing.";
+        }
+
+        if (isLeftChartFullScreenToggled) {
+          return "Top chart resizing is unavailable while the left chart is in full screen mode.";
+        }
+
+        var graphSelection = d3.select("#graph");
+        if (!graphSelection.empty() && !graphSelection.classed("in")) {
+          return "Expand the parallel coordinates chart to resize this area.";
+        }
+
+        return "";
+      }
+
       function syncMainVerticalResizeHandleState() {
         var resizeBar = d3.select("#mainVerticalResizeBar");
         var resizeGrip = d3.select("#mainVerticalResizeGrip");
         if (resizeBar.empty() || resizeGrip.empty()) return;
 
-        var graphSelection = d3.select("#graph");
-        var graphNode = graphSelection.node();
-        var graphHeightValue = parseFloat(graphSelection.style("height"));
-        if (
-          !isFinite(graphHeightValue) &&
-          graphNode &&
-          typeof graphNode.getBoundingClientRect === "function"
-        ) {
-          graphHeightValue = graphNode.getBoundingClientRect().height;
-        }
-        if (!isFinite(graphHeightValue) && isFinite(graphHeight)) {
-          graphHeightValue = graphHeight;
-        }
-        var isDisabled =
-          !graph ||
-          !Array.isArray(cleanedData) ||
-          cleanedData.length === 0 ||
-          isLeftChartFullScreenToggled ||
-          !isFinite(graphHeightValue) ||
-          graphHeightValue <= 1;
+        var disabledReason = getMainVerticalResizeDisabledReason();
+        var isDisabled = disabledReason !== "";
+        var enabledTitle = "Drag to resize the top charts";
+        var enabledAriaLabel = "Drag to resize the top charts vertically";
 
         resizeBar.classed("is-disabled", isDisabled);
         resizeGrip
-          .property("disabled", isDisabled)
-          .attr("aria-disabled", isDisabled ? "true" : "false");
+          .attr("aria-disabled", isDisabled ? "true" : "false")
+          .attr("tabindex", isDisabled ? "-1" : "0")
+          .attr("title", isDisabled ? disabledReason : enabledTitle)
+          .attr(
+            "aria-label",
+            isDisabled ? disabledReason : enabledAriaLabel
+          );
       }
 
       function applyMainVerticalSplitLayout(options) {
@@ -5027,7 +5034,7 @@
         }
 
         function isResizeDisabled() {
-          return resizeGrip.disabled;
+          return getMainVerticalResizeDisabledReason() !== "";
         }
 
         function getClientY(event) {
