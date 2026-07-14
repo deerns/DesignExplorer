@@ -500,11 +500,20 @@ a#copyRightButton {
     background-color: white;
 }
 
+#chartLayoutRow.rightChartFullScreenToggled {
+    display: block;
+}
+
+#chartLayoutRow.rightChartFullScreenToggled > #PcChartWrapper {
+    display: none;
+}
+
 #ScChartWrapper.rightChartFullScreenToggled{
-    width: 75%;
-    left: 15px;
+    width: 100%;
+    left: auto;
     z-index: 9;
-    position: absolute;
+    position: relative;
+    float: none;
 }
 
 #ScChartWrapper .chartSide.rightChartFullScreenToggled,
@@ -512,20 +521,68 @@ a#copyRightButton {
     width: 100%;
     float: left;
 }
+
+#bottomContentLayout.rightChartFullScreenToggled {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    clear: both;
+}
+
 #zoomedArea.rightChartFullScreenToggled{
-    display: none;
+    display: block;
     z-index: 1;
+    width: 100%;
+    float: none;
+    order: 1;
 }
 #PcChartWrapper.rightChartFullScreenToggled{
-    position: absolute;
+    display: none;
 }
 #thumbnails-btm_container.rightChartFullScreenToggled{
-    width: 25%;
-    height: calc(100% - 70px);
+    position: relative;
+    right: auto;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    float: none;
+    order: 2;
+}
+
+#thumbnails-btm_container #thumbnails-btm.rightChartFullScreenToggled{
+    width: 100%;
+}
+
+#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container,
+#bottomContentLayout.rightChartFullScreenToggled #zoomedArea,
+#bottomContentLayout.rightChartFullScreenToggled #tbContainer {
+    margin-top: 0;
+}
+
+#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight,
+#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight.drawer-open,
+#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight.drawer-pinned {
+    position: relative;
+    right: auto;
+    width: 100%;
+    transform: none;
+    overflow: hidden !important;
+}
+
+#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight #thumbnailsPullTab {
+    display: none !important;
 }
 
 #ScChartWrapper #copyRightButton.rightChartFullScreenToggled{
     width: 85% !important;
+}
+
+#tbContainer.rightChartFullScreenToggled {
+    width: 100%;
+    float: none;
+    order: 3;
+    padding-left: 0;
+    padding-right: 0;
 }
 
 g.cell text {

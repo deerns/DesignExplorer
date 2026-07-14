@@ -3414,7 +3414,7 @@
               aria-label="Drag to resize the top charts vertically"
             ></button>
           </div>
-          <div class="row-fluid col-lg-12">
+          <div class="row-fluid col-lg-12" id="bottomContentLayout">
             <!-- Zoomed div for zoomed in areas -->
             <div class="col-lg-9" id="zoomedArea" style="height: 0px">
               <div
@@ -5023,6 +5023,21 @@
         );
         var hasZoomedArea = isFinite(zoomedAreaHeight) && zoomedAreaHeight > 1;
 
+        if (isRightChartFullScreenToggled) {
+          if (hasZoomedArea) {
+            d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
+              "height",
+              cleanHeight + "px"
+            );
+          } else {
+            d3.select("#thumbnails-btm_container").style(
+              "height",
+              cleanHeight + "px"
+            );
+          }
+          return;
+        }
+
         if (hasZoomedArea) {
           d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
             "height",
@@ -5053,6 +5068,11 @@
         var resizeBar = d3.select("#mainVerticalResizeBar");
         var resizeGrip = d3.select("#mainVerticalResizeGrip");
         if (resizeBar.empty() || resizeGrip.empty()) return;
+
+        resizeBar.style("display", isRightChartFullScreenToggled ? "none" : null);
+        if (isRightChartFullScreenToggled) {
+          return;
+        }
 
         var disabledReason = getMainVerticalResizeDisabledReason();
         var isDisabled = disabledReason !== "";
@@ -5292,11 +5312,12 @@
         }
       }
 
-      function clearRightChartFullscreenState() {
-        var wasRightChartFullScreenToggled = isRightChartFullScreenToggled;
-        isRightChartFullScreenToggled = false;
+      function setRightChartFullscreenState(nextState) {
+        isRightChartFullScreenToggled = !!nextState;
+
         d3.selectAll(
-          "#ScChartWrapper," +
+          "#chartLayoutRow," +
+            "#ScChartWrapper," +
             ".chartSide," +
             "#ScChartWrapper .row-fluid," +
             ".thumbnailSide," +
@@ -5305,28 +5326,58 @@
             " #PcChartWrapper, " +
             "#thumbnails-btm_container, " +
             "#thumbnails-btm_container #thumbnails-btm, " +
-            " #zoomedArea"
-        ).classed("rightChartFullScreenToggled", false);
+            " #zoomedArea, " +
+            "#tbContainer, " +
+            "#bottomContentLayout"
+        ).classed("rightChartFullScreenToggled", isRightChartFullScreenToggled);
 
-        if (!wasRightChartFullScreenToggled || isLeftChartFullScreenToggled) {
-          return;
+        if (isRightChartFullScreenToggled) {
+          if (
+            graph &&
+            typeof graph.highlighted === "function" &&
+            graph.highlighted().length > 0
+          ) {
+            d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
+              "height",
+              cleanHeight + "px"
+            );
+          } else {
+            d3.select("#thumbnails-btm_container").style(
+              "height",
+              cleanHeight + "px"
+            );
+          }
+        } else if (!isLeftChartFullScreenToggled) {
+          if (
+            graph &&
+            typeof graph.highlighted === "function" &&
+            graph.highlighted().length > 0
+          ) {
+            d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
+              "height",
+              zoomedHeight + "px"
+            );
+          } else {
+            d3.select("#thumbnails-btm_container").style(
+              "height",
+              zoomedHeight + "px"
+            );
+          }
         }
+
+        syncMainVerticalResizeHandleState();
 
         if (
           graph &&
-          typeof graph.highlighted === "function" &&
-          graph.highlighted().length > 0
+          typeof refreshScatterChartLayout === "function" &&
+          shouldShowScatterPlots()
         ) {
-          d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
-            "height",
-            zoomedHeight + "px"
-          );
-        } else {
-          d3.select("#thumbnails-btm_container").style(
-            "height",
-            zoomedHeight + "px"
-          );
+          refreshScatterChartLayout();
         }
+      }
+
+      function clearRightChartFullscreenState() {
+        setRightChartFullscreenState(false);
       }
 
       function syncScatterPlotLayout(skipResize) {
@@ -5556,34 +5607,7 @@
         .replace("px", "");
 
       $("#scatter-fullscreen-toggle").click(function (e) {
-        isRightChartFullScreenToggled = !isRightChartFullScreenToggled;
-
-        d3.selectAll(
-          "#ScChartWrapper," +
-            ".chartSide," +
-            "#ScChartWrapper .row-fluid," +
-            ".thumbnailSide," +
-            "#copyRightButton, " +
-            ".scatter-matrix-container circle," +
-            " #PcChartWrapper, " +
-            "#thumbnails-btm_container, " +
-            "#thumbnails-btm_container #thumbnails-btm, " +
-            " #zoomedArea"
-        ).classed("rightChartFullScreenToggled", isRightChartFullScreenToggled);
-
-        if (isRightChartFullScreenToggled) {
-          //var newDim =  windowHeight - 200;
-          d3.select("#thumbnails-btm_container").style(
-            "height",
-            cleanHeight + "px"
-          );
-        } else {
-          d3.select("#thumbnails-btm_container").style(
-            "height",
-            zoomedHeight + "px"
-          );
-        }
-        syncMainVerticalResizeHandleState();
+        setRightChartFullscreenState(!isRightChartFullScreenToggled);
       });
 
       function resizeScChart(newWidth, newHeight) {
