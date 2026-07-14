@@ -593,6 +593,25 @@ a#copyRightButton {
     margin-top: 8px;
 }
 
+#ScChartWrapper.rightChartFullScreenToggled #scatterSelectionActionRow {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    z-index: 5;
+    width: auto;
+    padding: 0;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled #scatterSelectionActionRow .scatter-selection-actions {
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid #d9dee8;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
 #zoomedArea.rightChartFullScreenToggled{
     display: none !important;
     width: 0 !important;
@@ -641,8 +660,29 @@ a#copyRightButton {
     max-width: 33.333333%;
 }
 
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm .col-xs-1:before,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm .col-xs-3:before {
+    display: none;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm .col-xs-1,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm .col-xs-3 {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    padding: 4px;
+    transform: none;
+}
+
 #mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm img {
+    width: calc(100% - 8px);
+    height: calc(100% - 8px);
+    top: 4px;
+    right: 4px;
+    bottom: 4px;
+    left: 4px;
     border-width: 0.3em;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 #mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight,
