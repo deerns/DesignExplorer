@@ -4840,7 +4840,8 @@
       }
 
       function syncHideScatterPlotsSettingState(settingOrValue) {
-        var hideScatterPlots = isScatterPlotsHidden(settingOrValue);
+        var hideScatterPlots =
+          isScatterPlotsHidden(settingOrValue) || isLeftChartFullScreenToggled;
 
         var scatterSettingInput = d3.select("#hideScatterPlotsInput");
         if (!scatterSettingInput.empty()) {
@@ -9613,7 +9614,7 @@
             _userSetting.dimSliderTickSizes || {}
           ),
           imageLabels: effectiveImageLabels,
-          hideScatterPlots: syncHideScatterPlotsSettingState(_userSetting),
+          hideScatterPlots: isScatterPlotsHidden(_userSetting),
           labelSize: _userSetting.labelSize || defaultLabelSizeValue,
           lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
         };
@@ -10001,11 +10002,22 @@
 
         function handleHideScatterPlotsSettingChange() {
           var nextHideScatterPlots = !!this.checked;
+          var shouldExitLeftFullscreen =
+            isLeftChartFullScreenToggled && !nextHideScatterPlots;
+
+          if (shouldExitLeftFullscreen) {
+            isLeftChartFullScreenToggled = false;
+          }
+
           newUserSetting.hideScatterPlots = nextHideScatterPlots;
           _userSetting = _userSetting || {};
           _userSetting.hideScatterPlots = nextHideScatterPlots;
           syncHideScatterPlotsSettingState(nextHideScatterPlots);
           applyScatterPlotVisibilitySetting(nextHideScatterPlots);
+
+          if (shouldExitLeftFullscreen) {
+            applyMainVerticalSplitLayout({ immediate: true });
+          }
         }
 
         //Add this study/project info
