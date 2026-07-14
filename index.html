@@ -4816,6 +4816,20 @@
         d3.selectAll(".cell .highlight-marker").remove();
       }
 
+      function getScatterHighlightStrokeColor(d) {
+        if (
+          !d ||
+          typeof color !== "function" ||
+          !pcIsColoredBy ||
+          d[pcIsColoredBy] === undefined ||
+          d[pcIsColoredBy] === null
+        ) {
+          return "#0f4c81";
+        }
+
+        return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
+      }
+
       function drawScatterHighlightMarkers(data) {
         clearScatterHighlightMarkers();
         if (!Array.isArray(data) || data.length === 0) return;
@@ -4861,6 +4875,7 @@
               .append("path")
               .attr("class", "highlight-marker highlight-marker-core")
               .attr("d", markerPath)
+              .style("stroke", getScatterHighlightStrokeColor(d))
               .attr("visibility", visibility || null);
           });
         });
@@ -7772,6 +7787,13 @@
         d3.selectAll(".cell circle").style("fill", function (d) {
           return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
         });
+        drawScatterHighlightMarkers(
+          typeof graph !== "undefined" &&
+            graph &&
+            typeof graph.highlighted === "function"
+            ? graph.highlighted()
+            : []
+        );
         updatePinnedScatterDot();
       }
     </script>
