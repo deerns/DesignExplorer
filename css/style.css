@@ -500,68 +500,177 @@ a#copyRightButton {
     background-color: white;
 }
 
-#chartLayoutRow.rightChartFullScreenToggled {
-    display: block;
+#mainContentLayout.rightChartFullScreenToggled {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-rows: minmax(360px, 46vh) minmax(180px, 22vh) minmax(180px, 24vh);
+    gap: 12px;
+    align-items: stretch;
+    clear: both;
 }
 
-#chartLayoutRow.rightChartFullScreenToggled > #PcChartWrapper {
+#mainContentLayout.rightChartFullScreenToggled > #topChartsSection {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: auto;
+    height: 100%;
+    float: none;
+    padding-left: 0;
+    padding-right: 0;
+    min-width: 0;
+    min-height: 0;
+}
+
+#mainContentLayout.rightChartFullScreenToggled > #mainVerticalResizeBar {
+    display: none;
+}
+
+#mainContentLayout.rightChartFullScreenToggled > #bottomContentLayout {
+    display: contents;
+}
+
+#chartLayoutRow.rightChartFullScreenToggled {
+    display: block;
+    height: 100%;
+    margin: 0;
+}
+
+#chartLayoutRow.rightChartFullScreenToggled > #PcChartWrapper,
+#PcChartWrapper.rightChartFullScreenToggled{
     display: none;
 }
 
 #ScChartWrapper.rightChartFullScreenToggled{
     width: 100%;
+    height: 100%;
     left: auto;
     z-index: 9;
     position: relative;
     float: none;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    padding-left: 0;
+    padding-right: 0;
 }
 
 #ScChartWrapper .chartSide.rightChartFullScreenToggled,
 #ScChartWrapper .row-fluid.rightChartFullScreenToggled{
     width: 100%;
-    float: left;
+    float: none;
 }
 
-#bottomContentLayout.rightChartFullScreenToggled {
+#ScChartWrapper .chartSide.rightChartFullScreenToggled {
+    flex: 1 1 auto;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-    clear: both;
+    min-height: 0;
+    margin: 0;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled #radarChart {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled .scatter-matrix-container {
+    min-height: 0;
 }
 
 #zoomedArea.rightChartFullScreenToggled{
-    display: block;
+    grid-column: 2;
+    grid-row: 1;
+    display: flex !important;
+    flex-direction: column;
     z-index: 1;
     width: 100%;
+    height: 100% !important;
+    min-height: 0;
     float: none;
-    order: 1;
+    overflow: hidden;
+    margin-top: 0;
+    padding: 12px;
+    background: #ffffff;
+    border: 1px solid #d9dee8;
+    border-radius: 8px;
 }
-#PcChartWrapper.rightChartFullScreenToggled{
-    display: none;
+
+#zoomedArea.rightChartFullScreenToggled #vis {
+    flex: 0 0 auto;
+    align-items: stretch;
 }
-#thumbnails-btm_container.rightChartFullScreenToggled{
+
+#zoomedArea.rightChartFullScreenToggled #viewer2d,
+#zoomedArea.rightChartFullScreenToggled #viewer3d {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+#zoomedArea.rightChartFullScreenToggled #viewer2d {
+    display: flex;
+    flex-direction: column;
+}
+
+#zoomedArea.rightChartFullScreenToggled #viewer2d .viewer2d-main {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+#zoomedArea.rightChartFullScreenToggled #viewer2d-thumbs {
+    flex: 0 0 auto;
+    max-height: 88px;
+    overflow: auto;
+}
+
+#zoomedArea.rightChartFullScreenToggled #IterationData {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 8px;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled{
+    grid-column: 2;
+    grid-row: 2;
     position: relative;
     right: auto;
     width: 100%;
     max-width: none;
-    height: auto;
+    height: 100% !important;
+    min-height: 0;
     float: none;
-    order: 2;
-}
-
-#thumbnails-btm_container #thumbnails-btm.rightChartFullScreenToggled{
-    width: 100%;
-}
-
-#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container,
-#bottomContentLayout.rightChartFullScreenToggled #zoomedArea,
-#bottomContentLayout.rightChartFullScreenToggled #tbContainer {
+    overflow: hidden;
     margin-top: 0;
+    padding: 10px 12px 12px;
+    background: #ffffff;
+    border: 1px solid #d9dee8;
+    border-radius: 8px;
 }
 
-#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight,
-#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight.drawer-open,
-#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight.drawer-pinned {
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm{
+    width: 100%;
+    height: calc(100% - 38px);
+    overflow: auto;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled .sorting,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm {
+    float: none;
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm div {
+    width: 50%;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight.drawer-open,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight.drawer-pinned {
     position: relative;
     right: auto;
     width: 100%;
@@ -569,7 +678,8 @@ a#copyRightButton {
     overflow: hidden !important;
 }
 
-#bottomContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight #thumbnailsPullTab {
+#mainContentLayout.rightChartFullScreenToggled #thumbnailsPullTab,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight #thumbnailsPullTab {
     display: none !important;
 }
 
@@ -578,11 +688,26 @@ a#copyRightButton {
 }
 
 #tbContainer.rightChartFullScreenToggled {
+    grid-column: 1 / span 2;
+    grid-row: 3;
     width: 100%;
+    height: 100%;
     float: none;
-    order: 3;
-    padding-left: 0;
-    padding-right: 0;
+    overflow: auto;
+    padding: 10px 12px 12px;
+    margin-top: 0;
+    background: #ffffff;
+    border: 1px solid #d9dee8;
+    border-radius: 8px;
+}
+
+#tbContainer.rightChartFullScreenToggled .header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #ffffff;
+    margin-left: 0;
+    margin-right: 0;
 }
 
 g.cell text {
