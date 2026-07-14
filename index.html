@@ -9999,14 +9999,25 @@
         //remove current dynamic panels
         dimSettingListDiv.selectAll(".dynamic-dim-panel").remove();
 
+        function handleHideScatterPlotsSettingChange() {
+          var nextHideScatterPlots = !!this.checked;
+          newUserSetting.hideScatterPlots = nextHideScatterPlots;
+          _userSetting = _userSetting || {};
+          _userSetting.hideScatterPlots = nextHideScatterPlots;
+          syncHideScatterPlotsSettingState(nextHideScatterPlots);
+          applyScatterPlotVisibilitySetting(nextHideScatterPlots);
+        }
+
         //Add this study/project info
         dimSettingListDiv
           .select("#hideScatterPlotsInput")
           .property("checked", !!newUserSetting.hideScatterPlots)
-          .on("change", function () {
-            newUserSetting.hideScatterPlots = !!this.checked;
-            applyScatterPlotVisibilitySetting(newUserSetting.hideScatterPlots);
-          });
+          .on("input.hideScatterPlotsSetting", handleHideScatterPlotsSettingChange)
+          .on(
+            "change.hideScatterPlotsSetting",
+            handleHideScatterPlotsSettingChange
+          );
+        syncHideScatterPlotsSettingState(newUserSetting.hideScatterPlots);
         dimSettingListDiv
           .select("#studyNameInput")
           .property("value", newUserSetting.studyInfo.name)
