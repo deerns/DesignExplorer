@@ -3312,8 +3312,12 @@
                         class="btn btn-default btn-xs"
                         title="Hide scatterplots"
                         type="button"
+                        aria-label="Hide scatterplots"
                       >
-                        Hide Scatterplots
+                        <span
+                          class="glyphicon glyphicon-triangle-right"
+                          aria-hidden="true"
+                        ></span>
                       </button>
                     </div>
                   </div>
@@ -4866,19 +4870,23 @@
 
         var shouldShowScatter = shouldShowScatterPlots();
         var nextActionShowsScatter = !shouldShowScatter;
-        var buttonLabel = nextActionShowsScatter
-          ? "Show Scatterplots"
-          : "Hide Scatterplots";
         var buttonTitle = nextActionShowsScatter
-          ? isLeftChartFullScreenToggled
-            ? "Exit full screen and show scatterplots"
-            : "Show scatterplots"
+          ? "Show scatterplots"
           : "Hide scatterplots";
+        var iconClass = nextActionShowsScatter
+          ? "glyphicon glyphicon-triangle-left"
+          : "glyphicon glyphicon-triangle-right";
+
+        var icon = toggleButton.select("span");
+        if (icon.empty()) {
+          icon = toggleButton.append("span").attr("aria-hidden", "true");
+        }
 
         toggleButton
-          .text(buttonLabel)
           .attr("title", buttonTitle)
           .attr("aria-label", buttonTitle);
+
+        icon.attr("class", iconClass);
       }
 
       function setScatterPlotsVisibilityFromMainScreen(shouldShowScatter) {
