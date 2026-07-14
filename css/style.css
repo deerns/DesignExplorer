@@ -637,7 +637,12 @@ a#copyRightButton {
 }
 
 #mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm div {
-    width: 100%;
+    width: 33.333333%;
+    max-width: 33.333333%;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm img {
+    border-width: 0.3em;
 }
 
 #mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight,
