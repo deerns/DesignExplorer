@@ -856,13 +856,29 @@
         z-index: 3;
       }
 
-      .scatter-matrix-container circle.highlighted,
       .scatter-matrix-container circle.pinned {
         fill: #ffa300 !important;
         fill-opacity: 1 !important;
         stroke: #d98600;
         stroke-width: 1.5px;
         r: 4;
+      }
+
+      .scatter-matrix-container .highlight-marker {
+        fill: none;
+        pointer-events: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .scatter-matrix-container .highlight-marker-outline {
+        stroke: #ffffff;
+        stroke-width: 3.4px;
+      }
+
+      .scatter-matrix-container .highlight-marker-core {
+        stroke: #0f4c81;
+        stroke-width: 1.8px;
       }
     </style>
 
@@ -4765,6 +4781,12 @@
 
       function updateScatterChart() {
         var data = getCurrentGraphDisplayData();
+        var highlightedData =
+          typeof graph !== "undefined" &&
+          graph &&
+          typeof graph.highlighted === "function"
+            ? graph.highlighted()
+            : [];
 
         d3.selectAll(".cell circle")
           .classed("faded", false)
@@ -4774,6 +4796,7 @@
           d3.selectAll("#" + getCircleID(d)).attr("visibility", "shown");
         });
 
+        drawScatterHighlightMarkers(highlightedData);
         updatePinnedScatterDot();
       }
 
@@ -4789,23 +4812,79 @@
           .attr("visibility", "shown");
       }
 
+      function clearScatterHighlightMarkers() {
+        d3.selectAll(".cell .highlight-marker").remove();
+      }
+
+      function drawScatterHighlightMarkers(data) {
+        clearScatterHighlightMarkers();
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        data.forEach(function (d) {
+          var circleId = getCircleID(d);
+          if (!circleId) return;
+
+          d3.selectAll("#" + circleId).each(function () {
+            var circle = d3.select(this);
+            if (circle.attr("visibility") === "hidden") return;
+
+            var cell = d3.select(this.parentNode);
+            var cx = +circle.attr("cx");
+            var cy = +circle.attr("cy");
+            var markerSize = isRightChartFullScreenToggled ? 6 : 4.5;
+            var markerPath =
+              "M" +
+              (cx - markerSize) +
+              "," +
+              (cy - markerSize) +
+              "L" +
+              (cx + markerSize) +
+              "," +
+              (cy + markerSize) +
+              "M" +
+              (cx + markerSize) +
+              "," +
+              (cy - markerSize) +
+              "L" +
+              (cx - markerSize) +
+              "," +
+              (cy + markerSize);
+            var visibility = circle.attr("visibility");
+
+            cell
+              .append("path")
+              .attr("class", "highlight-marker highlight-marker-outline")
+              .attr("d", markerPath)
+              .attr("visibility", visibility || null);
+
+            cell
+              .append("path")
+              .attr("class", "highlight-marker highlight-marker-core")
+              .attr("d", markerPath)
+              .attr("visibility", visibility || null);
+          });
+        });
+      }
+
       function highlightScatterDot() {
         var data = graph.highlighted();
+        unlighlightScatter(true);
         if (data.length > 0) {
           d3.selectAll(".cell circle").classed("faded", true);
-
-          unlighlightScatter();
 
           data.forEach(function (d) {
             d3.selectAll("#" + getCircleID(d)).classed("highlighted", true);
           });
+
+          drawScatterHighlightMarkers(data);
         }
         updatePinnedScatterDot();
       }
 
-      function unlighlightScatter() {
+      function unlighlightScatter(skipPinnedRefresh) {
         d3.selectAll(".cell circle").classed("highlighted", false);
-        updatePinnedScatterDot();
+        clearScatterHighlightMarkers();
+        if (!skipPinnedRefresh) updatePinnedScatterDot();
       }
     </script>
 
