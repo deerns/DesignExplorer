@@ -3280,6 +3280,14 @@
                         Setting
                       </button>
                       <button
+                        id="scatterVisibility-toggle"
+                        class="btn btn-default btn-xs"
+                        title="Hide scatterplots"
+                        type="button"
+                      >
+                        Hide Scatterplots
+                      </button>
+                      <button
                         id="LL"
                         class="btn btn-default btn-xs"
                         onclick="changeLabelSize('largeLabel')"
@@ -4840,8 +4848,7 @@
       }
 
       function syncHideScatterPlotsSettingState(settingOrValue) {
-        var hideScatterPlots =
-          isScatterPlotsHidden(settingOrValue) || isLeftChartFullScreenToggled;
+        var hideScatterPlots = isScatterPlotsHidden(settingOrValue);
 
         var scatterSettingInput = d3.select("#hideScatterPlotsInput");
         if (!scatterSettingInput.empty()) {
@@ -4857,6 +4864,53 @@
         }
 
         return hideScatterPlots;
+      }
+
+      function updateScatterVisibilityToggleUi() {
+        var toggleButton = d3.select("#scatterVisibility-toggle");
+        if (toggleButton.empty()) return;
+
+        var shouldShowScatter = shouldShowScatterPlots();
+        var nextActionShowsScatter = !shouldShowScatter;
+        var buttonLabel = nextActionShowsScatter
+          ? "Show Scatterplots"
+          : "Hide Scatterplots";
+        var buttonTitle = nextActionShowsScatter
+          ? isLeftChartFullScreenToggled
+            ? "Exit full screen and show scatterplots"
+            : "Show scatterplots"
+          : "Hide scatterplots";
+
+        toggleButton
+          .text(buttonLabel)
+          .attr("title", buttonTitle)
+          .attr("aria-label", buttonTitle);
+      }
+
+      function setScatterPlotsVisibilityFromMainScreen(shouldShowScatter) {
+        var nextHideScatterPlots = !shouldShowScatter;
+        var shouldExitLeftFullscreen =
+          shouldShowScatter && isLeftChartFullScreenToggled;
+
+        _userSetting = _userSetting || {};
+        if (shouldExitLeftFullscreen) {
+          isLeftChartFullScreenToggled = false;
+        }
+
+        _userSetting.hideScatterPlots = nextHideScatterPlots;
+        if (
+          typeof window !== "undefined" &&
+          window.__activeSettingsDraft &&
+          typeof window.__activeSettingsDraft === "object"
+        ) {
+          window.__activeSettingsDraft.hideScatterPlots = nextHideScatterPlots;
+        }
+
+        applyScatterPlotVisibilitySetting(nextHideScatterPlots);
+
+        if (shouldExitLeftFullscreen) {
+          applyMainVerticalSplitLayout({ immediate: true });
+        }
       }
 
       function getContainerContentWidth(selector) {
@@ -5253,6 +5307,7 @@
           }
         }
         refreshSidebarControlLayout();
+        updateScatterVisibilityToggleUi();
       }
 
       function applyScatterPlotVisibilitySetting(settingOrValue, options) {
@@ -5424,6 +5479,11 @@
         d3.select("#wrapper").classed("toggled", isToggled);
         refreshSidebarControlLayout(!isToggled);
         schedulePcLayoutRefresh();
+      });
+
+      $("#scatterVisibility-toggle").click(function (e) {
+        e.preventDefault();
+        setScatterPlotsVisibilityFromMainScreen(!shouldShowScatterPlots());
       });
 
       $("#scatter-menu-toggle, .scatter-matrix-control").click(function (e) {
