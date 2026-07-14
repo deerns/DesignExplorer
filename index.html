@@ -4893,6 +4893,26 @@
         icon.attr("class", iconClass);
       }
 
+      function updateScatterFullscreenToggleUi() {
+        var toggleButton = d3.select("#scatter-fullscreen-toggle");
+        if (toggleButton.empty()) return;
+
+        var buttonTitle = isRightChartFullScreenToggled
+          ? "Return to main view"
+          : "Expand scatterplots";
+        var iconClass = isRightChartFullScreenToggled
+          ? "glyphicon glyphicon-triangle-right"
+          : "glyphicon glyphicon-triangle-left";
+
+        var icon = toggleButton.select("span");
+        if (icon.empty()) {
+          icon = toggleButton.append("span").attr("aria-hidden", "true");
+        }
+
+        toggleButton.attr("title", buttonTitle).attr("aria-label", buttonTitle);
+        icon.attr("class", iconClass);
+      }
+
       function setScatterPlotsVisibilityFromMainScreen(shouldShowScatter) {
         var nextHideScatterPlots = !shouldShowScatter;
         var shouldExitLeftFullscreen =
@@ -5405,6 +5425,8 @@
           window.__pendingScatterLayoutState = null;
         }
 
+        updateScatterFullscreenToggleUi();
+
         if (isRightChartFullScreenToggled) {
           if (
             graph &&
@@ -5683,6 +5705,7 @@
       $("#scatter-fullscreen-toggle").click(function (e) {
         setRightChartFullscreenState(!isRightChartFullScreenToggled);
       });
+      updateScatterFullscreenToggleUi();
 
       function resizeScChart(newWidth, newHeight) {
         d3.select(".scatter-matrix-svg") // for centering the chart
