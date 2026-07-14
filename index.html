@@ -4978,16 +4978,26 @@
       function getScatterChartBaseHeight() {
         var graphHeightValue = parseFloat(d3.select("#graph").style("height"));
         var radarHeight = getContainerContentHeight("#radarChart");
+        var scatterWrapperHeight = getContainerContentHeight("#ScChartWrapper");
+        var topSectionHeight = getContainerContentHeight("#topChartsSection");
         var baseHeight =
           isFinite(graphHeightValue) && graphHeightValue > 0
             ? graphHeightValue
             : null;
 
         if (isRightChartFullScreenToggled) {
-          if (isFinite(radarHeight) && radarHeight > 0) {
-            return Math.max(radarHeight - 20, baseHeight || 0, 260);
-          }
-          return Math.max(baseHeight || 0, 260);
+          var fullscreenHeight = Math.max(
+            isFinite(radarHeight) && radarHeight > 0 ? radarHeight - 20 : 0,
+            isFinite(scatterWrapperHeight) && scatterWrapperHeight > 0
+              ? scatterWrapperHeight - 20
+              : 0,
+            isFinite(topSectionHeight) && topSectionHeight > 0
+              ? topSectionHeight - 30
+              : 0,
+            baseHeight || 0,
+            420
+          );
+          return fullscreenHeight;
         }
 
         if (baseHeight !== null) {
