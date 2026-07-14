@@ -4839,6 +4839,25 @@
         return normalizeBooleanSetting(value, false);
       }
 
+      function syncHideScatterPlotsSettingState(settingOrValue) {
+        var hideScatterPlots = isScatterPlotsHidden(settingOrValue);
+
+        var scatterSettingInput = d3.select("#hideScatterPlotsInput");
+        if (!scatterSettingInput.empty()) {
+          scatterSettingInput.property("checked", hideScatterPlots);
+        }
+
+        if (
+          typeof window !== "undefined" &&
+          window.__activeSettingsDraft &&
+          typeof window.__activeSettingsDraft === "object"
+        ) {
+          window.__activeSettingsDraft.hideScatterPlots = hideScatterPlots;
+        }
+
+        return hideScatterPlots;
+      }
+
       function getContainerContentWidth(selector) {
         var node = d3.select(selector).node();
         if (
@@ -5200,7 +5219,7 @@
       }
 
       function syncScatterPlotLayout(skipResize) {
-        var hideScatterPlots = isScatterPlotsHidden(_userSetting);
+        var hideScatterPlots = syncHideScatterPlotsSettingState(_userSetting);
         var showScatterWrapper = !hideScatterPlots && !isLeftChartFullScreenToggled;
         var chartLayoutRow = d3.select("#chartLayoutRow");
 
@@ -5216,11 +5235,6 @@
         d3.select("#PcChartWrapper")
           .classed("col-lg-9", showScatterWrapper)
           .classed("col-lg-12", !showScatterWrapper);
-
-        var scatterSettingInput = d3.select("#hideScatterPlotsInput");
-        if (!scatterSettingInput.empty()) {
-          scatterSettingInput.property("checked", hideScatterPlots);
-        }
 
         if (!skipResize && graph) {
           reDrawPcChart();
@@ -5272,6 +5286,7 @@
             wasScatterHidden && willShowScatterPlots;
         }
         _userSetting.hideScatterPlots = hideScatterPlots;
+        syncHideScatterPlotsSettingState(hideScatterPlots);
 
         if (hideScatterPlots) {
           clearRightChartFullscreenState();
@@ -9598,10 +9613,7 @@
             _userSetting.dimSliderTickSizes || {}
           ),
           imageLabels: effectiveImageLabels,
-          hideScatterPlots: normalizeBooleanSetting(
-            _userSetting.hideScatterPlots,
-            false
-          ),
+          hideScatterPlots: syncHideScatterPlotsSettingState(_userSetting),
           labelSize: _userSetting.labelSize || defaultLabelSizeValue,
           lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
         };
