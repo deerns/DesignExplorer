@@ -4509,6 +4509,10 @@
 
       function resetScatterSelectionAction() {
         clearScatterSelectionState();
+        var resetData =
+          graph && typeof graph.data === "function"
+            ? (graph.data() || []).slice()
+            : [];
 
         if (graph && typeof graph.brushReset === "function") {
           isApplyingScatterSelectionBrush = true;
@@ -4518,12 +4522,20 @@
             isApplyingScatterSelectionBrush = false;
           }
 
-          updateSlidersTickValues();
-          syncGraphSelectionViews(getCurrentGraphDisplayData());
+          updateSlidersTickValues(resetData);
+          syncGraphSelectionViews(resetData);
         }
 
         if (scatterChart && typeof scatterChart.clearSelection === "function") {
           scatterChart.clearSelection();
+        }
+
+        if (
+          graph &&
+          typeof refreshScatterChartLayout === "function" &&
+          shouldShowScatterPlots()
+        ) {
+          refreshScatterChartLayout();
         } else if (graph) {
           d3.select("div#radarChart").selectAll("*").remove();
           addScatterChart();
@@ -5400,7 +5412,12 @@
       }
 
       function setRightChartFullscreenState(nextState) {
+        var wasRightChartFullScreenToggled = isRightChartFullScreenToggled;
         isRightChartFullScreenToggled = !!nextState;
+        var shouldClearViewerSelectionOnExit =
+          wasRightChartFullScreenToggled &&
+          !isRightChartFullScreenToggled &&
+          isAnyItemSelected;
 
         d3.selectAll(
           "#mainContentLayout," +
@@ -5426,6 +5443,14 @@
         }
 
         updateScatterFullscreenToggleUi();
+
+        if (shouldClearViewerSelectionOnExit) {
+          updateLayoutOnDeselect({
+            keepSlidersEnabled: true,
+            preserveScatterSelection: true,
+            preserveScatterSelectionState: true,
+          });
+        }
 
         if (isRightChartFullScreenToggled) {
           if (
@@ -5817,6 +5842,8 @@
       // update layout on select
       function updateLayoutOnDeselect(options) {
         options = options || {};
+        var preserveScatterSelectionState =
+          !!options.preserveScatterSelectionState;
         // find height of parallel coordinate
         // to find the height for thumbnail div
         var pcHeight = d3.select("#graph").style("height").replace("px", "");
@@ -5859,9 +5886,13 @@
         // unhighlight the radar chart        //-----TODO:here needs a switch for different charts-------//
         //rc.unhighlight();
         unlighlightScatter();
-        clearScatterSelectionState({
-          preserveApplied: !!options.preserveScatterSelection,
-        });
+        if (preserveScatterSelectionState) {
+          updateScatterSelectionActionButtons();
+        } else {
+          clearScatterSelectionState({
+            preserveApplied: !!options.preserveScatterSelection,
+          });
+        }
 
         //show radar chart
         $("#radarChart").collapse("show");
