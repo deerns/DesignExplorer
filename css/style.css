@@ -14,6 +14,22 @@ body {
     overflow-x: hidden;
 }
 
+#page-content-wrapper > .container-fluid {
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+#chartLayoutRow {
+    margin-left: -4px;
+    margin-right: -4px;
+}
+
+#chartLayoutRow > #PcChartWrapper,
+#chartLayoutRow > #ScChartWrapper {
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
 #mainVerticalResizeBar {
     position: relative;
     display: flex;
@@ -491,8 +507,8 @@ a#copyRightButton {
     position: absolute;
 }
 
-.col-lg-3 .chartSide.rightChartFullScreenToggled, 
-.col-lg-3 .row-fluid.rightChartFullScreenToggled{
+#ScChartWrapper .chartSide.rightChartFullScreenToggled,
+#ScChartWrapper .row-fluid.rightChartFullScreenToggled{
     width: 100%;
     float: left;
 }
@@ -508,7 +524,7 @@ a#copyRightButton {
     height: calc(100% - 70px);
 }
 
-.col-lg-3 #copyRightButton.rightChartFullScreenToggled{
+#ScChartWrapper #copyRightButton.rightChartFullScreenToggled{
     width: 85% !important;
 }
 

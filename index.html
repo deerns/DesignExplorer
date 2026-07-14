@@ -2872,6 +2872,10 @@
         }
       }
 
+      if (typeof syncScatterPlotLayout === "function") {
+        syncScatterPlotLayout(false);
+      }
+
       refreshThumbnailSortDropdown({
         preferredSortBy: getCurrentSortByValue(),
       });
@@ -4951,6 +4955,60 @@
         );
       }
 
+      function getActiveGraphDimensionCount() {
+        if (!graph || typeof graph.dimensions !== "function") {
+          return 0;
+        }
+
+        return Object.keys(graph.dimensions() || {}).length;
+      }
+
+      function setChartWrapperBootstrapClass(selection, nextClass) {
+        [
+          "col-lg-12",
+          "col-lg-9",
+          "col-lg-8",
+          "col-lg-7",
+          "col-lg-6",
+          "col-lg-5",
+          "col-lg-4",
+          "col-lg-3",
+        ].forEach(function (className) {
+          selection.classed(className, className === nextClass);
+        });
+      }
+
+      function updateChartLayoutColumnClasses(showScatterWrapper) {
+        var pcWrapper = d3.select("#PcChartWrapper");
+        var scWrapper = d3.select("#ScChartWrapper");
+        if (pcWrapper.empty()) return;
+
+        var pcClass = "col-lg-12";
+        var scClass = "col-lg-3";
+
+        if (showScatterWrapper) {
+          var activeDimensionCount = getActiveGraphDimensionCount();
+          if (activeDimensionCount <= 1) {
+            pcClass = "col-lg-5";
+            scClass = "col-lg-7";
+          } else if (activeDimensionCount === 2) {
+            pcClass = "col-lg-6";
+            scClass = "col-lg-6";
+          } else if (activeDimensionCount === 3) {
+            pcClass = "col-lg-8";
+            scClass = "col-lg-4";
+          } else {
+            pcClass = "col-lg-9";
+            scClass = "col-lg-3";
+          }
+        }
+
+        setChartWrapperBootstrapClass(pcWrapper, pcClass);
+        if (!scWrapper.empty()) {
+          setChartWrapperBootstrapClass(scWrapper, scClass);
+        }
+      }
+
       function syncBottomPanelHeights() {
         var zoomedAreaHeight = parseFloat(
           d3.select("#zoomedArea").style("height")
@@ -5232,7 +5290,7 @@
         d3.selectAll(
           "#ScChartWrapper," +
             ".chartSide," +
-            ".col-lg-3 .row-fluid," +
+            "#ScChartWrapper .row-fluid," +
             ".thumbnailSide," +
             "#copyRightButton, " +
             ".scatter-matrix-container circle," +
@@ -5277,9 +5335,7 @@
           chartLayoutRow.classed("scatter-hidden", !showScatterWrapper);
         }
 
-        d3.select("#PcChartWrapper")
-          .classed("col-lg-9", showScatterWrapper)
-          .classed("col-lg-12", !showScatterWrapper);
+        updateChartLayoutColumnClasses(showScatterWrapper);
 
         if (!skipResize && graph) {
           reDrawPcChart();
@@ -5497,7 +5553,7 @@
         d3.selectAll(
           "#ScChartWrapper," +
             ".chartSide," +
-            ".col-lg-3 .row-fluid," +
+            "#ScChartWrapper .row-fluid," +
             ".thumbnailSide," +
             "#copyRightButton, " +
             ".scatter-matrix-container circle," +
@@ -8115,6 +8171,8 @@
           if (_userSetting && _userSetting.dimLabels) {
             setDimLabels(_userSetting.dimLabels);
           }
+
+          syncScatterPlotLayout(false);
         });
 
         //turn off rating rectangle
