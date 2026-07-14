@@ -1600,12 +1600,38 @@ d3.parcoords = function (config) {
         };
     };
 
+    function getCompactDimensionPosition(d) {
+        var orderedKeys = pc.getOrderedDimensionKeys();
+        var dimensionCount = orderedKeys.length;
+        var index = orderedKeys.indexOf(d);
+
+        if (dimensionCount <= 0 || index === -1) {
+            return null;
+        }
+
+        if (dimensionCount === 1) {
+            return w() / 2;
+        }
+
+        if (dimensionCount === 2) {
+            return index === 0 ? w() * 0.22 : w() * 0.78;
+        }
+
+        return null;
+    }
+
     function position(d) {
         if (xscale.range().length === 0) {
             xscale.rangePoints([0, w()], 1);
         }
+
         var v = dragging[d];
-        return v == null ? xscale(d) : v;
+        if (v != null) {
+            return v;
+        }
+
+        var compactPosition = getCompactDimensionPosition(d);
+        return compactPosition == null ? xscale(d) : compactPosition;
     }
     pc.version = "0.7.0";
     // this descriptive text should live with other introspective methods
