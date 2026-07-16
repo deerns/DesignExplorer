@@ -562,6 +562,7 @@
       #dimSettingList .panel-title {
         flex: 1 1 auto;
         margin: 0;
+        min-width: 0;
       }
       #dimSettingList .setting-reorder-handle {
         flex: 0 0 auto;
@@ -586,6 +587,35 @@
       }
       #dimSettingList .dynamic-dim-panel.is-dragging .panel-heading {
         cursor: grabbing;
+      }
+      #dimSettingList .setting-panel-toggle {
+        flex: 0 0 auto;
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: #6b7280;
+        cursor: pointer;
+      }
+      #dimSettingList .setting-panel-toggle:hover,
+      #dimSettingList .setting-panel-toggle:focus {
+        color: #033899;
+        background: rgba(3, 56, 153, 0.08);
+        outline: none;
+      }
+      #dimSettingList .panel-primary > .panel-heading .setting-panel-toggle {
+        color: #ffffff;
+      }
+      #dimSettingList .panel-primary > .panel-heading .setting-panel-toggle:hover,
+      #dimSettingList .panel-primary > .panel-heading .setting-panel-toggle:focus {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.18);
       }
       #dimSettingList .setting-panel-placeholder {
         margin-bottom: 20px;
@@ -3907,6 +3937,20 @@
                       >Study Information</a
                     >
                   </h4>
+                  <button
+                    class="setting-panel-toggle"
+                    type="button"
+                    data-target="#settingStudyInfo"
+                    aria-controls="settingStudyInfo"
+                    aria-expanded="true"
+                    aria-label="Minimize Study Information"
+                    title="Minimize panel"
+                  >
+                    <span
+                      class="glyphicon glyphicon-chevron-up"
+                      aria-hidden="true"
+                    ></span>
+                  </button>
                 </div>
                 <div id="settingStudyInfo" class="panel-collapse collapse in">
                   <div class="panel-body">
@@ -10647,6 +10691,25 @@
             return d;
           });
 
+        panelHeading
+          .append("button")
+          .attr("type", "button")
+          .attr("class", "setting-panel-toggle")
+          .attr("data-target", function (d) {
+            return "#setting" + string_as_unicode_escape(d);
+          })
+          .attr("aria-controls", function (d) {
+            return "setting" + string_as_unicode_escape(d);
+          })
+          .attr("aria-expanded", "false")
+          .attr("aria-label", function (d) {
+            return "Expand " + getDimLabel(d);
+          })
+          .attr("title", "Expand panel")
+          .append("span")
+          .attr("class", "glyphicon glyphicon-chevron-right")
+          .attr("aria-hidden", "true");
+
         var panelBody = selectList
           .append("div")
           .attr("id", function (d) {
@@ -11121,7 +11184,10 @@
             : $();
           if (!$target.length) return;
 
-          if (!force && $target.hasClass("in")) return;
+          if (!force && $target.hasClass("in")) {
+            syncAllSettingPanelToggleStates();
+            return;
+          }
 
           $settingAccordion
             .find(".panel-collapse.in")
@@ -11140,6 +11206,74 @@
               .find(".panel-title a[href='#" + targetId + "']")
               .attr("aria-expanded", "true");
           }
+
+          syncAllSettingPanelToggleStates();
+        }
+
+        function closeSettingPanel(targetSel) {
+          var $target = targetSel
+            ? $settingAccordion.find(targetSel).first()
+            : $();
+          if (!$target.length) return;
+
+          $target.removeClass("in").attr("aria-expanded", "false");
+          syncAllSettingPanelToggleStates();
+        }
+
+        function toggleSettingPanel(targetSel) {
+          var $target = targetSel
+            ? $settingAccordion.find(targetSel).first()
+            : $();
+          if (!$target.length) return;
+
+          if ($target.hasClass("in")) {
+            closeSettingPanel(targetSel);
+            return;
+          }
+
+          openSettingPanel(targetSel, true);
+        }
+
+        function syncSettingPanelToggleState(panelNode) {
+          var $panel = $(panelNode);
+          if (!$panel.length) return;
+
+          var targetId = $panel.attr("id");
+          if (!targetId) return;
+
+          var isExpanded = $panel.hasClass("in");
+          var targetSel = "#" + targetId;
+          var $titleLink = $settingAccordion.find(
+            ".panel-title a[href='" + targetSel + "']"
+          );
+          var $toggleButton = $settingAccordion.find(
+            ".setting-panel-toggle[data-target='" + targetSel + "']"
+          );
+          var panelTitle = ($titleLink.text() || "").trim() || "panel";
+
+          $titleLink.attr("aria-expanded", isExpanded ? "true" : "false");
+          $toggleButton
+            .attr("aria-expanded", isExpanded ? "true" : "false")
+            .attr(
+              "aria-label",
+              (isExpanded ? "Minimize " : "Expand ") + panelTitle
+            )
+            .attr("title", isExpanded ? "Minimize panel" : "Expand panel");
+
+          $toggleButton
+            .find(".glyphicon")
+            .attr(
+              "class",
+              isExpanded
+                ? "glyphicon glyphicon-chevron-up"
+                : "glyphicon glyphicon-chevron-right"
+            );
+        }
+
+        function syncAllSettingPanelToggleStates() {
+          $settingAccordion.find(".panel-collapse").each(function () {
+            syncSettingPanelToggleState(this);
+          });
         }
 
         $settingAccordion
@@ -11163,6 +11297,17 @@
             }
           );
 
+        $settingAccordion
+          .off("click.panelCollapseToggle")
+          .on("click.panelCollapseToggle", ".setting-panel-toggle", function (e) {
+            var targetSel = $(this).attr("data-target") || "";
+            if (!targetSel) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSettingPanel(targetSel);
+          });
+
         // Always open Study Information first when the dialog opens.
         var $allPanels = $settingAccordion.find(".panel-collapse");
         if ($allPanels.length > 0) {
@@ -11176,6 +11321,7 @@
             }
           }
         }
+        syncAllSettingPanelToggleStates();
 
         initDimSettingSortable();
         if (typeof window !== "undefined" && window.__dimSettingOrderObserver) {
