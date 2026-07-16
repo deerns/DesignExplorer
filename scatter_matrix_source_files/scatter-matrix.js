@@ -251,6 +251,10 @@ ScatterMatrix.prototype.render = function () {
       .attr("href", "javascript:void(0);")
       .html("-")
       .on("click", function () {
+        if (d3.event) {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+        }
         redrawScatterMatrix(Math.max(12, getActiveCellSize() - 50));
       });
 
@@ -260,6 +264,10 @@ ScatterMatrix.prototype.render = function () {
       .attr("href", "javascript:void(0);")
       .html("Change plot size")
       .on("click", function () {
+        if (d3.event) {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+        }
         redrawScatterMatrix(
           isFinite(orgSize) && orgSize > 0 ? orgSize : getActiveCellSize()
         );
@@ -271,6 +279,10 @@ ScatterMatrix.prototype.render = function () {
       .attr("href", "javascript:void(0);")
       .html("+")
       .on("click", function () {
+        if (d3.event) {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+        }
         redrawScatterMatrix(getActiveCellSize() + 50);
       });
 

@@ -5869,13 +5869,20 @@
         setScatterPlotsVisibilityFromMainScreen(!shouldShowScatterPlots());
       });
 
-      $("#scatter-menu-toggle, .scatter-matrix-control").click(function (e) {
+      $("#scatter-menu-toggle").off("click").click(function (e) {
+        e.preventDefault();
+        e.stopPropagation();
         isScatterToggled = !isScatterToggled;
         d3.select(".scatter-matrix-control").classed(
           "toggled",
           isScatterToggled
         );
       });
+      $("#radarChart")
+        .off("click", ".scatter-matrix-control")
+        .on("click", ".scatter-matrix-control", function (e) {
+          e.stopPropagation();
+        });
 
       //--------------------------------------------------set right side chart full screen -----------------------------------//
 
