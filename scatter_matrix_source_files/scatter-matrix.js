@@ -271,32 +271,6 @@ ScatterMatrix.prototype.render = function () {
         );
       });
 
-    //set to full screen mode;-------------------------------------------------------------------------------------------------
-    var isRightChartFullScreenToggled = false;
-    var windowHeight = window.innerHeight;
-    var originalCellSize = self.__cell_size;
-    $("#scatter-fullscreen-toggle")
-      .off("click.scatterMatrixFullscreen")
-      .on("click.scatterMatrixFullscreen", function (e) {
-        isRightChartFullScreenToggled = !isRightChartFullScreenToggled;
-        if (isRightChartFullScreenToggled) {
-          self.__cell_size = (windowHeight - 250) / 2;
-          d3.selectAll(".cell circle").attr("r", "3");
-        } else {
-          self.__cell_size = originalCellSize;
-          d3.selectAll(".cell circle").attr("r", "1");
-        }
-
-        self.__draw(
-          self.__cell_size,
-          svg,
-          color_variable,
-          selected_colors,
-          to_include,
-          drill_variables
-        );
-      });
-
     var variable_li = variable_control
       .append("p")
       .text("Vertical Variables: ")
@@ -396,6 +370,7 @@ ScatterMatrix.prototype.__draw = function (
     }
     return name;
   };
+  var pointRadius = Math.max(1, Math.min(3, Math.round(cell_size / 120)));
   this.onData(function () {
     var data = self.__data;
     self.__selected_variables = Array.isArray(to_include)
@@ -789,9 +764,7 @@ ScatterMatrix.prototype.__draw = function (
         .attr("cy", function (d) {
           return y[p.y](d[p.y]);
         })
-        .attr("r", function (d) {
-          return isRightChartFullScreenToggled ? 2 : 1;
-        })
+        .attr("r", pointRadius)
         .style("fill", function (d) {
           return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
         });
