@@ -10029,7 +10029,10 @@
           ),
           imageLabels: effectiveImageLabels,
           hideScatterPlots: isScatterPlotsHidden(_userSetting),
-          labelSize: _userSetting.labelSize || defaultLabelSizeValue,
+          labelSize:
+            _userSetting.labelSizeBase ||
+            _userSetting.labelSize ||
+            defaultLabelSizeValue,
           lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
         };
         if (typeof window !== "undefined") {
@@ -10066,7 +10069,9 @@
 
         function currentLabelSizePercent() {
           // prefer saved setting
-          var saved = normalizeLabelSizeToNumber(_userSetting.labelSize);
+          var saved = normalizeLabelSizeToNumber(
+            _userSetting.labelSizeBase || _userSetting.labelSize
+          );
           if (saved !== null) return saved;
           // fallback to current computed font-size on a label (assumes percent set)
           var labelEl = d3.select(".label");
@@ -11768,6 +11773,7 @@
           applyLabelFontSize(userLabelSize);
         } else if (!hasLabelSize) {
           delete _userSetting.labelSize;
+          delete _userSetting.labelSizeBase;
           d3.selectAll(".label").style("font-size", defaultLabelSizeValue);
         }
         if (typeof applySliderFontOverrides === "function") {
@@ -12383,12 +12389,15 @@
             newUserSetting.labelSize === ""
           ) {
             delete globalUserSetting.labelSize;
+            delete globalUserSetting.labelSizeBase;
           } else {
             globalUserSetting.labelSize = newUserSetting.labelSize;
+            globalUserSetting.labelSizeBase = newUserSetting.labelSize;
           }
         }
 
-        var exportJson = globalUserSetting;
+        var exportJson = Object.assign({}, globalUserSetting);
+        delete exportJson.labelSizeBase;
         var jsonString = JSON.stringify(exportJson, null, 2);
         var jsonBlob = new Blob([jsonString], {
           type: "application/json;charset=utf-8",

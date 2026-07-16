@@ -169,6 +169,10 @@ function overwriteInitialGlobalValues() {
       typeof defaultLabelSizeValue !== "undefined"
         ? defaultLabelSizeValue
         : "90%",
+    labelSizeBase:
+      typeof defaultLabelSizeValue !== "undefined"
+        ? defaultLabelSizeValue
+        : "90%",
     lineGradient: {
       enabled: false,
       start:
@@ -552,6 +556,36 @@ function ensureSliderFontOverrideStyleTag() {
   return styleEl;
 }
 
+function getBaseLabelFontSizePercent() {
+  var baseSize = normalizeSliderPercentSize(
+    _userSetting && _userSetting.labelSizeBase
+  );
+  if (baseSize === null) {
+    baseSize = normalizeSliderPercentSize(_userSetting && _userSetting.labelSize);
+  }
+  if (baseSize === null && typeof defaultLabelSizeValue !== "undefined") {
+    baseSize = normalizeSliderPercentSize(defaultLabelSizeValue);
+  }
+  return baseSize === null ? 90 : baseSize;
+}
+
+function resolveRelativeLabelFontSize(size) {
+  var scaleMap = {
+    largeLabel: 1.2,
+    mediumLabel: 1,
+    smallLabel: 0.8,
+  };
+  if (!scaleMap.hasOwnProperty(size)) {
+    return null;
+  }
+
+  var resolvedPercent = Math.max(
+    50,
+    Math.min(200, getBaseLabelFontSizePercent() * scaleMap[size])
+  );
+  return Math.round(resolvedPercent * 100) / 100 + "%";
+}
+
 function applySliderFontOverrides(setting) {
   if (typeof d3 === "undefined") return;
 
@@ -717,14 +751,9 @@ function applySliderFontOverrides(setting) {
 }
 
 function applyLabelFontSize(size) {
-  // Accept either preset keys or a raw CSS font-size string/number
-  var map = {
-    largeLabel: "95%",
-    mediumLabel: "90%",
-    smallLabel: "75%",
-  };
-
-  var resolved = map.hasOwnProperty(size) ? map[size] : size;
+  var presetResolved = resolveRelativeLabelFontSize(size);
+  var shouldUpdateBaseSize = presetResolved === null;
+  var resolved = presetResolved !== null ? presetResolved : size;
 
   if (typeof resolved === "number") {
     resolved = resolved + "%";
@@ -753,6 +782,9 @@ function applyLabelFontSize(size) {
 
   // persist into global settings if available
   if (typeof _userSetting !== "undefined") {
+    if (shouldUpdateBaseSize) {
+      _userSetting.labelSizeBase = resolved;
+    }
     _userSetting.labelSize = resolved;
   }
 }
