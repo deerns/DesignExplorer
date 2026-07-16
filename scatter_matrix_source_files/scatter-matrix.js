@@ -370,7 +370,6 @@ ScatterMatrix.prototype.__draw = function (
     }
     return name;
   };
-  var pointRadius = Math.max(1, Math.min(3, Math.round(cell_size / 120)));
   this.onData(function () {
     var data = self.__data;
     self.__selected_variables = Array.isArray(to_include)
@@ -418,13 +417,133 @@ ScatterMatrix.prototype.__draw = function (
       return colors.length > 0 ? "color-" + colors.indexOf(c) : "color-2";
     }
 
+    // When drilling, user select one or more variables. The first drilled
+    // variable becomes the x-axis variable for all columns, and each column
+    // contains only data points that match specific values for each of the
+    // drilled variables other than the first.
+
+    var drill_values = [];
+    var drill_degrees = [];
+    drill_variables.forEach(function (variable) {
+      // Skip first one, since that's just the x axis
+      if (drill_values.length == 0) {
+        drill_values.push([]);
+        drill_degrees.push(1);
+      } else {
+        var values = [];
+        data.forEach(function (d) {
+          var v = d[variable];
+          if (v !== undefined && values.indexOf(v) < 0) {
+            values.push(v);
+          }
+        });
+        values.sort();
+        drill_values.push(values);
+        drill_degrees.push(values.length);
+      }
+    });
+    var total_columns = 1;
+    drill_degrees.forEach(function (d) {
+      total_columns *= d;
+    });
+
+    // Pick out stuff to draw on horizontal and vertical dimensions
+
+    if (drill_variables.length > 0) {
+      // First drill is now the x-axis variable for all columns
+      x_variables = [];
+      for (var i = 0; i < total_columns; i++) {
+        x_variables.push(drill_variables[0]);
+      }
+    } else x_variables = variables_to_draw.slice(0);
+
+    if (drill_variables.length > 0) {
+      // Don't draw any of the "drilled" variables in vertical dimension
+      y_variables = [];
+      variables_to_draw.forEach(function (variable) {
+        if (drill_variables.indexOf(variable) < 0) {
+          y_variables.push(variable);
+        }
+      });
+    } else y_variables = variables_to_draw.slice(0);
+    y_variables = y_variables.reverse();
+    var filter_descriptions = 0;
+    if (drill_variables.length > 1) {
+      filter_descriptions = drill_variables.length - 1;
+    }
+
     // Size parameters
-    var size = cell_size,
-      padding = 10,
+    var padding = 10,
       axis_width = 20,
       axis_height = 15,
       legend_width = 0,
       label_height = 15;
+
+    function fitCellSizeToViewport(requestedSize) {
+      var maxSize = requestedSize;
+      var wrapperNode =
+        container_el && typeof container_el.node === "function"
+          ? container_el.node()
+          : null;
+      var chartNode = d3.select(self.__dom_id).node();
+      var availableWidth = null;
+      var availableHeight = null;
+
+      if (wrapperNode && typeof wrapperNode.getBoundingClientRect === "function") {
+        var wrapperBounds = wrapperNode.getBoundingClientRect();
+        availableWidth = wrapperBounds.width;
+        availableHeight = wrapperBounds.height;
+      }
+
+      if (
+        (!isFinite(availableWidth) || availableWidth <= 0) &&
+        chartNode &&
+        typeof chartNode.getBoundingClientRect === "function"
+      ) {
+        availableWidth = chartNode.getBoundingClientRect().width;
+      }
+
+      if (
+        (!isFinite(availableHeight) || availableHeight <= 0) &&
+        chartNode &&
+        typeof chartNode.getBoundingClientRect === "function"
+      ) {
+        availableHeight = chartNode.getBoundingClientRect().height;
+      }
+
+      if (
+        isFinite(availableWidth) &&
+        availableWidth > 0 &&
+        x_variables.length > 0
+      ) {
+        var widthBudget =
+          availableWidth - label_height - axis_width - padding - legend_width - 8;
+        maxSize = Math.min(maxSize, widthBudget / x_variables.length);
+      }
+
+      if (
+        isFinite(availableHeight) &&
+        availableHeight > 0 &&
+        y_variables.length > 0
+      ) {
+        var heightBudget =
+          availableHeight -
+          axis_height -
+          label_height -
+          label_height * filter_descriptions -
+          8;
+        maxSize = Math.min(maxSize, heightBudget / y_variables.length);
+      }
+
+      if (!isFinite(maxSize) || maxSize <= 0) {
+        return Math.max(12, requestedSize || 12);
+      }
+
+      return Math.max(12, Math.floor(maxSize));
+    }
+
+    var size = fitCellSizeToViewport(cell_size);
+    var pointRadius = Math.max(1, Math.min(3, Math.round(size / 120)));
 
     // Get x and y scales for each numeric variable
     var x = {},
@@ -492,61 +611,6 @@ ScatterMatrix.prototype.__draw = function (
       x[trait] = d3.scale.linear().domain(domain).range(range_x);
       y[trait] = d3.scale.linear().domain(domain).range(range_y.reverse());
     });
-
-    // When drilling, user select one or more variables. The first drilled
-    // variable becomes the x-axis variable for all columns, and each column
-    // contains only data points that match specific values for each of the
-    // drilled variables other than the first.
-
-    var drill_values = [];
-    var drill_degrees = [];
-    drill_variables.forEach(function (variable) {
-      // Skip first one, since that's just the x axis
-      if (drill_values.length == 0) {
-        drill_values.push([]);
-        drill_degrees.push(1);
-      } else {
-        var values = [];
-        data.forEach(function (d) {
-          var v = d[variable];
-          if (v !== undefined && values.indexOf(v) < 0) {
-            values.push(v);
-          }
-        });
-        values.sort();
-        drill_values.push(values);
-        drill_degrees.push(values.length);
-      }
-    });
-    var total_columns = 1;
-    drill_degrees.forEach(function (d) {
-      total_columns *= d;
-    });
-
-    // Pick out stuff to draw on horizontal and vertical dimensions
-
-    if (drill_variables.length > 0) {
-      // First drill is now the x-axis variable for all columns
-      x_variables = [];
-      for (var i = 0; i < total_columns; i++) {
-        x_variables.push(drill_variables[0]);
-      }
-    } else x_variables = variables_to_draw.slice(0);
-
-    if (drill_variables.length > 0) {
-      // Don't draw any of the "drilled" variables in vertical dimension
-      y_variables = [];
-      variables_to_draw.forEach(function (variable) {
-        if (drill_variables.indexOf(variable) < 0) {
-          y_variables.push(variable);
-        }
-      });
-    } else y_variables = variables_to_draw.slice(0);
-    y_variables = y_variables.reverse();
-    var filter_descriptions = 0;
-    if (drill_variables.length > 1) {
-      filter_descriptions = drill_variables.length - 1;
-    }
 
     // Formatting for axis
     var intf = d3.format("d");
