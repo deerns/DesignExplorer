@@ -219,22 +219,39 @@ ScatterMatrix.prototype.render = function () {
       .append("div")
       .attr("class", "btn-group col-xs-12")
       .style("margin-bottom", "20px");
-    var orgSize = self.__cell_size;
+    var orgSize = null;
+
+    function getActiveCellSize() {
+      if (isFinite(self.__rendered_cell_size) && self.__rendered_cell_size > 0) {
+        return self.__rendered_cell_size;
+      }
+      if (isFinite(self.__cell_size) && self.__cell_size > 0) {
+        return self.__cell_size;
+      }
+      return 80;
+    }
+
+    function redrawScatterMatrix(nextCellSize) {
+      if (isFinite(nextCellSize) && nextCellSize > 0) {
+        self.__cell_size = nextCellSize;
+      }
+      self.__draw(
+        self.__cell_size,
+        svg,
+        color_variable,
+        selected_colors,
+        to_include,
+        drill_variables
+      );
+    }
+
     size_a
       .append("a")
       .attr("class", "btn btn-default btn-xs")
       .attr("href", "javascript:void(0);")
       .html("-")
       .on("click", function () {
-        self.__cell_size -= 50;
-        self.__draw(
-          self.__cell_size,
-          svg,
-          color_variable,
-          selected_colors,
-          to_include,
-          drill_variables
-        );
+        redrawScatterMatrix(Math.max(12, getActiveCellSize() - 50));
       });
 
     size_a
@@ -243,14 +260,8 @@ ScatterMatrix.prototype.render = function () {
       .attr("href", "javascript:void(0);")
       .html("Change plot size")
       .on("click", function () {
-        self.__cell_size = orgSize;
-        self.__draw(
-          self.__cell_size,
-          svg,
-          color_variable,
-          selected_colors,
-          to_include,
-          drill_variables
+        redrawScatterMatrix(
+          isFinite(orgSize) && orgSize > 0 ? orgSize : getActiveCellSize()
         );
       });
 
@@ -260,15 +271,7 @@ ScatterMatrix.prototype.render = function () {
       .attr("href", "javascript:void(0);")
       .html("+")
       .on("click", function () {
-        self.__cell_size += 50;
-        self.__draw(
-          self.__cell_size,
-          svg,
-          color_variable,
-          selected_colors,
-          to_include,
-          drill_variables
-        );
+        redrawScatterMatrix(getActiveCellSize() + 50);
       });
 
     var variable_li = variable_control
@@ -314,14 +317,8 @@ ScatterMatrix.prototype.render = function () {
       return "" + i + ": " + formatDimLabel(d);
     });
 
-    self.__draw(
-      self.__cell_size,
-      svg,
-      color_variable,
-      selected_colors,
-      to_include,
-      drill_variables
-    );
+    redrawScatterMatrix(self.__cell_size);
+    orgSize = getActiveCellSize();
   });
 };
 
@@ -553,6 +550,7 @@ ScatterMatrix.prototype.__draw = function (
     }
 
     var size = fitCellSizeToViewport(cell_size);
+    self.__rendered_cell_size = size;
     var pointRadius = Math.max(1, Math.min(3, Math.round(size / 120)));
 
     // Get x and y scales for each numeric variable
