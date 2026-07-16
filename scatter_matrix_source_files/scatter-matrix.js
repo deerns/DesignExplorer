@@ -486,13 +486,23 @@ ScatterMatrix.prototype.__draw = function (
           ? container_el.node()
           : null;
       var chartNode = d3.select(self.__dom_id).node();
-      var availableWidth = null;
-      var availableHeight = null;
+      var availableWidth =
+        isFinite(self.__viewportWidth) && self.__viewportWidth > 0
+          ? self.__viewportWidth
+          : null;
+      var availableHeight =
+        isFinite(self.__viewportHeight) && self.__viewportHeight > 0
+          ? self.__viewportHeight
+          : null;
 
       if (wrapperNode && typeof wrapperNode.getBoundingClientRect === "function") {
         var wrapperBounds = wrapperNode.getBoundingClientRect();
-        availableWidth = wrapperBounds.width;
-        availableHeight = wrapperBounds.height;
+        if (!isFinite(availableWidth) || availableWidth <= 0) {
+          availableWidth = wrapperBounds.width;
+        }
+        if (!isFinite(availableHeight) || availableHeight <= 0) {
+          availableHeight = wrapperBounds.height;
+        }
       }
 
       if (

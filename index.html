@@ -4754,6 +4754,8 @@
         }
         var selectedData = getCurrentGraphDisplayData();
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
+        sm.__viewportWidth = scatterMatrixWidth;
+        sm.__viewportHeight = Math.max(scatterBaseHeight - 30, 160);
         if (
           typeof window !== "undefined" &&
           window.__pendingScatterChartState &&
