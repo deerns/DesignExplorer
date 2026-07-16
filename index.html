@@ -5302,13 +5302,29 @@
         return "";
       }
 
+      function shouldShowMainVerticalResizeHandle() {
+        if (isRightChartFullScreenToggled) {
+          return false;
+        }
+
+        var graphSelection = d3.select("#graph");
+        if (graphSelection.empty()) {
+          return true;
+        }
+
+        var graphHeight = parseFloat(graphSelection.style("height"));
+        var isGraphExpanded = graphSelection.classed("in") && graphHeight > 1;
+        return isGraphExpanded;
+      }
+
       function syncMainVerticalResizeHandleState() {
         var resizeBar = d3.select("#mainVerticalResizeBar");
         var resizeGrip = d3.select("#mainVerticalResizeGrip");
         if (resizeBar.empty() || resizeGrip.empty()) return;
 
-        resizeBar.style("display", isRightChartFullScreenToggled ? "none" : null);
-        if (isRightChartFullScreenToggled) {
+        var shouldShowHandle = shouldShowMainVerticalResizeHandle();
+        resizeBar.style("display", shouldShowHandle ? null : "none");
+        if (!shouldShowHandle) {
           return;
         }
 
