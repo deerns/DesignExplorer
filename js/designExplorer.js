@@ -472,8 +472,32 @@ function findSliderDimOverride(dimName, settingMap) {
   return match ? map[match] : undefined;
 }
 
+function getSliderDimNameFromNode(node, datum) {
+  var attrDim =
+    node && typeof node.getAttribute === "function"
+      ? node.getAttribute("data-dim")
+      : "";
+  if (attrDim) {
+    return attrDim;
+  }
+
+  if (datum && typeof datum === "object") {
+    return datum.name || datum.key || datum.dim || datum.dimension || datum;
+  }
+
+  return datum;
+}
+
 function getSliderWrapperSelection(dimName) {
   if (typeof d3 === "undefined") return null;
+
+  var byDataDim = d3.selectAll("#inputSliders .inputSlider").filter(function (d) {
+    var currentDim = getSliderDimNameFromNode(this, d);
+    return normalizeSliderDimKey(currentDim) === normalizeSliderDimKey(dimName);
+  });
+  if (!byDataDim.empty()) {
+    return byDataDim;
+  }
 
   if (typeof string_as_unicode_escape === "function") {
     var escaped = string_as_unicode_escape(String(dimName));
@@ -489,6 +513,28 @@ function getSliderWrapperSelection(dimName) {
   });
 
   return fallback.empty() ? null : fallback;
+}
+
+function getGraphDimensionSelection(dimName) {
+  if (typeof d3 === "undefined") return null;
+
+  var byData = d3.selectAll("#graph .dimension").filter(function (d) {
+    var currentDim = getSliderDimNameFromNode(this, d);
+    return normalizeSliderDimKey(currentDim) === normalizeSliderDimKey(dimName);
+  });
+  if (!byData.empty()) {
+    return byData;
+  }
+
+  if (typeof string_as_unicode_escape === "function") {
+    var escaped = string_as_unicode_escape(String(dimName));
+    var byId = d3.select("#dim_" + escaped);
+    if (!byId.empty()) {
+      return byId;
+    }
+  }
+
+  return null;
 }
 
 function ensureSliderFontOverrideStyleTag() {
@@ -535,11 +581,11 @@ function applySliderFontOverrides(setting) {
   }
 
   d3.selectAll("#inputSliders .inputSlider").each(function (d) {
-    addDimName(d && d.name ? d.name : d);
+    addDimName(getSliderDimNameFromNode(this, d));
   });
 
   d3.selectAll("#graph .dimension").each(function (d) {
-    addDimName(d && d.name ? d.name : d);
+    addDimName(getSliderDimNameFromNode(this, d));
   });
 
   Object.keys(titleMap).forEach(addDimName);
@@ -548,11 +594,12 @@ function applySliderFontOverrides(setting) {
   dimNames.forEach(function (dimName) {
     var wrapper = getSliderWrapperSelection(dimName);
     var wrapperId = wrapper && wrapper.attr ? wrapper.attr("id") : null;
-    var escapedDim =
-      typeof string_as_unicode_escape === "function"
-        ? string_as_unicode_escape(String(dimName))
-        : String(dimName);
-    var graphDimSelector = "#dim_" + escapedDim;
+    var graphDim = getGraphDimensionSelection(dimName);
+    var graphDimId = graphDim && graphDim.attr ? graphDim.attr("id") : null;
+    var graphDimSelector = graphDimId ? "#" + graphDimId : null;
+    if (!graphDimSelector && typeof string_as_unicode_escape === "function") {
+      graphDimSelector = "#dim_" + string_as_unicode_escape(String(dimName));
+    }
 
     var titleOverride = normalizeSliderPercentSize(
       findSliderDimOverride(dimName, titleMap)
@@ -582,23 +629,25 @@ function applySliderFontOverrides(setting) {
       40 + Math.round(resolvedTickPx * 1.4)
     ) + "px";
 
-    cssRules.push(
-      graphDimSelector +
-        " .label{" +
-        "font-size:" +
-        resolvedTitlePercent +
-        "% !important;" +
-        "}"
-    );
+    if (graphDimSelector) {
+      cssRules.push(
+        graphDimSelector +
+          " .label{" +
+          "font-size:" +
+          resolvedTitlePercent +
+          "% !important;" +
+          "}"
+      );
 
-    cssRules.push(
-      graphDimSelector +
-        " .axis .tick text{" +
-        "font-size:" +
-        resolvedTick +
-        " !important;" +
-        "}"
-    );
+      cssRules.push(
+        graphDimSelector +
+          " .axis .tick text{" +
+          "font-size:" +
+          resolvedTick +
+          " !important;" +
+          "}"
+      );
+    }
 
     if (wrapperId) {
       var wrapperSelector = "#" + wrapperId;
