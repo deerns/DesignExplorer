@@ -5313,7 +5313,7 @@
         }
 
         var graphHeight = parseFloat(graphSelection.style("height"));
-        var isGraphExpanded = graphSelection.classed("in") && graphHeight > 1;
+        var isGraphExpanded = graphSelection.classed("in") || graphHeight > 1;
         return isGraphExpanded;
       }
 
@@ -6096,8 +6096,8 @@
           // collapse in
           var pcHeight = graphHeight;
           d3.select("#graph")
-            .transition("ease out")
             .attr("class", "parcoords collapse in")
+            .transition("ease out")
             .style("height", pcHeight + "px");
 
           //mirror collapse behavior with radar chart
