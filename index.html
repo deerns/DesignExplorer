@@ -11277,25 +11277,38 @@
         }
 
         $settingAccordion
-          .off("click.panelHeadingToggle")
+          .off("click.panelTitleToggle")
           .on(
-            "click.panelHeadingToggle",
-            ".panel-heading, .panel-title a[data-toggle='collapse']",
+            "click.panelTitleToggle",
+            ".panel-title a[data-toggle='collapse']",
             function (e) {
-              if ($(e.target).closest("input, button, select, textarea").length) {
-                return;
-              }
-
-              var $link = $(this).is("a[data-toggle='collapse']")
-                ? $(this)
-                : $(this).find("a[data-toggle='collapse']").first();
+              var $link = $(this);
               if (!$link.length) return;
 
               e.preventDefault();
               e.stopPropagation();
-              openSettingPanel($link.attr("href"), false);
+              toggleSettingPanel($link.attr("href"));
             }
           );
+
+        $settingAccordion
+          .off("click.panelHeadingOpen")
+          .on("click.panelHeadingOpen", ".panel-heading", function (e) {
+            if (
+              $(e.target).closest(
+                "input, button, select, textarea, .panel-title a[data-toggle='collapse']"
+              ).length
+            ) {
+              return;
+            }
+
+            var $link = $(this).find("a[data-toggle='collapse']").first();
+            if (!$link.length) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            openSettingPanel($link.attr("href"), false);
+          });
 
         $settingAccordion
           .off("click.panelCollapseToggle")
