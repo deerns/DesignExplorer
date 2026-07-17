@@ -30,7 +30,7 @@ body {
     padding-right: 4px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1200px) {
     #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) {
         display: flex;
         align-items: stretch;
@@ -54,6 +54,52 @@ body {
         display: flex;
         flex-direction: column;
         justify-content: center;
+    }
+}
+
+@media (max-width: 1199px) {
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #PcChartWrapper,
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper {
+        float: none;
+        width: auto;
+        max-width: none;
+    }
+
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper {
+        margin-top: 12px;
+    }
+
+    #PcChartWrapper > .row > .btn-group.col-xs-12 {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+
+    #PcChartWrapper > .row > .btn-group.col-xs-12 > .btn,
+    #PcChartWrapper > .row > .btn-group.col-xs-12 > a.btn {
+        float: none;
+    }
+
+    #PcChartWrapper > .row > .btn-group.col-xs-12 > .btn-group {
+        float: none !important;
+        width: 100% !important;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+        margin-top: 4px;
+    }
+
+    #ScChartWrapper .chartSide {
+        display: flex;
+        justify-content: center;
+    }
+
+    #ScChartWrapper #radarChart {
+        width: 100%;
+        max-width: min(100%, 440px);
+        margin: 0 auto;
     }
 }
 
