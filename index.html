@@ -4724,6 +4724,13 @@
         updateScatterSelectionActionButtons();
         var scatterBaseHeight = getScatterChartBaseHeight();
         var scatterContainerWidth = getEffectiveScatterContainerWidth();
+        if (
+          !isRightChartFullScreenToggled &&
+          (!isFinite(scatterContainerWidth) || scatterContainerWidth < 160)
+        ) {
+          scheduleScatterLayoutRetry(140);
+          return;
+        }
         var scatterMatrixWidth = scatterBaseHeight - 10;
         if (isFinite(scatterContainerWidth) && scatterContainerWidth > 0) {
           scatterMatrixWidth = Math.min(
@@ -5747,8 +5754,43 @@
       var pendingPcLayoutRefresh = null;
       var pendingScatterShowRefresh = null;
       var pendingDeferredScatterLayoutRefresh = null;
+      var pendingScatterLayoutRetry = null;
       var pendingPcLayoutRefreshOptions = null;
       var pendingWindowResizeFinalize = null;
+      var pendingWindowResizeScatterFinalize = null;
+
+      function hasStableScatterContainerWidth(minWidth) {
+        var requiredWidth =
+          isFinite(minWidth) && minWidth > 0 ? minWidth : 160;
+        var containerWidth = getEffectiveScatterContainerWidth();
+        return isFinite(containerWidth) && containerWidth >= requiredWidth;
+      }
+
+      function scheduleScatterLayoutRetry(delayMs) {
+        if (pendingScatterLayoutRetry !== null) {
+          clearTimeout(pendingScatterLayoutRetry);
+          pendingScatterLayoutRetry = null;
+        }
+
+        pendingScatterLayoutRetry = setTimeout(function () {
+          pendingScatterLayoutRetry = null;
+          if (!graph || !shouldShowScatterPlots()) return;
+          refreshScatterChartLayout();
+        }, isFinite(delayMs) && delayMs > 0 ? delayMs : 140);
+      }
+
+      function scheduleScatterRefreshAfterWindowResize(delayMs) {
+        if (pendingWindowResizeScatterFinalize !== null) {
+          clearTimeout(pendingWindowResizeScatterFinalize);
+          pendingWindowResizeScatterFinalize = null;
+        }
+
+        pendingWindowResizeScatterFinalize = setTimeout(function () {
+          pendingWindowResizeScatterFinalize = null;
+          if (!graph || !shouldShowScatterPlots()) return;
+          refreshScatterChartLayout();
+        }, isFinite(delayMs) && delayMs > 0 ? delayMs : 140);
+      }
 
       function scheduleScatterChartRefreshAfterShow() {
         if (!graph || !shouldShowScatterPlots()) return;
@@ -5861,6 +5903,13 @@
 
         var radarChart = d3.select("#radarChart");
         if (radarChart.empty()) return;
+        if (
+          !isRightChartFullScreenToggled &&
+          !hasStableScatterContainerWidth(160)
+        ) {
+          scheduleScatterLayoutRetry(140);
+          return;
+        }
 
         if (
           typeof window !== "undefined" &&
@@ -5939,12 +5988,6 @@
       }
 
       function scheduleWindowResizeLayoutRefresh() {
-        schedulePcLayoutRefresh({
-          immediate: true,
-          refreshSidebar: false,
-          refreshScatter: false,
-        });
-
         if (pendingWindowResizeFinalize !== null) {
           clearTimeout(pendingWindowResizeFinalize);
           pendingWindowResizeFinalize = null;
@@ -5955,11 +5998,10 @@
           schedulePcLayoutRefresh({
             immediate: true,
             refreshSidebar: true,
-            refreshScatter: true,
-            forceScatterRefresh: true,
-            deferScatterRefresh: true,
+            refreshScatter: false,
           });
-        }, 160);
+          scheduleScatterRefreshAfterWindowResize(160);
+        }, 220);
       }
 
       // side bar for sliders
