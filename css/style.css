@@ -30,6 +30,30 @@ body {
     padding-right: 4px;
 }
 
+@media (min-width: 768px) {
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) {
+        display: flex;
+        align-items: flex-start;
+    }
+
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #PcChartWrapper,
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper {
+        float: none;
+    }
+
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #PcChartWrapper {
+        flex: 1 1 auto;
+        width: auto;
+        max-width: none;
+    }
+
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper {
+        flex: 0 0 clamp(300px, 24vw, 360px);
+        width: clamp(300px, 24vw, 360px);
+        max-width: clamp(300px, 24vw, 360px);
+    }
+}
+
 #mainVerticalResizeBar {
     position: relative;
     display: flex;
