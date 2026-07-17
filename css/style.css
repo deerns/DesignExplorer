@@ -201,10 +201,11 @@ body.is-main-vertical-resizing * {
 }
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
+    position: relative;
     width: 100%;
     max-width: 100%;
-    display: flex;
-    justify-content: center;
+    display: block;
+    overflow: visible;
 }
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container svg {

@@ -942,7 +942,7 @@
     <link
       type="text/css"
       rel="stylesheet"
-      href="./scatter_matrix_source_files/scatter-matrix.css"
+      href="./scatter_matrix_source_files/scatter-matrix.css?v=20260717-1"
     />
 
     <!-- Bootstrap Core CSS -->
@@ -951,7 +951,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20260710-1" rel="stylesheet" />
+    <link href="css/style.css?v=20260717-1" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -5177,16 +5177,20 @@
       }
 
       function getEffectiveScatterContainerWidth() {
+        var radarWidth = getContainerContentWidth("#radarChart");
         var chartSideWidth = getContainerContentWidth("#ScChartWrapper .chartSide");
         var wrapperWidth = getContainerContentWidth("#ScChartWrapper");
+        var widthCandidates = [radarWidth, chartSideWidth, wrapperWidth].filter(
+          function (value) {
+            return isFinite(value) && value > 0;
+          }
+        );
 
-        if (chartSideWidth !== null && wrapperWidth !== null) {
-          return Math.min(chartSideWidth, wrapperWidth);
+        if (widthCandidates.length > 0) {
+          return Math.min.apply(null, widthCandidates);
         }
-        if (chartSideWidth !== null) {
-          return chartSideWidth;
-        }
-        return wrapperWidth;
+
+        return null;
       }
 
       function getPcChartBaseWidth() {
