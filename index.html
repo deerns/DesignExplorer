@@ -5736,6 +5736,8 @@
 
       var pendingPcLayoutRefresh = null;
       var pendingScatterShowRefresh = null;
+      var pendingPcLayoutRefreshOptions = null;
+      var pendingWindowResizeFinalize = null;
 
       function scheduleScatterChartRefreshAfterShow() {
         if (!graph || !shouldShowScatterPlots()) return;
@@ -5824,7 +5826,15 @@
         addScatterChart();
       }
 
-      function schedulePcLayoutRefresh() {
+      function schedulePcLayoutRefresh(options) {
+        options = options || {};
+        pendingPcLayoutRefreshOptions = {
+          immediate: !!options.immediate,
+          refreshSidebar: options.refreshSidebar !== false,
+          refreshScatter: options.refreshScatter !== false,
+          forceScatterRefresh: options.forceScatterRefresh !== false,
+        };
+
         if (pendingPcLayoutRefresh !== null) {
           if (
             typeof window !== "undefined" &&
@@ -5838,11 +5848,31 @@
         }
 
         var runRefresh = function () {
+          var nextOptions = pendingPcLayoutRefreshOptions || {
+            immediate: false,
+            refreshSidebar: true,
+            refreshScatter: true,
+            forceScatterRefresh: true,
+          };
+
           pendingPcLayoutRefresh = null;
-          refreshSidebarControlLayout();
+          pendingPcLayoutRefreshOptions = null;
+
+          if (nextOptions.refreshSidebar) {
+            refreshSidebarControlLayout();
+          }
+
           if (graph) {
-            reDrawPcChart();
-            refreshScatterChartLayout();
+            reDrawPcChart({ immediate: nextOptions.immediate });
+
+            if (nextOptions.refreshScatter) {
+              if (
+                nextOptions.forceScatterRefresh ||
+                !syncExistingScatterChartState()
+              ) {
+                refreshScatterChartLayout();
+              }
+            }
           }
         };
 
@@ -5854,6 +5884,29 @@
         } else {
           pendingPcLayoutRefresh = setTimeout(runRefresh, 0);
         }
+      }
+
+      function scheduleWindowResizeLayoutRefresh() {
+        schedulePcLayoutRefresh({
+          immediate: true,
+          refreshSidebar: false,
+          refreshScatter: false,
+        });
+
+        if (pendingWindowResizeFinalize !== null) {
+          clearTimeout(pendingWindowResizeFinalize);
+          pendingWindowResizeFinalize = null;
+        }
+
+        pendingWindowResizeFinalize = setTimeout(function () {
+          pendingWindowResizeFinalize = null;
+          schedulePcLayoutRefresh({
+            immediate: true,
+            refreshSidebar: true,
+            refreshScatter: true,
+            forceScatterRefresh: true,
+          });
+        }, 160);
       }
 
       // side bar for sliders
@@ -7504,10 +7557,11 @@
         .select("#ScChartWrapper")
         .style("height")
         .replace("px", "");
-      window.addEventListener("resize", schedulePcLayoutRefresh);
+      window.addEventListener("resize", scheduleWindowResizeLayoutRefresh);
 
       //redraw the charts when window size changes
-      function reDrawPcChart() {
+      function reDrawPcChart(options) {
+        options = options || {};
         calWidthAndHeight();
 
         var newGraphWidth = getPcChartBaseWidth();
@@ -7517,7 +7571,9 @@
           newGraphHeight = newGraphHeight;
         }
 
-        resizePcChart(newGraphWidth, newGraphHeight);
+        resizePcChart(newGraphWidth, newGraphHeight, {
+          immediate: !!options.immediate,
+        });
         syncBottomPanelHeights();
         syncMainVerticalResizeHandleState();
         //console.log(graphHeight+"x"+zoomedHeight);
