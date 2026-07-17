@@ -53,7 +53,8 @@ body {
         max-width: clamp(300px, 24vw, 360px);
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
+        min-height: 0;
     }
 }
 
@@ -171,6 +172,47 @@ body.is-main-vertical-resizing * {
 }
 
 #radarChart {
+    overflow: visible;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) > .row-fluid,
+#ScChartWrapper:not(.rightChartFullScreenToggled) > #scatterSelectionActionRow {
+    flex: 0 0 auto;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) .chartSide {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
+    float: none;
+    width: 100%;
+    max-width: min(100%, 440px);
+    margin: 0 auto;
+    padding-left: 0;
+    padding-right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container svg {
+    float: none;
+    display: block;
+    margin: 0 auto;
     overflow: visible;
 }
 
