@@ -5742,6 +5742,7 @@
 
       var pendingPcLayoutRefresh = null;
       var pendingScatterShowRefresh = null;
+      var pendingDeferredScatterLayoutRefresh = null;
       var pendingPcLayoutRefreshOptions = null;
       var pendingWindowResizeFinalize = null;
 
@@ -5783,6 +5784,41 @@
           });
         } else {
           pendingScatterShowRefresh = setTimeout(runRefresh, 30);
+        }
+      }
+
+      function scheduleDeferredScatterLayoutRefresh() {
+        if (!graph || !shouldShowScatterPlots()) return;
+
+        if (pendingDeferredScatterLayoutRefresh !== null) {
+          if (
+            typeof window !== "undefined" &&
+            typeof window.cancelAnimationFrame === "function"
+          ) {
+            window.cancelAnimationFrame(pendingDeferredScatterLayoutRefresh);
+          } else {
+            clearTimeout(pendingDeferredScatterLayoutRefresh);
+          }
+          pendingDeferredScatterLayoutRefresh = null;
+        }
+
+        var runRefresh = function () {
+          pendingDeferredScatterLayoutRefresh = null;
+          if (!graph || !shouldShowScatterPlots()) return;
+          refreshScatterChartLayout();
+        };
+
+        if (
+          typeof window !== "undefined" &&
+          typeof window.requestAnimationFrame === "function"
+        ) {
+          pendingDeferredScatterLayoutRefresh =
+            window.requestAnimationFrame(function () {
+              pendingDeferredScatterLayoutRefresh =
+                window.requestAnimationFrame(runRefresh);
+            });
+        } else {
+          pendingDeferredScatterLayoutRefresh = setTimeout(runRefresh, 30);
         }
       }
 
@@ -5839,6 +5875,7 @@
           refreshSidebar: options.refreshSidebar !== false,
           refreshScatter: options.refreshScatter !== false,
           forceScatterRefresh: options.forceScatterRefresh !== false,
+          deferScatterRefresh: !!options.deferScatterRefresh,
         };
 
         if (pendingPcLayoutRefresh !== null) {
@@ -5859,6 +5896,7 @@
             refreshSidebar: true,
             refreshScatter: true,
             forceScatterRefresh: true,
+            deferScatterRefresh: false,
           };
 
           pendingPcLayoutRefresh = null;
@@ -5876,7 +5914,11 @@
                 nextOptions.forceScatterRefresh ||
                 !syncExistingScatterChartState()
               ) {
-                refreshScatterChartLayout();
+                if (nextOptions.deferScatterRefresh) {
+                  scheduleDeferredScatterLayoutRefresh();
+                } else {
+                  refreshScatterChartLayout();
+                }
               }
             }
           }
@@ -5911,6 +5953,7 @@
             refreshSidebar: true,
             refreshScatter: true,
             forceScatterRefresh: true,
+            deferScatterRefresh: true,
           });
         }, 160);
       }
