@@ -193,11 +193,8 @@ body.is-main-vertical-resizing * {
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
     float: none;
     width: 100%;
-    max-width: min(100%, 380px);
+    max-width: min(100%, 360px);
     margin: 0 auto;
-    padding-left: 8px;
-    padding-right: 8px;
-    box-sizing: border-box;
     overflow: visible;
 }
 
@@ -207,19 +204,10 @@ body.is-main-vertical-resizing * {
     justify-content: center;
 }
 
-#ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-svg {
-    width: 100% !important;
-    max-width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-}
-
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container svg {
     float: none;
     display: block;
     margin: 0 auto;
-    max-width: 100%;
-    height: auto;
     overflow: visible;
 }
 
