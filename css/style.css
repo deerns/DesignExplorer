@@ -192,14 +192,16 @@ body.is-main-vertical-resizing * {
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
     float: none;
-    width: 100%;
-    max-width: min(100%, 360px);
     margin: 0 auto;
+    padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box;
     overflow: visible;
 }
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
     width: 100%;
+    max-width: 100%;
     display: flex;
     justify-content: center;
 }
