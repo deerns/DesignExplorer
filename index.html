@@ -886,6 +886,23 @@
         z-index: 3;
       }
 
+      #radarChart .scatter-matrix-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 0;
+      }
+
+      #radarChart .scatter-matrix-container svg {
+        float: none;
+        display: block;
+        margin: 0 auto;
+      }
+
+      #radarChart .scatter-matrix-svg {
+        margin-top: 4px;
+      }
+
       .scatter-matrix-container circle.pinned {
         fill: #ffa300 !important;
         fill-opacity: 1 !important;
@@ -4723,6 +4740,7 @@
       function addScatterChart() {
         updateScatterSelectionActionButtons();
         var scatterBaseHeight = getScatterChartBaseHeight();
+        var radarChartHeight = getContainerContentHeight("#radarChart");
         var rightChartWidth = d3
           .select("#radarChart")
           .style("width")
@@ -4731,14 +4749,20 @@
         if (!isFinite(scatterContainerWidth) || scatterContainerWidth <= 0) {
           scatterContainerWidth = getContainerContentWidth("#ScChartWrapper");
         }
-        var scatterMatrixWidth = scatterBaseHeight - 10;
-        if (isFinite(scatterContainerWidth) && scatterContainerWidth > 0) {
-          scatterMatrixWidth = Math.min(
-            scatterMatrixWidth,
-            scatterContainerWidth - 10
-          );
-        }
+        var scatterMatrixWidth =
+          isFinite(scatterContainerWidth) && scatterContainerWidth > 0
+            ? scatterContainerWidth - 12
+            : scatterBaseHeight - 8;
         scatterMatrixWidth = Math.max(scatterMatrixWidth, 180);
+        var scatterViewportHeight =
+          isFinite(radarChartHeight) && radarChartHeight > 0
+            ? radarChartHeight - 12
+            : scatterBaseHeight - 18;
+        scatterViewportHeight = Math.max(scatterViewportHeight, 160);
+        var initialScatterVariableCount = Math.max(
+          getInitialScatterVariableCount(),
+          1
+        );
         var preservedScatterLayout =
           typeof window !== "undefined" ? window.__pendingScatterLayoutState : null;
         if (
@@ -4755,7 +4779,7 @@
         var selectedData = getCurrentGraphDisplayData();
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
         sm.__viewportWidth = scatterMatrixWidth;
-        sm.__viewportHeight = Math.max(scatterBaseHeight - 30, 160);
+        sm.__viewportHeight = scatterViewportHeight;
         if (
           typeof window !== "undefined" &&
           window.__pendingScatterChartState &&
@@ -4764,7 +4788,13 @@
           sm.__initial_selected_variables =
             window.__pendingScatterChartState.selectedVariables.slice();
         }
-        var scatterCellSize = Math.max((scatterMatrixWidth - 50) / 2, 60);
+        var scatterCellSize = Math.max(
+          Math.min(
+            (scatterMatrixWidth - 30) / initialScatterVariableCount,
+            (scatterViewportHeight - 24) / initialScatterVariableCount
+          ),
+          60
+        );
         if (
           preservedScatterLayout &&
           !isRightChartFullScreenToggled &&
@@ -4795,7 +4825,7 @@
 
         d3.select(".scatter-matrix-control").style(
           "height",
-          Math.max(scatterBaseHeight - 30, 160) + "px"
+          scatterViewportHeight + "px"
         );
         d3.select(".scatter-matrix-control").classed(
           "toggled",
@@ -5173,14 +5203,47 @@
           return fullscreenHeight;
         }
 
+        var measuredHeight = Math.max(
+          isFinite(radarHeight) && radarHeight > 0 ? radarHeight : 0,
+          isFinite(scatterWrapperHeight) && scatterWrapperHeight > 0
+            ? scatterWrapperHeight
+            : 0
+        );
+
+        if (measuredHeight > 0) {
+          return baseHeight !== null
+            ? Math.max(baseHeight, measuredHeight)
+            : measuredHeight;
+        }
+
         if (baseHeight !== null) {
           return baseHeight;
         }
-        if (isFinite(radarHeight) && radarHeight > 0) {
-          return radarHeight;
-        }
 
         return 320;
+      }
+
+      function getInitialScatterVariableCount() {
+        var pendingScatterChartState =
+          typeof window !== "undefined" ? window.__pendingScatterChartState : null;
+
+        if (
+          pendingScatterChartState &&
+          Array.isArray(pendingScatterChartState.selectedVariables) &&
+          pendingScatterChartState.selectedVariables.length > 0
+        ) {
+          return pendingScatterChartState.selectedVariables.length;
+        }
+
+        if (
+          scatterChart &&
+          Array.isArray(scatterChart.__selected_variables) &&
+          scatterChart.__selected_variables.length > 0
+        ) {
+          return scatterChart.__selected_variables.length;
+        }
+
+        return 2;
       }
 
       function getPcChartBaseWidth() {

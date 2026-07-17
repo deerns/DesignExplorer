@@ -482,11 +482,11 @@ ScatterMatrix.prototype.__draw = function (
     }
 
     // Size parameters
-    var padding = 10,
-      axis_width = 20,
-      axis_height = 15,
+    var padding = 6,
+      axis_width = 14,
+      axis_height = 12,
       legend_width = 0,
-      label_height = 15;
+      label_height = 12;
 
     function fitCellSizeToViewport(requestedSize) {
       var maxSize = requestedSize;
