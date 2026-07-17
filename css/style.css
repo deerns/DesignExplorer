@@ -33,7 +33,7 @@ body {
 @media (min-width: 768px) {
     #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) {
         display: flex;
-        align-items: flex-start;
+        align-items: stretch;
     }
 
     #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #PcChartWrapper,
@@ -51,6 +51,9 @@ body {
         flex: 0 0 clamp(300px, 24vw, 360px);
         width: clamp(300px, 24vw, 360px);
         max-width: clamp(300px, 24vw, 360px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
 }
 

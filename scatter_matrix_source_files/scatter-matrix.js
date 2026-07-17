@@ -483,7 +483,7 @@ ScatterMatrix.prototype.__draw = function (
 
     // Size parameters
     var padding = 6,
-      axis_width = 14,
+      axis_width = 24,
       axis_height = 12,
       legend_width = 0,
       label_height = 12;
