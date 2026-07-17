@@ -184,7 +184,7 @@ body.is-main-vertical-resizing * {
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 0;
     margin-left: 0;
     margin-right: 0;
@@ -192,8 +192,12 @@ body.is-main-vertical-resizing * {
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
     float: none;
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
     width: 100%;
-    margin: 0 auto;
+    margin: 0;
     padding-left: 0;
     padding-right: 0;
     box-sizing: border-box;
@@ -202,10 +206,16 @@ body.is-main-vertical-resizing * {
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
     position: relative;
+    min-width: 0;
     width: 100%;
     max-width: 100%;
     display: block;
     overflow: visible;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-svg {
+    min-width: 0;
+    max-width: 100%;
 }
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container svg {
