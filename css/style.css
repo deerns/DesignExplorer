@@ -93,11 +93,12 @@ body {
     }
 
     #ScChartWrapper .chartSide {
-        display: flex;
-        justify-content: center;
+        display: block;
+        margin: 0;
     }
 
     #ScChartWrapper #radarChart {
+        display: block;
         width: 100%;
         max-width: min(100%, 440px);
         margin: 0 auto;
@@ -181,10 +182,6 @@ body.is-main-vertical-resizing * {
 }
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) .chartSide {
-    display: flex;
-    flex: 1 1 auto;
-    align-items: center;
-    justify-content: flex-start;
     min-height: 0;
     margin-left: 0;
     margin-right: 0;
@@ -193,9 +190,6 @@ body.is-main-vertical-resizing * {
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
     float: none;
     display: block;
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: 100%;
     width: 100%;
     margin: 0;
     padding-left: 0;
@@ -221,8 +215,23 @@ body.is-main-vertical-resizing * {
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container svg {
     float: none;
     display: block;
-    margin: 0 auto;
+    margin: 0;
     overflow: visible;
+}
+
+@media (min-width: 1200px) {
+    #ScChartWrapper:not(.rightChartFullScreenToggled) .chartSide {
+        display: flex;
+        flex: 1 1 auto;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 100%;
+    }
 }
 
 #legend text.legend-label,
