@@ -5919,6 +5919,19 @@
         }
       }
 
+      function scheduleScatterLayoutStabilization(delays) {
+        if (!Array.isArray(delays) || delays.length === 0) {
+          delays = [0];
+        }
+
+        delays.forEach(function (delayMs) {
+          setTimeout(function () {
+            if (!graph || !shouldShowScatterPlots()) return;
+            scheduleDeferredScatterLayoutRefresh();
+          }, isFinite(delayMs) && delayMs > 0 ? delayMs : 0);
+        });
+      }
+
       function syncExistingScatterChartState() {
         if (
           typeof window !== "undefined" &&
@@ -12912,6 +12925,7 @@
             updateLabels();
             refreshGraphLabelsWithRetry(0);
             graph.render();
+            scheduleScatterLayoutStabilization([0, 90]);
             applyLineGradientSetting(_userSetting.lineGradient, true);
             // force relabel axes immediately
             d3.selectAll(".dimension text.label").text(function (d) {
@@ -12952,7 +12966,10 @@
               if (typeof applySliderFontOverrides === "function") {
                 applySliderFontOverrides(_userSetting || {});
               }
-              if (graph) graph.render();
+              if (graph) {
+                graph.render();
+                scheduleScatterLayoutStabilization([0, 90]);
+              }
               applyLineGradientSetting(_userSetting.lineGradient, true);
             }, 0);
             // extra delayed pass in case parcoords re-renders after settings
@@ -12972,6 +12989,7 @@
                   return getDimLabel(d);
                 });
                 graph.render();
+                scheduleScatterLayoutStabilization([0, 90]);
                 applyLineGradientSetting(_userSetting.lineGradient, true);
                 applyDimLabelsToGraph(5);
               }
@@ -12994,6 +13012,7 @@
                   applyLabelFontSize(_userSetting.labelSize);
                 }
                 graph.render();
+                scheduleScatterLayoutStabilization([0, 90]);
                 applyLineGradientSetting(_userSetting.lineGradient, true);
                 applyDimLabelsToGraph(3);
               }

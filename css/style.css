@@ -42,8 +42,9 @@ body {
     }
 
     #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #PcChartWrapper {
-        flex: 1 1 auto;
-        width: auto;
+        flex: 1 1 0;
+        width: 0;
+        min-width: 0;
         max-width: none;
     }
 
