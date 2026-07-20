@@ -5945,8 +5945,13 @@
       }
 
       function initMainVerticalResizeHandle() {
+        var resizeBar = document.getElementById("mainVerticalResizeBar");
         var resizeGrip = document.getElementById("mainVerticalResizeGrip");
-        if (!resizeGrip || resizeGrip.__mainVerticalResizeBound) {
+        if (
+          !resizeBar ||
+          !resizeGrip ||
+          resizeGrip.__mainVerticalResizeBound
+        ) {
           return;
         }
 
@@ -5970,7 +5975,7 @@
           applyMainVerticalSplitLayout({ immediate: true });
         }
 
-        d3.select(resizeGrip).call(
+        d3.select(resizeBar).call(
           d3.behavior
             .drag()
             .on("dragstart", function () {

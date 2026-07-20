@@ -114,6 +114,9 @@ body {
     height: 18px;
     margin: 8px 0 4px;
     padding-left: 12px;
+    z-index: 60;
+    pointer-events: auto;
+    isolation: isolate;
 }
 
 #mainVerticalResizeGrip {
@@ -131,6 +134,12 @@ body {
     touch-action: none;
     pointer-events: auto;
     appearance: none;
+}
+
+#topChartsSection,
+#bottomContentLayout {
+    position: relative;
+    z-index: 1;
 }
 
 #mainVerticalResizeGrip:focus {
