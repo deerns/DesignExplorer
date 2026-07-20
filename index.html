@@ -6066,6 +6066,15 @@
           applyMainVerticalSplitLayout({ immediate: true });
         }
 
+        function stepMainVerticalLayoutByWheel(deltaY) {
+          if (!isFinite(deltaY) || deltaY === 0) {
+            return;
+          }
+
+          var direction = deltaY > 0 ? -1 : 1;
+          stepMainVerticalLayout(direction * 18);
+        }
+
         function startDrag(startEvent) {
           if (isResizeDisabled()) {
             return;
@@ -6153,6 +6162,28 @@
         resizeBar.addEventListener("touchstart", handleTouchStart, {
           passive: false,
         });
+        resizeGrip.addEventListener(
+          "wheel",
+          function (event) {
+            if (isResizeDisabled()) return;
+            if (event.cancelable) {
+              event.preventDefault();
+            }
+            stepMainVerticalLayoutByWheel(event.deltaY);
+          },
+          { passive: false }
+        );
+        resizeBar.addEventListener(
+          "wheel",
+          function (event) {
+            if (isResizeDisabled()) return;
+            if (event.cancelable) {
+              event.preventDefault();
+            }
+            stepMainVerticalLayoutByWheel(event.deltaY);
+          },
+          { passive: false }
+        );
 
         resizeGrip.addEventListener("keydown", function (event) {
           if (isResizeDisabled()) return;
