@@ -248,6 +248,10 @@ body.is-main-vertical-resizing * {
         margin-top: auto;
         margin-bottom: auto;
     }
+
+    #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
+        margin-top: clamp(28px, 4vh, 56px);
+    }
 }
 
 #legend text.legend-label,
