@@ -5945,8 +5945,13 @@
       }
 
       function initMainVerticalResizeHandle() {
+        var resizeBar = document.getElementById("mainVerticalResizeBar");
         var resizeGrip = document.getElementById("mainVerticalResizeGrip");
-        if (!resizeGrip || resizeGrip.__mainVerticalResizeBound) {
+        if (
+          !resizeBar ||
+          !resizeGrip ||
+          resizeGrip.__mainVerticalResizeBound
+        ) {
           return;
         }
 
@@ -6007,17 +6012,9 @@
               return;
             }
             document.body.classList.remove("is-main-vertical-resizing");
-            resizeGrip.removeEventListener("pointermove", handlePointerMove);
-            resizeGrip.removeEventListener("pointerup", stopDrag);
-            resizeGrip.removeEventListener("pointercancel", stopDrag);
-            if (
-              typeof resizeGrip.releasePointerCapture === "function" &&
-              dragState.pointerId !== undefined
-            ) {
-              try {
-                resizeGrip.releasePointerCapture(dragState.pointerId);
-              } catch (e) {}
-            }
+            document.removeEventListener("pointermove", handlePointerMove);
+            document.removeEventListener("pointerup", stopDrag);
+            document.removeEventListener("pointercancel", stopDrag);
 
             if (endEvent && isFinite(endEvent.clientY)) {
               applyDrag(endEvent.clientY, false);
@@ -6027,21 +6024,12 @@
             applyMainVerticalSplitLayout({ immediate: true });
           }
 
-          if (
-            typeof resizeGrip.setPointerCapture === "function" &&
-            dragState.pointerId !== undefined
-          ) {
-            try {
-              resizeGrip.setPointerCapture(dragState.pointerId);
-            } catch (e) {}
-          }
-
-          resizeGrip.addEventListener("pointermove", handlePointerMove);
-          resizeGrip.addEventListener("pointerup", stopDrag);
-          resizeGrip.addEventListener("pointercancel", stopDrag);
+          document.addEventListener("pointermove", handlePointerMove);
+          document.addEventListener("pointerup", stopDrag);
+          document.addEventListener("pointercancel", stopDrag);
         }
 
-        resizeGrip.addEventListener("pointerdown", function (event) {
+        resizeBar.addEventListener("pointerdown", function (event) {
           if (event.pointerType === "mouse" && event.button !== 0) return;
           if (event.cancelable) {
             event.preventDefault();
