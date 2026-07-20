@@ -195,7 +195,8 @@ body.is-main-vertical-resizing * {
     padding-left: 0;
     padding-right: 0;
     box-sizing: border-box;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: visible;
 }
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
@@ -210,6 +211,8 @@ body.is-main-vertical-resizing * {
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-svg {
     min-width: 0;
     max-width: 100%;
+    margin-left: 0;
+    margin-right: auto;
 }
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container svg {

@@ -951,7 +951,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20260717-3" rel="stylesheet" />
+    <link href="css/style.css?v=20260717-4" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -5183,15 +5183,45 @@
         return 320;
       }
 
+      function getVisibleScatterViewportWidth() {
+        var viewportWidth =
+          typeof window !== "undefined" && isFinite(window.innerWidth)
+            ? window.innerWidth
+            : null;
+        var pageWidth = getContainerContentWidth("#page-content-wrapper");
+        var fluidWidth = getContainerContentWidth(
+          "#page-content-wrapper > .container-fluid"
+        );
+        var topSectionWidth = getContainerContentWidth("#topChartsSection");
+        var widthCandidates = [
+          viewportWidth !== null ? viewportWidth - 28 : null,
+          pageWidth,
+          fluidWidth,
+          topSectionWidth,
+        ].filter(function (value) {
+          return isFinite(value) && value > 0;
+        });
+
+        if (widthCandidates.length > 0) {
+          return Math.max(Math.min.apply(null, widthCandidates), 0);
+        }
+
+        return null;
+      }
+
       function getEffectiveScatterContainerWidth() {
         var radarWidth = getContainerContentWidth("#radarChart");
         var chartSideWidth = getContainerContentWidth("#ScChartWrapper .chartSide");
         var wrapperWidth = getContainerContentWidth("#ScChartWrapper");
-        var widthCandidates = [radarWidth, chartSideWidth, wrapperWidth].filter(
-          function (value) {
-            return isFinite(value) && value > 0;
-          }
-        );
+        var viewportWidth = getVisibleScatterViewportWidth();
+        var widthCandidates = [
+          radarWidth,
+          chartSideWidth,
+          wrapperWidth,
+          viewportWidth,
+        ].filter(function (value) {
+          return isFinite(value) && value > 0;
+        });
 
         if (widthCandidates.length > 0) {
           return Math.min.apply(null, widthCandidates);
