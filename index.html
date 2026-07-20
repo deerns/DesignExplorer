@@ -4785,6 +4785,42 @@
         });
       }
 
+      function orderScatterVariablesByGraph(numericVariables) {
+        var ordered = Array.isArray(numericVariables)
+          ? numericVariables.slice()
+          : [];
+        if (ordered.length === 0) {
+          return [];
+        }
+
+        var graphOrder = getCurrentGraphDimensionOrder();
+        if (!Array.isArray(graphOrder) || graphOrder.length === 0) {
+          return ordered;
+        }
+
+        var lookup = {};
+        ordered.forEach(function (name) {
+          lookup[name] = true;
+        });
+
+        var result = [];
+        graphOrder.forEach(function (name) {
+          if (lookup[name]) {
+            result.push(name);
+            delete lookup[name];
+          }
+        });
+
+        ordered.forEach(function (name) {
+          if (lookup[name]) {
+            result.push(name);
+            delete lookup[name];
+          }
+        });
+
+        return result;
+      }
+
       function getScatterPointFill(d) {
         if (
           typeof color !== "function" ||
@@ -4835,7 +4871,9 @@
           };
         }
 
-        var numericVariables = getScatterNumericVariables(data);
+        var numericVariables = orderScatterVariablesByGraph(
+          getScatterNumericVariables(data)
+        );
         if (numericVariables.length < 2) {
           svgWrapper.html("<em>No numeric dimensions available for scatterplots</em>");
           return {
@@ -4857,12 +4895,15 @@
             : [];
         var selectedVariables =
           requestedVariables.length >= 2
-            ? requestedVariables.slice(0, 3)
-            : numericVariables.slice(0, Math.min(3, numericVariables.length));
+            ? requestedVariables.slice(0, 2)
+            : numericVariables.slice(-3, -1);
+        if (selectedVariables.length < 2) {
+          selectedVariables = numericVariables.slice(0, Math.min(2, numericVariables.length));
+        }
         var variableCount = selectedVariables.length;
-        var labelMargin = 42;
+        var labelMargin = 92;
         var topMargin = 16;
-        var bottomMargin = 28;
+        var bottomMargin = 44;
         var rightMargin = 10;
         var availableWidth = Math.max(viewportWidth - labelMargin - rightMargin, 120);
         var availableHeight = Math.max(viewportHeight - topMargin - bottomMargin, 120);
@@ -4919,6 +4960,39 @@
           .append("g")
           .attr("transform", "translate(" + labelMargin + "," + topMargin + ")");
 
+        svg
+          .selectAll(".scatter-axis-label-y")
+          .data(selectedVariables)
+          .enter()
+          .append("text")
+          .attr("class", "scatter-axis-label scatter-axis-label-y")
+          .attr("x", labelMargin - 10)
+          .attr("y", function (d, i) {
+            return topMargin + i * cellSize + cellSize / 2;
+          })
+          .attr("dy", ".32em")
+          .attr("text-anchor", "end")
+          .text(function (d) {
+            var idx = numericVariables.indexOf(d) + 1;
+            return idx + ": " + getDimLabel(d);
+          });
+
+        svg
+          .selectAll(".scatter-axis-label-x")
+          .data(selectedVariables)
+          .enter()
+          .append("text")
+          .attr("class", "scatter-axis-label scatter-axis-label-x")
+          .attr("x", function (d, i) {
+            return labelMargin + i * cellSize + cellSize / 2;
+          })
+          .attr("y", topMargin + cellSize * variableCount + 22)
+          .attr("text-anchor", "middle")
+          .text(function (d) {
+            var idx = numericVariables.indexOf(d) + 1;
+            return idx + ": " + getDimLabel(d);
+          });
+
         selectedVariables.forEach(function (yKey, rowIndex) {
           selectedVariables.forEach(function (xKey, columnIndex) {
             var xScale = d3.scale
@@ -4973,31 +5047,6 @@
                 return getScatterPointFill(d);
               })
               .style("fill-opacity", 0.7);
-
-            if (columnIndex === 0) {
-              cell
-                .append("text")
-                .attr("x", -10)
-                .attr("y", cellSize / 2)
-                .attr("dy", ".32em")
-                .attr("text-anchor", "middle")
-                .attr("transform", "rotate(-90)")
-                .text(function (d) {
-                  var idx = numericVariables.indexOf(d.y) + 1;
-                  return idx + ": " + getDimLabel(d.y);
-                });
-            }
-
-            if (rowIndex === variableCount - 1) {
-              cell
-                .append("text")
-                .attr("x", 6)
-                .attr("y", cellSize + 16)
-                .text(function (d) {
-                  var idx = numericVariables.indexOf(d.x) + 1;
-                  return idx + ": " + getDimLabel(d.x);
-                });
-            }
           });
         });
 
@@ -12845,6 +12894,20 @@
       }
 
       function updateScatterCellAxisTitles() {
+        d3.selectAll(".scatter-matrix-svg .scatter-axis-label-y").text(function (d) {
+          var key = (d || "").toString();
+          var idx = getScatterVariableIndex(key);
+          var prefix = idx !== null ? idx + ": " : "";
+          return prefix + getDimLabel(key);
+        });
+
+        d3.selectAll(".scatter-matrix-svg .scatter-axis-label-x").text(function (d) {
+          var key = (d || "").toString();
+          var idx = getScatterVariableIndex(key);
+          var prefix = idx !== null ? idx + ": " : "";
+          return prefix + getDimLabel(key);
+        });
+
         d3.selectAll(".scatter-matrix-svg g.cell text").text(function (d) {
           var el = d3.select(this);
           var current = (el.text() || "").trim();
@@ -13024,7 +13087,8 @@
         attempt = attempt || 0;
         updateScatterLabels();
         var hasAxes =
-          d3.selectAll(".scatter-matrix-svg .x.axis text").size() +
+          d3.selectAll(".scatter-matrix-svg .scatter-axis-label").size() +
+            d3.selectAll(".scatter-matrix-svg .x.axis text").size() +
             d3.selectAll(".scatter-matrix-svg .y.axis text").size() >
           0;
         if (!hasAxes && attempt < 10) {
