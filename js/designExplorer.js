@@ -45,14 +45,34 @@ var mainVerticalLayoutState = {
   minBottomHeight: 150,
 };
 
+function resolveMainVerticalTopControlsHeight() {
+  var measuredTopControlsHeight = null;
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.getMeasuredMainVerticalTopControlsHeight === "function"
+  ) {
+    measuredTopControlsHeight = window.getMeasuredMainVerticalTopControlsHeight();
+  }
+
+  if (
+    isFinite(measuredTopControlsHeight) &&
+    measuredTopControlsHeight > 0
+  ) {
+    mainVerticalLayoutState.topControlsHeight = measuredTopControlsHeight;
+  }
+
+  return mainVerticalLayoutState.topControlsHeight;
+}
+
 function getMainVerticalLayoutBounds(totalHeight) {
+  var topControlsHeight = resolveMainVerticalTopControlsHeight();
   var resolvedTotalHeight =
     isFinite(totalHeight) && totalHeight > 0
       ? totalHeight
       : Math.max((window.innerHeight || 0) - 115, 0);
   var minTopHeight =
-    mainVerticalLayoutState.topControlsHeight +
-    mainVerticalLayoutState.minGraphHeight;
+    topControlsHeight + mainVerticalLayoutState.minGraphHeight;
   var minBottomHeight = mainVerticalLayoutState.minBottomHeight;
 
   if (minTopHeight + minBottomHeight > resolvedTotalHeight) {
@@ -61,7 +81,7 @@ function getMainVerticalLayoutBounds(totalHeight) {
       Math.min(minBottomHeight, resolvedTotalHeight * 0.35)
     );
     minTopHeight = Math.max(
-      mainVerticalLayoutState.topControlsHeight + 80,
+      topControlsHeight + 80,
       resolvedTotalHeight - minBottomHeight
     );
   }
@@ -73,9 +93,10 @@ function getMainVerticalLayoutBounds(totalHeight) {
 }
 
 function getMainVerticalLayoutTopHeight() {
+  var topControlsHeight = resolveMainVerticalTopControlsHeight();
   return (
     (isFinite(graphHeight) ? graphHeight : 0) +
-    mainVerticalLayoutState.topControlsHeight
+    topControlsHeight
   );
 }
 
@@ -98,6 +119,7 @@ function setMainVerticalLayoutTopHeight(nextTopHeight) {
 }
 
 function calWidthAndHeight() {
+  var topControlsHeight = resolveMainVerticalTopControlsHeight();
   windowWidth = window.innerWidth;
   windowHeight = window.innerHeight;
   cleanHeight = windowHeight - 115; // 2
@@ -117,7 +139,7 @@ function calWidthAndHeight() {
   mainVerticalLayoutState.topRatio =
     cleanHeight > 0 ? topHeight / cleanHeight : 1 / 3;
   graphHeight = Math.max(
-    topHeight - mainVerticalLayoutState.topControlsHeight,
+    topHeight - topControlsHeight,
     80
   ); // remove 22+2 top tool button
   zoomedHeight = Math.max(cleanHeight - topHeight, 0);

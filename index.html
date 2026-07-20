@@ -5575,6 +5575,56 @@
           : null;
       }
 
+      function getElementOuterHeight(selector) {
+        var node = d3.select(selector).node();
+        if (
+          !node ||
+          typeof node.getBoundingClientRect !== "function" ||
+          typeof window === "undefined"
+        ) {
+          return null;
+        }
+
+        var bounds = node.getBoundingClientRect();
+        var computedStyle =
+          typeof window.getComputedStyle === "function"
+            ? window.getComputedStyle(node)
+            : null;
+        var marginTop = computedStyle
+          ? parseFloat(computedStyle.marginTop) || 0
+          : 0;
+        var marginBottom = computedStyle
+          ? parseFloat(computedStyle.marginBottom) || 0
+          : 0;
+        var outerHeight = bounds.height + marginTop + marginBottom;
+
+        return isFinite(outerHeight) && outerHeight > 0 ? outerHeight : null;
+      }
+
+      function getMeasuredMainVerticalTopControlsHeight() {
+        var leftControlsHeight = getElementOuterHeight("#PcChartWrapper > .row");
+        var rightControlsHeight = getElementOuterHeight(
+          "#ScChartWrapper > .row-fluid:first-child"
+        );
+        var fallbackHeight =
+          typeof mainVerticalLayoutState !== "undefined" &&
+          isFinite(mainVerticalLayoutState.topControlsHeight)
+            ? mainVerticalLayoutState.topControlsHeight
+            : 24;
+
+        return Math.max(
+          leftControlsHeight || 0,
+          rightControlsHeight || 0,
+          fallbackHeight,
+          24
+        );
+      }
+
+      if (typeof window !== "undefined") {
+        window.getMeasuredMainVerticalTopControlsHeight =
+          getMeasuredMainVerticalTopControlsHeight;
+      }
+
       function getScatterChartBaseHeight() {
         var graphHeightValue = parseFloat(d3.select("#graph").style("height"));
         var radarHeight = getContainerContentHeight("#radarChart");
@@ -5807,18 +5857,36 @@
       }
 
       function syncMainVerticalSectionHeights() {
-        var topControlsHeight =
-          typeof mainVerticalLayoutState !== "undefined" &&
-          isFinite(mainVerticalLayoutState.topControlsHeight)
-            ? mainVerticalLayoutState.topControlsHeight
-            : 24;
-        var topSectionHeight = Math.max(graphHeight + topControlsHeight, 0);
+        if (isRightChartFullScreenToggled) {
+          d3.select("#topChartsSection").style("height", null);
+          d3.select("#chartLayoutRow").style("height", null);
+          d3.selectAll("#PcChartWrapper, #ScChartWrapper").style(
+            "height",
+            null
+          );
+          d3.select("#PcChartWrapper > .row-fluid").style("height", null);
+          d3.select("#ScChartWrapper .chartSide").style("height", null);
+          d3.select("#bottomContentLayout").style("height", null);
+          return;
+        }
+
+        var topControlsHeight = getMeasuredMainVerticalTopControlsHeight();
+        var graphAreaHeight = Math.max(graphHeight, 0);
+        var topSectionHeight = Math.max(graphAreaHeight + topControlsHeight, 0);
 
         d3.select("#topChartsSection").style("height", topSectionHeight + "px");
         d3.select("#chartLayoutRow").style("height", topSectionHeight + "px");
         d3.selectAll("#PcChartWrapper, #ScChartWrapper").style(
           "height",
           topSectionHeight + "px"
+        );
+        d3.select("#PcChartWrapper > .row-fluid").style(
+          "height",
+          graphAreaHeight + "px"
+        );
+        d3.select("#ScChartWrapper .chartSide").style(
+          "height",
+          graphAreaHeight + "px"
         );
 
         d3.select("#bottomContentLayout").style(
@@ -5997,7 +6065,7 @@
           applyMainVerticalSplitLayout({ immediate: true });
         }
 
-        function applyDragToClientY(clientY, skipScatterRefresh) {
+        function getNextTopHeightFromClientY(clientY) {
           var dragState = resizeGrip.__mainVerticalDragState || null;
           if (
             !dragState ||
@@ -6005,53 +6073,87 @@
             !isFinite(dragState.startTopHeight) ||
             !isFinite(clientY)
           ) {
-            return;
+            return null;
           }
 
-          var nextTopHeight =
-            dragState.startTopHeight + (clientY - dragState.startY);
+          return dragState.startTopHeight + (clientY - dragState.startY);
+        }
+
+        function applyDragToClientY(clientY, skipScatterRefresh) {
+          var nextTopHeight = getNextTopHeightFromClientY(clientY);
+          if (!isFinite(nextTopHeight)) {
+            return false;
+          }
+
+          if (skipScatterRefresh) {
+            scheduleMainVerticalDragLayout(nextTopHeight);
+            return true;
+          }
+
           setMainVerticalLayoutTopHeight(nextTopHeight);
           applyMainVerticalSplitLayout({
             immediate: true,
-            skipScatterRefresh: !!skipScatterRefresh,
+            skipScatterRefresh: false,
           });
+          return true;
         }
 
-        function stopDocumentDrag(endEvent) {
-          document.body.classList.remove("is-main-vertical-resizing");
-          document.removeEventListener("mousemove", handleDocumentMouseMove);
-          document.removeEventListener("mouseup", stopDocumentDrag);
-          document.removeEventListener("touchmove", handleDocumentTouchMove);
-          document.removeEventListener("touchend", stopDocumentDrag);
-          document.removeEventListener("touchcancel", stopDocumentDrag);
+        function stopPointerDrag(endEvent) {
+          var activePointerId = resizeBar.__mainVerticalPointerId;
+          if (
+            activePointerId !== undefined &&
+            activePointerId !== null &&
+            endEvent &&
+            endEvent.pointerId !== undefined &&
+            endEvent.pointerId !== activePointerId
+          ) {
+            return;
+          }
 
-          if (endEvent && isFinite(getClientY(endEvent))) {
-            applyDragToClientY(getClientY(endEvent), false);
-          } else {
+          document.body.classList.remove("is-main-vertical-resizing");
+          resizeBar.__mainVerticalPointerId = null;
+
+          if (
+            resizeBar.releasePointerCapture &&
+            activePointerId !== undefined &&
+            activePointerId !== null
+          ) {
+            try {
+              resizeBar.releasePointerCapture(activePointerId);
+            } catch (error) {}
+          }
+
+          if (
+            !(endEvent && applyDragToClientY(getClientY(endEvent), false)) &&
+            !applyPendingMainVerticalDragLayout(false)
+          ) {
             applyMainVerticalSplitLayout({ immediate: true });
           }
 
           resizeGrip.__mainVerticalDragState = null;
         }
 
-        function handleDocumentMouseMove(moveEvent) {
+        function handlePointerMove(moveEvent) {
           if (!resizeGrip.__mainVerticalDragState) return;
-          if (moveEvent.cancelable) {
-            moveEvent.preventDefault();
+          if (
+            resizeBar.__mainVerticalPointerId !== undefined &&
+            resizeBar.__mainVerticalPointerId !== null &&
+            moveEvent.pointerId !== undefined &&
+            moveEvent.pointerId !== resizeBar.__mainVerticalPointerId
+          ) {
+            return;
           }
-          applyDragToClientY(moveEvent.clientY, true);
-        }
-
-        function handleDocumentTouchMove(moveEvent) {
-          if (!resizeGrip.__mainVerticalDragState) return;
           if (moveEvent.cancelable) {
             moveEvent.preventDefault();
           }
           applyDragToClientY(getClientY(moveEvent), true);
         }
 
-        function startDocumentDrag(startEvent) {
+        function startPointerDrag(startEvent) {
           if (isResizeDisabled()) return;
+          if (startEvent.button !== undefined && startEvent.button !== 0) {
+            return;
+          }
 
           var startY = getClientY(startEvent);
           if (!isFinite(startY)) return;
@@ -6064,29 +6166,29 @@
             startY: startY,
             startTopHeight: getMainVerticalLayoutTopHeight(),
           };
+          resizeBar.__mainVerticalPointerId =
+            startEvent.pointerId !== undefined ? startEvent.pointerId : null;
           document.body.classList.add("is-main-vertical-resizing");
 
-          document.addEventListener("mousemove", handleDocumentMouseMove);
-          document.addEventListener("mouseup", stopDocumentDrag);
-          document.addEventListener("touchmove", handleDocumentTouchMove, {
-            passive: false,
-          });
-          document.addEventListener("touchend", stopDocumentDrag);
-          document.addEventListener("touchcancel", stopDocumentDrag);
+          if (
+            resizeBar.setPointerCapture &&
+            startEvent.pointerId !== undefined
+          ) {
+            try {
+              resizeBar.setPointerCapture(startEvent.pointerId);
+            } catch (error) {}
+          }
         }
 
-        resizeBar.addEventListener("mousedown", function (event) {
-          if (event.button !== 0) return;
-          startDocumentDrag(event);
+        resizeBar.addEventListener("pointerdown", startPointerDrag);
+        resizeBar.addEventListener("pointermove", handlePointerMove);
+        resizeBar.addEventListener("pointerup", stopPointerDrag);
+        resizeBar.addEventListener("pointercancel", stopPointerDrag);
+        document.addEventListener("pointermove", handlePointerMove, {
+          passive: false,
         });
-
-        resizeBar.addEventListener(
-          "touchstart",
-          function (event) {
-            startDocumentDrag(event);
-          },
-          { passive: false }
-        );
+        document.addEventListener("pointerup", stopPointerDrag);
+        document.addEventListener("pointercancel", stopPointerDrag);
 
         resizeGrip.addEventListener("keydown", function (event) {
           if (isResizeDisabled()) return;
@@ -6221,6 +6323,7 @@
           }
         }
 
+        syncMainVerticalSectionHeights();
         syncMainVerticalResizeHandleState();
 
         if (
