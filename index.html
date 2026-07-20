@@ -5819,98 +5819,6 @@
         return "";
       }
 
-      function getMainVerticalLayoutAvailableHeight() {
-        var topSectionHeight = getContainerContentHeight("#topChartsSection");
-        var bottomSectionHeight = getContainerContentHeight("#bottomContentLayout");
-        var currentGraphHeight = parseFloat(d3.select("#graph").style("height"));
-        var currentBottomHeight =
-          typeof zoomedHeight !== "undefined" && isFinite(zoomedHeight)
-            ? zoomedHeight
-            : null;
-        var totalHeight = 0;
-
-        if (isFinite(topSectionHeight) && topSectionHeight > 0) {
-          totalHeight += topSectionHeight;
-        } else if (isFinite(currentGraphHeight) && currentGraphHeight > 0) {
-          totalHeight += currentGraphHeight;
-        }
-
-        if (isFinite(bottomSectionHeight) && bottomSectionHeight >= 0) {
-          totalHeight += bottomSectionHeight;
-        } else if (isFinite(currentBottomHeight) && currentBottomHeight > 0) {
-          totalHeight += currentBottomHeight;
-        }
-
-        return totalHeight > 0 ? totalHeight : null;
-      }
-
-      function syncMainVerticalLayoutHeightState(preferredTopHeight) {
-        var totalHeight = getMainVerticalLayoutAvailableHeight();
-        if (!isFinite(totalHeight) || totalHeight <= 0) {
-          return null;
-        }
-
-        var currentGraphHeight = parseFloat(d3.select("#graph").style("height"));
-        var minTopHeight = 260;
-        var minBottomHeight = 160;
-        var desiredTopHeight =
-          preferredTopHeight !== undefined && preferredTopHeight !== null
-            ? preferredTopHeight
-            : typeof window !== "undefined" &&
-              isFinite(window.__mainVerticalDesiredTopHeight)
-            ? window.__mainVerticalDesiredTopHeight
-            : null;
-
-        if (!isFinite(desiredTopHeight) || desiredTopHeight <= 0) {
-          if (isFinite(currentGraphHeight) && currentGraphHeight > 0) {
-            desiredTopHeight = currentGraphHeight + 48;
-          } else {
-            desiredTopHeight = totalHeight * 0.62;
-          }
-        }
-
-        if (totalHeight < minTopHeight + minBottomHeight) {
-          minTopHeight = Math.max(220, totalHeight * 0.5);
-          minBottomHeight = Math.max(120, totalHeight - minTopHeight);
-        }
-
-        var maxTopHeight = Math.max(minTopHeight, totalHeight - minBottomHeight);
-        var boundedTopHeight = Math.max(
-          minTopHeight,
-          Math.min(desiredTopHeight, maxTopHeight)
-        );
-        var boundedBottomHeight = Math.max(
-          minBottomHeight,
-          totalHeight - boundedTopHeight
-        );
-
-        graphHeight = boundedTopHeight;
-        zoomedHeight = boundedBottomHeight;
-        cleanHeight = boundedBottomHeight;
-
-        if (typeof window !== "undefined") {
-          window.__mainVerticalDesiredTopHeight = boundedTopHeight;
-        }
-
-        return boundedTopHeight;
-      }
-
-      function getMainVerticalLayoutTopHeight() {
-        var syncedTopHeight = syncMainVerticalLayoutHeightState();
-        if (isFinite(syncedTopHeight) && syncedTopHeight > 0) {
-          return syncedTopHeight;
-        }
-
-        var currentGraphHeight = parseFloat(d3.select("#graph").style("height"));
-        return isFinite(currentGraphHeight) && currentGraphHeight > 0
-          ? currentGraphHeight
-          : 320;
-      }
-
-      function setMainVerticalLayoutTopHeight(nextTopHeight) {
-        syncMainVerticalLayoutHeightState(nextTopHeight);
-      }
-
       function shouldShowMainVerticalResizeHandle() {
         if (isRightChartFullScreenToggled) {
           return false;
@@ -5956,7 +5864,6 @@
       function applyMainVerticalSplitLayout(options) {
         options = options || {};
         calWidthAndHeight();
-        syncMainVerticalLayoutHeightState();
 
         if (graph) {
           var targetWidth = getPcChartBaseWidth();
@@ -8309,7 +8216,6 @@
       function reDrawPcChart(options) {
         options = options || {};
         calWidthAndHeight();
-        syncMainVerticalLayoutHeightState();
 
         var newGraphWidth = getPcChartBaseWidth();
         var newGraphHeight = graphHeight;

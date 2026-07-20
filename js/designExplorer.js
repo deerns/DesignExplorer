@@ -39,7 +39,7 @@ function unloadPageContent() {
 }
 
 var mainVerticalLayoutState = {
-  topRatio: 1 / 3,
+  topRatio: 0.58,
   topControlsHeight: 24,
   minGraphHeight: 120,
   minBottomHeight: 150,
