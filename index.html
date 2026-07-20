@@ -5806,6 +5806,27 @@
         }
       }
 
+      function syncMainVerticalSectionHeights() {
+        var topControlsHeight =
+          typeof mainVerticalLayoutState !== "undefined" &&
+          isFinite(mainVerticalLayoutState.topControlsHeight)
+            ? mainVerticalLayoutState.topControlsHeight
+            : 24;
+        var topSectionHeight = Math.max(graphHeight + topControlsHeight, 0);
+
+        d3.select("#topChartsSection").style("height", topSectionHeight + "px");
+        d3.select("#chartLayoutRow").style("height", topSectionHeight + "px");
+        d3.selectAll("#PcChartWrapper, #ScChartWrapper").style(
+          "height",
+          topSectionHeight + "px"
+        );
+
+        d3.select("#bottomContentLayout").style(
+          "height",
+          Math.max(zoomedHeight, 0) + "px"
+        );
+      }
+
       function getMainVerticalResizeDisabledReason() {
         if (!graph || !Array.isArray(cleanedData) || cleanedData.length === 0) {
           return "Load data to enable top chart resizing.";
@@ -5864,6 +5885,7 @@
       function applyMainVerticalSplitLayout(options) {
         options = options || {};
         calWidthAndHeight();
+        syncMainVerticalSectionHeights();
 
         if (graph) {
           var targetWidth = getPcChartBaseWidth();
@@ -8231,6 +8253,7 @@
       function reDrawPcChart(options) {
         options = options || {};
         calWidthAndHeight();
+        syncMainVerticalSectionHeights();
 
         var newGraphWidth = getPcChartBaseWidth();
         var newGraphHeight = graphHeight;
