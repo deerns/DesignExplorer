@@ -186,12 +186,17 @@ body.is-main-vertical-resizing * {
     min-height: 0;
     margin-left: 0;
     margin-right: 0;
+    display: block;
+    width: 100%;
 }
 
 #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
     float: none;
     display: block;
+    position: relative;
     width: 100%;
+    max-width: none;
+    min-height: 220px;
     margin: 0;
     padding-left: 0;
     padding-right: 0;
@@ -225,16 +230,16 @@ body.is-main-vertical-resizing * {
 
 @media (min-width: 1200px) {
     #ScChartWrapper:not(.rightChartFullScreenToggled) .chartSide {
-        display: flex;
-        flex: 1 1 auto;
-        align-items: center;
-        justify-content: flex-start;
+        display: block;
+        flex: 0 0 auto;
+        width: 100%;
     }
 
     #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
-        flex: 1 1 auto;
+        display: block;
+        width: 100%;
         min-width: 0;
-        max-width: 100%;
+        max-width: none;
     }
 }
 
