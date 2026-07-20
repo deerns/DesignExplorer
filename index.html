@@ -6065,130 +6065,73 @@
           applyMainVerticalSplitLayout({ immediate: true });
         }
 
-        function getNextTopHeightFromClientY(clientY) {
-          var dragState = resizeGrip.__mainVerticalDragState || null;
+        function getDragClientY() {
           if (
-            !dragState ||
-            !isFinite(dragState.startY) ||
-            !isFinite(dragState.startTopHeight) ||
-            !isFinite(clientY)
+            d3.event &&
+            d3.event.sourceEvent &&
+            isFinite(getClientY(d3.event.sourceEvent))
           ) {
-            return null;
+            return getClientY(d3.event.sourceEvent);
           }
-
-          return dragState.startTopHeight + (clientY - dragState.startY);
+          if (d3.event && isFinite(d3.event.y)) {
+            return d3.event.y;
+          }
+          return null;
         }
 
-        function applyDragToClientY(clientY, skipScatterRefresh) {
-          var nextTopHeight = getNextTopHeightFromClientY(clientY);
-          if (!isFinite(nextTopHeight)) {
-            return false;
-          }
+        d3.select(resizeBar).call(
+          d3.behavior
+            .drag()
+            .on("dragstart", function () {
+              if (isResizeDisabled()) return;
+              if (d3.event && d3.event.sourceEvent) {
+                d3.event.sourceEvent.preventDefault();
+              }
+              resizeGrip.__mainVerticalDragState = {
+                startY: getDragClientY(),
+                startTopHeight: getMainVerticalLayoutTopHeight(),
+              };
+              document.body.classList.add("is-main-vertical-resizing");
+            })
+            .on("drag", function () {
+              if (isResizeDisabled()) return;
+              if (d3.event && d3.event.sourceEvent) {
+                d3.event.sourceEvent.preventDefault();
+              }
 
-          if (skipScatterRefresh) {
-            scheduleMainVerticalDragLayout(nextTopHeight);
-            return true;
-          }
+              var dragState = resizeGrip.__mainVerticalDragState || null;
+              var currentY = getDragClientY();
+              var nextTopHeight = null;
 
-          setMainVerticalLayoutTopHeight(nextTopHeight);
-          applyMainVerticalSplitLayout({
-            immediate: true,
-            skipScatterRefresh: false,
-          });
-          return true;
-        }
+              if (
+                dragState &&
+                isFinite(dragState.startY) &&
+                isFinite(currentY) &&
+                isFinite(dragState.startTopHeight)
+              ) {
+                nextTopHeight =
+                  dragState.startTopHeight + (currentY - dragState.startY);
+              } else if (isFinite(d3.event.dy)) {
+                nextTopHeight =
+                  getMainVerticalLayoutTopHeight() + d3.event.dy;
+              }
 
-        function stopPointerDrag(endEvent) {
-          var activePointerId = resizeBar.__mainVerticalPointerId;
-          if (
-            activePointerId !== undefined &&
-            activePointerId !== null &&
-            endEvent &&
-            endEvent.pointerId !== undefined &&
-            endEvent.pointerId !== activePointerId
-          ) {
-            return;
-          }
+              if (!isFinite(nextTopHeight)) {
+                return;
+              }
 
-          document.body.classList.remove("is-main-vertical-resizing");
-          resizeBar.__mainVerticalPointerId = null;
-
-          if (
-            resizeBar.releasePointerCapture &&
-            activePointerId !== undefined &&
-            activePointerId !== null
-          ) {
-            try {
-              resizeBar.releasePointerCapture(activePointerId);
-            } catch (error) {}
-          }
-
-          if (
-            !(endEvent && applyDragToClientY(getClientY(endEvent), false)) &&
-            !applyPendingMainVerticalDragLayout(false)
-          ) {
-            applyMainVerticalSplitLayout({ immediate: true });
-          }
-
-          resizeGrip.__mainVerticalDragState = null;
-        }
-
-        function handlePointerMove(moveEvent) {
-          if (!resizeGrip.__mainVerticalDragState) return;
-          if (
-            resizeBar.__mainVerticalPointerId !== undefined &&
-            resizeBar.__mainVerticalPointerId !== null &&
-            moveEvent.pointerId !== undefined &&
-            moveEvent.pointerId !== resizeBar.__mainVerticalPointerId
-          ) {
-            return;
-          }
-          if (moveEvent.cancelable) {
-            moveEvent.preventDefault();
-          }
-          applyDragToClientY(getClientY(moveEvent), true);
-        }
-
-        function startPointerDrag(startEvent) {
-          if (isResizeDisabled()) return;
-          if (startEvent.button !== undefined && startEvent.button !== 0) {
-            return;
-          }
-
-          var startY = getClientY(startEvent);
-          if (!isFinite(startY)) return;
-
-          if (startEvent.cancelable) {
-            startEvent.preventDefault();
-          }
-
-          resizeGrip.__mainVerticalDragState = {
-            startY: startY,
-            startTopHeight: getMainVerticalLayoutTopHeight(),
-          };
-          resizeBar.__mainVerticalPointerId =
-            startEvent.pointerId !== undefined ? startEvent.pointerId : null;
-          document.body.classList.add("is-main-vertical-resizing");
-
-          if (
-            resizeBar.setPointerCapture &&
-            startEvent.pointerId !== undefined
-          ) {
-            try {
-              resizeBar.setPointerCapture(startEvent.pointerId);
-            } catch (error) {}
-          }
-        }
-
-        resizeBar.addEventListener("pointerdown", startPointerDrag);
-        resizeBar.addEventListener("pointermove", handlePointerMove);
-        resizeBar.addEventListener("pointerup", stopPointerDrag);
-        resizeBar.addEventListener("pointercancel", stopPointerDrag);
-        document.addEventListener("pointermove", handlePointerMove, {
-          passive: false,
-        });
-        document.addEventListener("pointerup", stopPointerDrag);
-        document.addEventListener("pointercancel", stopPointerDrag);
+              setMainVerticalLayoutTopHeight(nextTopHeight);
+              applyMainVerticalSplitLayout({
+                immediate: true,
+                skipScatterRefresh: true,
+              });
+            })
+            .on("dragend", function () {
+              resizeGrip.__mainVerticalDragState = null;
+              document.body.classList.remove("is-main-vertical-resizing");
+              applyMainVerticalSplitLayout({ immediate: true });
+            })
+        );
 
         resizeGrip.addEventListener("keydown", function (event) {
           if (isResizeDisabled()) return;
