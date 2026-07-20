@@ -8805,15 +8805,10 @@
       function finalizeScatterSetupAfterDataLoad() {
         if (!graph) return;
         deferScatterLayoutUntilReady = false;
-
-        if (!shouldShowScatterPlots()) {
-          syncScatterPlotLayout(true);
-          return;
-        }
-
         d3.select("#radarChart").selectAll("*").remove();
         scatterChart = null;
-        refreshScatterChartLayout();
+        syncScatterPlotLayout(false);
+        scheduleScatterLayoutStabilization([0, 120, 260]);
       }
 
       function loadDataToDesignExplorer(data, options) {
