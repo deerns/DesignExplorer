@@ -7973,6 +7973,7 @@
             applySliderFontOverrides(_userSetting || {});
           }
           refreshGraphLabelsWithRetry(0);
+          scheduleScatterLayoutStabilization([0, 90]);
         });
         graph.on("render.pinnedReference", drawPinnedReferenceLineInPc);
         graph.on("resize.pinnedReference", drawPinnedReferenceLineInPc);
@@ -12924,9 +12925,7 @@
             applyLineGradientSetting(_userSetting.lineGradient, true);
             updateLabels();
             refreshGraphLabelsWithRetry(0);
-            graph.render();
-            scheduleScatterLayoutStabilization([0, 90]);
-            applyLineGradientSetting(_userSetting.lineGradient, true);
+            scheduleScatterLayoutStabilization([0, 90, 220]);
             // force relabel axes immediately
             d3.selectAll(".dimension text.label").text(function (d) {
               return getDimLabel(d);
@@ -12942,7 +12941,7 @@
             if (typeof applySliderFontOverrides === "function") {
               applySliderFontOverrides(_userSetting || {});
             }
-            applyLineGradientSetting(_userSetting.lineGradient, true);
+            applyLineGradientSetting(_userSetting.lineGradient, false);
             setImageLabels(_userSetting.imageLabels);
             refreshImageRadioTexts();
             if (graph) updateLabels();
@@ -12966,16 +12965,12 @@
               if (typeof applySliderFontOverrides === "function") {
                 applySliderFontOverrides(_userSetting || {});
               }
-              if (graph) {
-                graph.render();
-                scheduleScatterLayoutStabilization([0, 90]);
-              }
-              applyLineGradientSetting(_userSetting.lineGradient, true);
+              applyLineGradientSetting(_userSetting.lineGradient, false);
             }, 0);
             // extra delayed pass in case parcoords re-renders after settings
             setTimeout(function () {
               setDimLabels(_userSetting.dimLabels);
-              applyLineGradientSetting(_userSetting.lineGradient, true);
+              applyLineGradientSetting(_userSetting.lineGradient, false);
               setImageLabels(_userSetting.imageLabels);
               refreshImageRadioTexts();
               if (typeof applySliderFontOverrides === "function") {
@@ -12988,9 +12983,6 @@
                 d3.selectAll(".dimension text.label").text(function (d) {
                   return getDimLabel(d);
                 });
-                graph.render();
-                scheduleScatterLayoutStabilization([0, 90]);
-                applyLineGradientSetting(_userSetting.lineGradient, true);
                 applyDimLabelsToGraph(5);
               }
             }, 200);
@@ -12998,7 +12990,7 @@
             setTimeout(function () {
               setStudyInfo(_userSetting.studyInfo || {});
               setDimLabels(_userSetting.dimLabels);
-              applyLineGradientSetting(_userSetting.lineGradient, true);
+              applyLineGradientSetting(_userSetting.lineGradient, false);
               if (typeof applySliderFontOverrides === "function") {
                 applySliderFontOverrides(_userSetting || {});
               }
@@ -13011,9 +13003,6 @@
                 if (_userSetting.labelSize) {
                   applyLabelFontSize(_userSetting.labelSize);
                 }
-                graph.render();
-                scheduleScatterLayoutStabilization([0, 90]);
-                applyLineGradientSetting(_userSetting.lineGradient, true);
                 applyDimLabelsToGraph(3);
               }
             }, 500);
