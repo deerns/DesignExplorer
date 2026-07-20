@@ -4722,23 +4722,13 @@
       // add scatter chart
       function addScatterChart() {
         updateScatterSelectionActionButtons();
-        var scatterBaseHeight = getScatterChartBaseHeight();
-        var scatterContainerWidth = getEffectiveScatterContainerWidth();
-        if (
-          !isRightChartFullScreenToggled &&
-          (!isFinite(scatterContainerWidth) || scatterContainerWidth < 160)
-        ) {
+        var layoutMetrics = getScatterChartLayoutMetrics();
+        if (!layoutMetrics) {
           scheduleScatterLayoutRetry(140);
           return;
         }
-        var scatterMatrixWidth = scatterBaseHeight - 10;
-        if (isFinite(scatterContainerWidth) && scatterContainerWidth > 0) {
-          scatterMatrixWidth = Math.min(
-            scatterMatrixWidth,
-            scatterContainerWidth - 10
-          );
-        }
-        scatterMatrixWidth = Math.max(scatterMatrixWidth, 180);
+        var scatterMatrixWidth = layoutMetrics.viewportWidth;
+        var scatterViewportHeight = layoutMetrics.viewportHeight;
         var preservedScatterLayout =
           typeof window !== "undefined" ? window.__pendingScatterLayoutState : null;
         if (
@@ -4755,7 +4745,9 @@
         var selectedData = getCurrentGraphDisplayData();
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
         sm.__viewportWidth = scatterMatrixWidth;
-        sm.__viewportHeight = Math.max(scatterBaseHeight - 30, 160);
+        sm.__viewportHeight = scatterViewportHeight;
+        sm.__layout_width = scatterMatrixWidth;
+        sm.__layout_height = scatterViewportHeight;
         if (
           typeof window !== "undefined" &&
           window.__pendingScatterChartState &&
@@ -4795,7 +4787,7 @@
 
         d3.select(".scatter-matrix-control").style(
           "height",
-          Math.max(scatterBaseHeight - 30, 160) + "px"
+          scatterViewportHeight + "px"
         );
         d3.select(".scatter-matrix-control").classed(
           "toggled",
@@ -5183,6 +5175,33 @@
         return 320;
       }
 
+      function getScatterChartLayoutMetrics() {
+        var scatterBaseHeight = getScatterChartBaseHeight();
+        var scatterContainerWidth = getEffectiveScatterContainerWidth();
+
+        if (
+          !isRightChartFullScreenToggled &&
+          (!isFinite(scatterContainerWidth) || scatterContainerWidth < 160)
+        ) {
+          return null;
+        }
+
+        var scatterMatrixWidth = scatterBaseHeight - 10;
+        if (isFinite(scatterContainerWidth) && scatterContainerWidth > 0) {
+          scatterMatrixWidth = Math.min(
+            scatterMatrixWidth,
+            scatterContainerWidth - 10
+          );
+        }
+
+        return {
+          baseHeight: scatterBaseHeight,
+          containerWidth: scatterContainerWidth,
+          viewportWidth: Math.max(scatterMatrixWidth, 180),
+          viewportHeight: Math.max(scatterBaseHeight - 30, 160),
+        };
+      }
+
       function getVisibleScatterViewportWidth() {
         var viewportWidth =
           typeof window !== "undefined" && isFinite(window.innerWidth)
@@ -5412,7 +5431,9 @@
 
         if (shouldShowScatterPlots()) {
           if (options.skipScatterRefresh) {
-            syncExistingScatterChartState();
+            if (!syncExistingScatterChartState()) {
+              scheduleDeferredScatterLayoutRefresh();
+            }
           } else {
             refreshScatterChartLayout();
           }
@@ -5912,6 +5933,46 @@
           radarChart.empty() ||
           radarChart.select(".scatter-matrix-container").empty()
         ) {
+          return false;
+        }
+
+        var layoutMetrics = getScatterChartLayoutMetrics();
+        if (!layoutMetrics) {
+          return false;
+        }
+
+        var svgWrapper = radarChart.select(".scatter-matrix-svg");
+        var innerSvg = svgWrapper.select("svg");
+        var currentWrapperWidth = parseFloat(svgWrapper.style("width"));
+        if (!isFinite(currentWrapperWidth) || currentWrapperWidth <= 0) {
+          currentWrapperWidth = svgWrapper.node().getBoundingClientRect().width;
+        }
+        var currentSvgWidth = parseFloat(innerSvg.attr("width"));
+        if (!isFinite(currentSvgWidth) || currentSvgWidth <= 0) {
+          currentSvgWidth = innerSvg.node().getBoundingClientRect().width;
+        }
+        var currentSvgHeight = parseFloat(innerSvg.attr("height"));
+        if (!isFinite(currentSvgHeight) || currentSvgHeight <= 0) {
+          currentSvgHeight = innerSvg.node().getBoundingClientRect().height;
+        }
+        var expectedWidth = layoutMetrics.viewportWidth;
+        var expectedHeight = layoutMetrics.viewportHeight;
+        var overflowTolerance = 6;
+        var layoutChanged =
+          !isFinite(scatterChart.__layout_width) ||
+          !isFinite(scatterChart.__layout_height) ||
+          Math.abs(scatterChart.__layout_width - expectedWidth) >
+            overflowTolerance ||
+          Math.abs(scatterChart.__layout_height - expectedHeight) >
+            overflowTolerance ||
+          (isFinite(currentWrapperWidth) &&
+            currentWrapperWidth > expectedWidth + overflowTolerance) ||
+          (isFinite(currentSvgWidth) &&
+            currentSvgWidth > expectedWidth + overflowTolerance) ||
+          (isFinite(currentSvgHeight) &&
+            currentSvgHeight > expectedHeight + overflowTolerance);
+
+        if (layoutChanged) {
           return false;
         }
 
