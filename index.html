@@ -5942,7 +5942,6 @@
 
         resizeBar.classed("is-disabled", isDisabled);
         resizeGrip
-          .property("disabled", isDisabled)
           .attr("aria-disabled", isDisabled ? "true" : "false")
           .attr("tabindex", isDisabled ? "-1" : "0")
           .attr("title", isDisabled ? disabledReason : enabledTitle)
@@ -6048,7 +6047,7 @@
         }
 
         function isResizeDisabled() {
-          return !!resizeGrip.disabled;
+          return getMainVerticalResizeDisabledReason() !== "";
         }
 
         function getClientY(event) {
@@ -6071,12 +6070,16 @@
           if (isResizeDisabled()) {
             return;
           }
+          if (resizeGrip.__mainVerticalDragActive) {
+            return;
+          }
 
           var startY = getClientY(startEvent);
           if (!isFinite(startY)) {
             return;
           }
 
+          resizeGrip.__mainVerticalDragActive = true;
           resizeGrip.__mainVerticalDragState = {
             startY: startY,
             startTopHeight: getMainVerticalLayoutTopHeight(),
@@ -6110,6 +6113,7 @@
             document.removeEventListener("touchend", stopDrag);
             document.removeEventListener("touchcancel", stopDrag);
 
+            resizeGrip.__mainVerticalDragActive = false;
             resizeGrip.__mainVerticalDragState = null;
 
             if (!applyPendingMainVerticalDragLayout(false)) {
@@ -6129,6 +6133,7 @@
         function handleMouseStart(event) {
           if (event.button !== 0) return;
           event.preventDefault();
+          event.stopPropagation();
           startDrag(event);
         }
 
@@ -6136,6 +6141,7 @@
           if (event.cancelable) {
             event.preventDefault();
           }
+          event.stopPropagation();
           startDrag(event);
         }
 
