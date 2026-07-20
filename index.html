@@ -4728,10 +4728,6 @@
       function addScatterChart() {
         updateScatterSelectionActionButtons();
         var layoutMetrics = getScatterChartLayoutMetrics();
-        if (!layoutMetrics) {
-          scheduleScatterLayoutRetry(140);
-          return;
-        }
         var scatterMatrixWidth = layoutMetrics.viewportWidth;
         var scatterViewportHeight = layoutMetrics.viewportHeight;
         var preservedScatterLayout =
@@ -5180,15 +5176,28 @@
         return 320;
       }
 
+      function getFallbackScatterContainerWidth() {
+        var viewportWidth = getVisibleScatterViewportWidth();
+
+        if (isFinite(viewportWidth) && viewportWidth > 0) {
+          if (isRightChartFullScreenToggled) {
+            return Math.max(viewportWidth - 40, 280);
+          }
+
+          return Math.max(Math.min(viewportWidth * 0.28, 360), 280);
+        }
+
+        return isRightChartFullScreenToggled ? 420 : 320;
+      }
+
       function getScatterChartLayoutMetrics() {
         var scatterBaseHeight = getScatterChartBaseHeight();
         var scatterContainerWidth = getEffectiveScatterContainerWidth();
+        var hasMeasuredWidth =
+          isFinite(scatterContainerWidth) && scatterContainerWidth >= 160;
 
-        if (
-          !isRightChartFullScreenToggled &&
-          (!isFinite(scatterContainerWidth) || scatterContainerWidth < 160)
-        ) {
-          return null;
+        if (!hasMeasuredWidth) {
+          scatterContainerWidth = getFallbackScatterContainerWidth();
         }
 
         var scatterMatrixWidth = scatterBaseHeight - 10;
@@ -5202,6 +5211,7 @@
         return {
           baseHeight: scatterBaseHeight,
           containerWidth: scatterContainerWidth,
+          hasMeasuredWidth: hasMeasuredWidth,
           viewportWidth: Math.max(scatterMatrixWidth, 180),
           viewportHeight: Math.max(scatterBaseHeight - 30, 160),
         };
@@ -6024,13 +6034,6 @@
 
         var radarChart = d3.select("#radarChart");
         if (radarChart.empty()) return;
-        if (
-          !isRightChartFullScreenToggled &&
-          !hasStableScatterContainerWidth(160)
-        ) {
-          scheduleScatterLayoutRetry(140);
-          return;
-        }
 
         if (
           typeof window !== "undefined" &&
