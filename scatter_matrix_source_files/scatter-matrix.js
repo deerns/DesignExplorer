@@ -46,6 +46,18 @@ ScatterMatrix.prototype.render = function () {
     }
     return name;
   };
+  var isDefaultScatterVariable = function (name) {
+    if (typeof normalizeDimKey === "function") {
+      var normalized = normalizeDimKey(name);
+      return (
+        normalized !== normalizeDimKey("Rating") &&
+        normalized !== normalizeDimKey("Description")
+      );
+    }
+
+    var raw = (name || "").toString().trim().toLowerCase();
+    return raw !== "rating" && raw !== "description";
+  };
 
   var container = d3
     .select(this.__dom_id)
@@ -181,10 +193,13 @@ ScatterMatrix.prototype.render = function () {
         })
       : [];
     if (to_include.length === 0) {
-      to_include = self.__numeric_variables.slice(-3, -1);
+      to_include = self.__numeric_variables.filter(isDefaultScatterVariable).slice(-2);
     }
     if (to_include.length === 0) {
-      to_include = self.__numeric_variables.slice(0, 1);
+      to_include = self.__numeric_variables.slice(-2);
+    }
+    if (to_include.length === 0) {
+      to_include = self.__numeric_variables.slice(0, Math.min(2, self.__numeric_variables.length));
     }
     self.__selected_variables = to_include.slice();
 

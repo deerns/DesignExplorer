@@ -4896,7 +4896,15 @@
         var selectedVariables =
           requestedVariables.length >= 2
             ? requestedVariables.slice(0, 2)
-            : numericVariables.slice(-3, -1);
+            : numericVariables
+                .filter(function (name) {
+                  var normalized =
+                    typeof normalizeDimKey === "function"
+                      ? normalizeDimKey(name)
+                      : (name || "").toString().trim().toLowerCase();
+                  return normalized !== "rating" && normalized !== "description";
+                })
+                .slice(-2);
         if (selectedVariables.length < 2) {
           selectedVariables = numericVariables.slice(0, Math.min(2, numericVariables.length));
         }
