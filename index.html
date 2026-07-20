@@ -4305,7 +4305,39 @@
         }
 
         var brushed = graph.brushed();
-        return Array.isArray(brushed) ? brushed.slice() : [];
+        return Array.isArray(brushed) ? ensureScatterDataIds(brushed.slice()) : [];
+      }
+
+      function ensureScatterDataIds(rows) {
+        if (!Array.isArray(rows)) {
+          return [];
+        }
+
+        var nextId =
+          typeof window !== "undefined" && isFinite(window.__nextScatterRowId)
+            ? window.__nextScatterRowId
+            : 0;
+
+        rows.forEach(function (row) {
+          if (!row || typeof row !== "object") return;
+
+          if (row.scid === undefined || row.scid === null || row.scid === "") {
+            row.scid = nextId;
+            nextId += 1;
+            return;
+          }
+
+          var numericId = Number(row.scid);
+          if (isFinite(numericId) && numericId >= nextId) {
+            nextId = numericId + 1;
+          }
+        });
+
+        if (typeof window !== "undefined") {
+          window.__nextScatterRowId = nextId;
+        }
+
+        return rows;
       }
 
       function getCurrentGraphDisplayData() {
@@ -4317,11 +4349,13 @@
         if (graph && typeof graph.data === "function") {
           var graphData = graph.data();
           if (Array.isArray(graphData) && graphData.length > 0) {
-            return graphData.slice();
+            return ensureScatterDataIds(graphData.slice());
           }
         }
 
-        return Array.isArray(cleanedData) ? cleanedData.slice() : [];
+        return Array.isArray(cleanedData)
+          ? ensureScatterDataIds(cleanedData.slice())
+          : [];
       }
 
       function getCurrentScatterBaseData() {
@@ -4760,6 +4794,7 @@
         ) {
           selectedData = cleanedData.slice();
         }
+        selectedData = ensureScatterDataIds(selectedData);
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
         sm.__viewportWidth = scatterMatrixWidth;
         sm.__viewportHeight = scatterViewportHeight;
@@ -4860,22 +4895,52 @@
           typeof graph.highlighted === "function"
             ? graph.highlighted()
             : [];
+        var circles = d3.selectAll(".cell circle");
+        var scatterBaseData =
+          scatterChart && Array.isArray(scatterChart.__data)
+            ? ensureScatterDataIds(scatterChart.__data.slice())
+            : [];
 
         if (!Array.isArray(data) || data.length === 0) {
+          circles.classed("faded", false).attr("visibility", "visible");
           drawScatterHighlightMarkers(highlightedData);
           updatePinnedScatterDot();
           return;
         }
 
-        d3.selectAll(".cell circle")
-          .classed("faded", false)
-          .attr("visibility", "hidden");
+        data = ensureScatterDataIds(data);
 
-        data.forEach(function (d) {
-          var circleId = getCircleID(d);
-          if (!circleId) return;
-          d3.selectAll("#" + circleId).attr("visibility", "visible");
-        });
+        circles
+          .classed("faded", false)
+          .attr("visibility", "visible");
+
+        if (
+          scatterBaseData.length > 0 &&
+          data.length > 0 &&
+          data.length < scatterBaseData.length
+        ) {
+          var visibleLookup = {};
+          data.forEach(function (d) {
+            var circleId = getCircleID(d);
+            if (!circleId) return;
+            visibleLookup[circleId] = true;
+          });
+
+          var visibleCount = 0;
+          circles.each(function (d) {
+            var circle = d3.select(this);
+            var circleId = getCircleID(d) || circle.attr("id");
+            var isVisible = !!visibleLookup[circleId];
+            if (isVisible) {
+              visibleCount += 1;
+            }
+            circle.attr("visibility", isVisible ? "visible" : "hidden");
+          });
+
+          if (visibleCount === 0) {
+            circles.attr("visibility", "visible");
+          }
+        }
 
         drawScatterHighlightMarkers(highlightedData);
         updatePinnedScatterDot();
@@ -8862,6 +8927,17 @@
         scatterChart = null;
         if (typeof window !== "undefined") {
           window.__scatterNeedsShowRefresh = false;
+        }
+        if (
+          (!pcIsColoredBy ||
+            !graph.dimensions ||
+            !graph.dimensions()[pcIsColoredBy]) &&
+          typeof graph.getOrderedDimensionKeys === "function"
+        ) {
+          var orderedKeys = graph.getOrderedDimensionKeys() || [];
+          if (orderedKeys.length > 0) {
+            pcIsColoredBy = orderedKeys[0];
+          }
         }
         addScatterChart();
         scheduleScatterLayoutStabilization([120, 260, 520]);

@@ -142,11 +142,17 @@ ScatterMatrix.prototype.render = function () {
       }
     }
 
-    var scid = 0;
-    data.forEach(function (d) {
-      d.scid = scid;
-      scid += 1;
-    });
+    if (typeof ensureScatterDataIds === "function") {
+      ensureScatterDataIds(data);
+    } else {
+      var scid = 0;
+      data.forEach(function (d) {
+        if (d.scid === undefined || d.scid === null || d.scid === "") {
+          d.scid = scid;
+        }
+        scid += 1;
+      });
+    }
 
     //console.log(string_variables);//------------------------------------------------------------------
 
@@ -889,7 +895,16 @@ ScatterMatrix.prototype.__draw = function (
         })
         .attr("r", pointRadius)
         .style("fill", function (d) {
-          return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
+          if (
+            typeof color !== "function" ||
+            typeof valueToNumber !== "function" ||
+            !pcIsColoredBy
+          ) {
+            return "#0f4c81";
+          }
+
+          var fill = color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
+          return fill || "#0f4c81";
         });
 
       // Add titles for x variables and drill variable values
