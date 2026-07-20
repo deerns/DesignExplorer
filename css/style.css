@@ -250,7 +250,7 @@ body.is-main-vertical-resizing * {
     }
 
     #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
-        margin-top: clamp(28px, 4vh, 56px);
+        transform: translateY(clamp(28px, 4vh, 56px));
     }
 }
 
