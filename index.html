@@ -3070,17 +3070,19 @@
         loadCsvWithEncodingFallback(
           csvFilePathLink,
           function (data) {
-            loadDataToDesignExplorer(data);
-            loadSetting(settingFilePathLink);
-            updateLayoutOnDeselect();
+            loadDataToDesignExplorer(data, { deferScatterInit: true });
+            loadSetting(settingFilePathLink, function () {
+              finalizeScatterSetupAfterDataLoad();
+              updateLayoutOnDeselect();
 
-            // If a server link was provided manually, open settings (same as the Setting button)
-            // only after data finishes loading so image counts are ready
-            if (document.getElementById("folderLink").value) {
-              setTimeout(function () {
-                dataSetting(graph);
-              }, 200);
-            }
+              // If a server link was provided manually, open settings (same as the Setting button)
+              // only after data finishes loading so image counts are ready
+              if (document.getElementById("folderLink").value) {
+                setTimeout(function () {
+                  dataSetting(graph);
+                }, 200);
+              }
+            });
           },
           function (err) {
             console.error(err);
@@ -4263,8 +4265,10 @@
         loadCsvWithEncodingFallback(
           filePath,
           function (data) {
-            loadDataToDesignExplorer(data);
-            loadSetting(settingFilePath);
+            loadDataToDesignExplorer(data, { deferScatterInit: true });
+            loadSetting(settingFilePath, function () {
+              finalizeScatterSetupAfterDataLoad();
+            });
           },
           function (err) {
             console.error(err);
@@ -4278,6 +4282,7 @@
     <script type="text/javascript">
       // update radar chart
       var scatterChart;
+      var deferScatterLayoutUntilReady = false;
       var activeScatterSelectionData = [];
       var activeScatterSelectionMeta = null;
       var scatterSelectionApplied = false;
@@ -5742,6 +5747,14 @@
 
         updateChartLayoutColumnClasses(showScatterWrapper);
 
+        if (deferScatterLayoutUntilReady) {
+          d3.select("#radarChart").selectAll("*").remove();
+          scatterChart = null;
+          refreshSidebarControlLayout();
+          updateScatterVisibilityToggleUi();
+          return;
+        }
+
         if (!skipResize && graph) {
           reDrawPcChart();
           if (showScatterWrapper) {
@@ -5933,6 +5946,9 @@
       }
 
       function syncExistingScatterChartState() {
+        if (deferScatterLayoutUntilReady) {
+          return false;
+        }
         if (
           typeof window !== "undefined" &&
           window.__pendingScatterLayoutState
@@ -6003,6 +6019,7 @@
       }
 
       function refreshScatterChartLayout() {
+        if (deferScatterLayoutUntilReady) return;
         if (!graph || !shouldShowScatterPlots()) return;
 
         var radarChart = d3.select("#radarChart");
@@ -8785,7 +8802,24 @@
 
     <!-- import data  //  onload functions to close intro window and read input data -->
     <script>
-      function loadDataToDesignExplorer(data) {
+      function finalizeScatterSetupAfterDataLoad() {
+        if (!graph) return;
+        deferScatterLayoutUntilReady = false;
+
+        if (!shouldShowScatterPlots()) {
+          syncScatterPlotLayout(true);
+          return;
+        }
+
+        d3.select("#radarChart").selectAll("*").remove();
+        scatterChart = null;
+        refreshScatterChartLayout();
+      }
+
+      function loadDataToDesignExplorer(data, options) {
+        options = options || {};
+        var deferScatterInit = !!options.deferScatterInit;
+        deferScatterLayoutUntilReady = deferScatterInit;
         overwriteInitialGlobalValues();
         resetDatasetScopedUserSettings();
         clearScatterSelectionState();
@@ -8818,7 +8852,13 @@
         //updateRadarChart();                //-----TODO:here needs a switch for different charts-------
 
         //draw scatter chart
-        addScatterChart();
+        if (deferScatterInit) {
+          d3.select("#radarChart").selectAll("*").remove();
+          scatterChart = null;
+          updateScatterSelectionActionButtons();
+        } else {
+          addScatterChart();
+        }
 
         // set color change
         // set the initial coloring based on the 3rd column
@@ -8883,8 +8923,13 @@
           loadCsvWithEncodingFallback(
             "design_explorer_data/default_onload.csv",
             function (data) {
-              loadDataToDesignExplorer(data);
-              loadSetting("design_explorer_data/DefaultData/settings.json");
+              loadDataToDesignExplorer(data, { deferScatterInit: true });
+              loadSetting(
+                "design_explorer_data/DefaultData/settings.json",
+                function () {
+                  finalizeScatterSetupAfterDataLoad();
+                }
+              );
             },
             function (err) {
               console.error(err);
@@ -8991,8 +9036,10 @@
             //originalDataLength = data.length;
 
             if (data !== null) {
-              loadDataToDesignExplorer(data);
-              loadSetting();
+              loadDataToDesignExplorer(data, { deferScatterInit: true });
+              loadSetting(undefined, function () {
+                finalizeScatterSetupAfterDataLoad();
+              });
             }
           };
 
@@ -11978,12 +12025,30 @@
         var isThereNewStudyInfo = Object.keys(userStudyInfo).length > 0;
         var isThereNewDimScales = Object.keys(userDimScales).length > 0;
         var isThereNewDimTicks = Object.keys(userDimTicks).length > 0;
+        var isThereNewDimMark = Object.keys(userDimMark).length > 0;
         var isThereNewDimLabels = Object.keys(userDimLabels).length > 0;
+        var isThereNewDimHidden = Object.keys(userDimHidden).length > 0;
+        var isThereNewDimReversed = Object.keys(userDimReversed).length > 0;
         var hasLabelSize =
           userLabelSize !== undefined &&
           userLabelSize !== null &&
           String(userLabelSize).trim().length > 0;
         var reversedChanged = false;
+        var hasExistingHiddenDims =
+          Object.keys(_userSetting.dimHidden || {}).length > 0;
+        var hasExistingReversedDims =
+          Object.keys(_userSetting.dimReversed || {}).length > 0;
+        var hasExistingTargetMarks =
+          Object.keys(_userSetting.dimMark || {}).length > 0;
+        var shouldSyncFieldLayout =
+          isThereNewDimScales ||
+          isThereNewDimTicks ||
+          isThereNewDimHidden ||
+          isThereNewDimReversed ||
+          hasExistingHiddenDims ||
+          hasExistingReversedDims ||
+          userDimOrder.length > 0 ||
+          userSliderOrder.length > 0;
 
         _userSetting.lineGradient = cloneLineGradientSetting(userLineGradient);
         _userSetting.dimSliderTitleSizes = Object.assign(
@@ -12030,25 +12095,38 @@
         }
 
         //set target mark must be after graph.updateAxes();
-        reversedChanged =
-          setDimReversed(chart, userDimReversed, true) || reversedChanged;
-        setAllTargetMarks(chart, userDimMark);
+        if (isThereNewDimReversed) {
+          reversedChanged =
+            setDimReversed(chart, userDimReversed, true) || reversedChanged;
+        }
+        if (isThereNewDimMark) {
+          setAllTargetMarks(chart, userDimMark);
+        }
 
-        if (isThereNewDimLabels || userDimLabels) {
+        if (isThereNewDimLabels) {
           setDimLabels(userDimLabels);
           if (graph) {
             updateLabels();
           }
         }
 
-        setDimHidden(userDimHidden);
-        reversedChanged =
-          setDimReversed(chart, _userSetting.dimReversed || {}, true) ||
-          reversedChanged;
+        if (isThereNewDimHidden || hasExistingHiddenDims) {
+          setDimHidden(userDimHidden);
+        } else {
+          updateSliderVisibilityFromSettings();
+          syncHiddenSettingCheckboxes();
+        }
+        if (isThereNewDimReversed || hasExistingReversedDims) {
+          reversedChanged =
+            setDimReversed(chart, _userSetting.dimReversed || {}, true) ||
+            reversedChanged;
+        }
         if (reversedChanged && graph && typeof graph.updateAxes === "function") {
           graph.updateAxes();
         }
-        setAllTargetMarks(chart, _userSetting.dimMark || {});
+        if (isThereNewDimMark || hasExistingTargetMarks) {
+          setAllTargetMarks(chart, _userSetting.dimMark || {});
+        }
 
         if (hasLabelSize && typeof applyLabelFontSize === "function") {
           applyLabelFontSize(userLabelSize);
@@ -12060,27 +12138,29 @@
         if (typeof applySliderFontOverrides === "function") {
           applySliderFontOverrides(_userSetting || {});
         }
-        var finalSliderOrder = getEffectiveSliderOrder(_userSetting);
-        if (finalSliderOrder.length > 0) {
-          forceMainSliderSync(
-            {
-              dimOrder: _userSetting.dimOrder || [],
-              sliderOrder: finalSliderOrder,
-            },
-            {
-              skipSettingsPanels: true,
-            }
-          );
-        } else if ((_userSetting.dimOrder || []).length > 0) {
-          forceMainSliderSync(
-            {
-              dimOrder: _userSetting.dimOrder || [],
-              sliderOrder: [],
-            },
-            {
-              skipSettingsPanels: true,
-            }
-          );
+        if (shouldSyncFieldLayout) {
+          var finalSliderOrder = getEffectiveSliderOrder(_userSetting);
+          if (finalSliderOrder.length > 0) {
+            forceMainSliderSync(
+              {
+                dimOrder: _userSetting.dimOrder || [],
+                sliderOrder: finalSliderOrder,
+              },
+              {
+                skipSettingsPanels: true,
+              }
+            );
+          } else if ((_userSetting.dimOrder || []).length > 0) {
+            forceMainSliderSync(
+              {
+                dimOrder: _userSetting.dimOrder || [],
+                sliderOrder: [],
+              },
+              {
+                skipSettingsPanels: true,
+              }
+            );
+          }
         }
 
         applyScatterPlotVisibilitySetting(userHideScatterPlots);
@@ -12698,9 +12778,18 @@
         }, 0);
       }
 
-      function loadSetting(settingFilePath) {
+      function loadSetting(settingFilePath, onComplete) {
         var jsonFileLink = "";
         var isExplicitPath = settingFilePath !== undefined;
+        var completed = false;
+
+        function finish() {
+          if (completed) return;
+          completed = true;
+          if (typeof onComplete === "function") {
+            onComplete();
+          }
+        }
 
         function asPlainObject(value) {
           return value && typeof value === "object" && !Array.isArray(value)
@@ -12725,6 +12814,7 @@
         }
 
         if (!jsonFileLink || jsonFileLink.length === 0) {
+          finish();
           return;
         }
 
@@ -12736,7 +12826,9 @@
               error
             );
             if (isExplicitPath) {
-              loadSetting();
+              loadSetting(undefined, onComplete);
+            } else {
+              finish();
             }
             return;
           }
@@ -13007,6 +13099,7 @@
               }
             }, 500);
           }, 0);
+          finish();
         });
       }
     </script>
