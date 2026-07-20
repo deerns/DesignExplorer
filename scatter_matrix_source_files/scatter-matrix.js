@@ -104,6 +104,9 @@ ScatterMatrix.prototype.render = function () {
     self.__numeric_variables = [];
 
     for (k in data[0]) {
+      if (k === "scid") {
+        continue;
+      }
       var is_numeric = true;
       data.forEach(function (d) {
         var v = d[k];

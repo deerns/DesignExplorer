@@ -12892,6 +12892,7 @@
         var rows = graph.data() || [];
         if (!rows.length) return [];
         return Object.keys(rows[0]).filter(function (k) {
+          if (k === "scid") return false;
           var v = rows[0][k];
           return v !== null && v !== "" && !isNaN(+v);
         });
