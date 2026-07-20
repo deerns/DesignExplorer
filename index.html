@@ -5970,62 +5970,84 @@
           applyMainVerticalSplitLayout({ immediate: true });
         }
 
-        function startDrag(startEvent) {
+        function startDrag(pointerId, startY) {
           if (isResizeDisabled()) {
             return;
           }
 
           var dragState = {
-            startY: getClientY(startEvent),
+            pointerId: pointerId,
+            startY: startY,
             startTopHeight: getMainVerticalLayoutTopHeight(),
           };
 
           document.body.classList.add("is-main-vertical-resizing");
 
-          function handleMove(moveEvent) {
+          function applyDrag(clientY, skipScatterRefresh) {
+            var deltaY = clientY - dragState.startY;
+            setMainVerticalLayoutTopHeight(dragState.startTopHeight + deltaY);
+            applyMainVerticalSplitLayout({
+              immediate: true,
+              skipScatterRefresh: !!skipScatterRefresh,
+            });
+          }
+
+          function handlePointerMove(moveEvent) {
+            if (moveEvent.pointerId !== dragState.pointerId) {
+              return;
+            }
             if (moveEvent.cancelable) {
               moveEvent.preventDefault();
             }
-            var deltaY = getClientY(moveEvent) - dragState.startY;
-            scheduleMainVerticalDragLayout(dragState.startTopHeight + deltaY);
+            applyDrag(moveEvent.clientY, true);
           }
 
-          function stopDrag() {
-            document.body.classList.remove("is-main-vertical-resizing");
-            document.removeEventListener("mousemove", handleMove);
-            document.removeEventListener("mouseup", stopDrag);
-            document.removeEventListener("touchmove", handleMove);
-            document.removeEventListener("touchend", stopDrag);
-            document.removeEventListener("touchcancel", stopDrag);
-
-            if (!applyPendingMainVerticalDragLayout(false)) {
-              applyMainVerticalSplitLayout({ immediate: true });
+          function stopDrag(endEvent) {
+            if (endEvent && endEvent.pointerId !== dragState.pointerId) {
+              return;
             }
+            document.body.classList.remove("is-main-vertical-resizing");
+            resizeGrip.removeEventListener("pointermove", handlePointerMove);
+            resizeGrip.removeEventListener("pointerup", stopDrag);
+            resizeGrip.removeEventListener("pointercancel", stopDrag);
+            if (
+              typeof resizeGrip.releasePointerCapture === "function" &&
+              dragState.pointerId !== undefined
+            ) {
+              try {
+                resizeGrip.releasePointerCapture(dragState.pointerId);
+              } catch (e) {}
+            }
+
+            if (endEvent && isFinite(endEvent.clientY)) {
+              applyDrag(endEvent.clientY, false);
+              return;
+            }
+
+            applyMainVerticalSplitLayout({ immediate: true });
           }
 
-          document.addEventListener("mousemove", handleMove);
-          document.addEventListener("mouseup", stopDrag);
-          document.addEventListener("touchmove", handleMove, { passive: false });
-          document.addEventListener("touchend", stopDrag);
-          document.addEventListener("touchcancel", stopDrag);
+          if (
+            typeof resizeGrip.setPointerCapture === "function" &&
+            dragState.pointerId !== undefined
+          ) {
+            try {
+              resizeGrip.setPointerCapture(dragState.pointerId);
+            } catch (e) {}
+          }
+
+          resizeGrip.addEventListener("pointermove", handlePointerMove);
+          resizeGrip.addEventListener("pointerup", stopDrag);
+          resizeGrip.addEventListener("pointercancel", stopDrag);
         }
 
-        resizeGrip.addEventListener("mousedown", function (event) {
-          if (event.button !== 0) return;
-          event.preventDefault();
-          startDrag(event);
+        resizeGrip.addEventListener("pointerdown", function (event) {
+          if (event.pointerType === "mouse" && event.button !== 0) return;
+          if (event.cancelable) {
+            event.preventDefault();
+          }
+          startDrag(event.pointerId, event.clientY);
         });
-
-        resizeGrip.addEventListener(
-          "touchstart",
-          function (event) {
-            if (event.cancelable) {
-              event.preventDefault();
-            }
-            startDrag(event);
-          },
-          { passive: false }
-        );
 
         resizeGrip.addEventListener("keydown", function (event) {
           if (isResizeDisabled()) return;
