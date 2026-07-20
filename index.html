@@ -4314,11 +4314,14 @@
           return brushed;
         }
 
-        if (!graph || typeof graph.data !== "function") {
-          return [];
+        if (graph && typeof graph.data === "function") {
+          var graphData = graph.data();
+          if (Array.isArray(graphData) && graphData.length > 0) {
+            return graphData.slice();
+          }
         }
 
-        return (graph.data() || []).slice();
+        return Array.isArray(cleanedData) ? cleanedData.slice() : [];
       }
 
       function getCurrentScatterBaseData() {
@@ -4744,6 +4747,19 @@
           );
         }
         var selectedData = getCurrentGraphDisplayData();
+        if (
+          (!Array.isArray(selectedData) || selectedData.length === 0) &&
+          graph &&
+          typeof graph.data === "function"
+        ) {
+          selectedData = (graph.data() || []).slice();
+        }
+        if (
+          (!Array.isArray(selectedData) || selectedData.length === 0) &&
+          Array.isArray(cleanedData)
+        ) {
+          selectedData = cleanedData.slice();
+        }
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
         sm.__viewportWidth = scatterMatrixWidth;
         sm.__viewportHeight = scatterViewportHeight;
@@ -4808,18 +4824,36 @@
 
       //unique id for each Circle
       function getCircleID(d) {
-        var id;
-        var keys = d3.keys(graph.data()[0]);
+        if (!d || typeof d !== "object") {
+          return null;
+        }
+
+        if (d.scid !== undefined && d.scid !== null && d.scid !== "") {
+          return "scatter_" + d.scid;
+        }
+
+        var keys = d3.keys(d).filter(function (key) {
+          return key !== "scid";
+        });
+        var idParts = [];
 
         keys.forEach(function (key) {
-          id = "scatter_" + cleanString(d[key].toString());
+          if (d[key] === undefined || d[key] === null) return;
+          idParts.push(cleanString(String(d[key])));
         });
 
-        return id;
+        return idParts.length > 0 ? "scatter_" + idParts.join("_") : null;
       }
 
       function updateScatterChart() {
         var data = getCurrentGraphDisplayData();
+        if (
+          (!Array.isArray(data) || data.length === 0) &&
+          scatterChart &&
+          Array.isArray(scatterChart.__data)
+        ) {
+          data = scatterChart.__data.slice();
+        }
         var highlightedData =
           typeof graph !== "undefined" &&
           graph &&
@@ -4827,12 +4861,20 @@
             ? graph.highlighted()
             : [];
 
+        if (!Array.isArray(data) || data.length === 0) {
+          drawScatterHighlightMarkers(highlightedData);
+          updatePinnedScatterDot();
+          return;
+        }
+
         d3.selectAll(".cell circle")
           .classed("faded", false)
           .attr("visibility", "hidden");
 
         data.forEach(function (d) {
-          d3.selectAll("#" + getCircleID(d)).attr("visibility", "shown");
+          var circleId = getCircleID(d);
+          if (!circleId) return;
+          d3.selectAll("#" + circleId).attr("visibility", "visible");
         });
 
         drawScatterHighlightMarkers(highlightedData);
@@ -4848,7 +4890,7 @@
 
         d3.selectAll("#" + pinnedId)
           .classed("pinned", true)
-          .attr("visibility", "shown");
+          .attr("visibility", "visible");
       }
 
       function clearScatterHighlightMarkers() {
@@ -4927,7 +4969,9 @@
           d3.selectAll(".cell circle").classed("faded", true);
 
           data.forEach(function (d) {
-            d3.selectAll("#" + getCircleID(d)).classed("highlighted", true);
+            var circleId = getCircleID(d);
+            if (!circleId) return;
+            d3.selectAll("#" + circleId).classed("highlighted", true);
           });
 
           drawScatterHighlightMarkers(data);

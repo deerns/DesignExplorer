@@ -62,6 +62,29 @@ ScatterMatrix.prototype.render = function () {
 
   this.onData(function () {
     var data = self.__data; //// NOTE: passing raw data to local data
+    if (
+      (!Array.isArray(data) || data.length === 0) &&
+      typeof graph !== "undefined" &&
+      graph &&
+      typeof graph.data === "function"
+    ) {
+      data = (graph.data() || []).slice();
+    }
+    if (
+      (!Array.isArray(data) || data.length === 0) &&
+      typeof cleanedData !== "undefined" &&
+      Array.isArray(cleanedData)
+    ) {
+      data = cleanedData.slice();
+    }
+    self.__data = Array.isArray(data) ? data : [];
+    data = self.__data;
+
+    if (data.length === 0) {
+      control.selectAll("*").remove();
+      svg.html("<em>No scatter data available</em>");
+      return;
+    }
 
     // Divide variables into string and numeric variables
 
@@ -78,6 +101,12 @@ ScatterMatrix.prototype.render = function () {
         self.__numeric_variables.push(k);
         original_numeric_variables.push(k);
       }
+    }
+
+    if (self.__numeric_variables.length === 0) {
+      control.selectAll("*").remove();
+      svg.html("<em>No numeric dimensions available for scatterplots</em>");
+      return;
     }
 
     var graphOrder =
@@ -398,12 +427,22 @@ ScatterMatrix.prototype.__draw = function (
     container_el.selectAll("*").remove();
 
     // If no data, don't do anything
-    if (data.length === 0) {
+    if (!Array.isArray(data) || data.length === 0) {
+      container_el.html("<em>No scatter data available</em>");
       return;
     }
 
     // Parse headers from first row of data
     var variables_to_draw = to_include.slice(0);
+    if (variables_to_draw.length === 0) {
+      variables_to_draw = Array.isArray(self.__numeric_variables)
+        ? self.__numeric_variables.slice(0, Math.min(2, self.__numeric_variables.length))
+        : [];
+    }
+    if (variables_to_draw.length === 0) {
+      container_el.html("<em>No numeric dimensions available for scatterplots</em>");
+      return;
+    }
 
     // Get values of the string variable
     var colors = [];
