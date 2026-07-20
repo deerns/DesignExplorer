@@ -5110,20 +5110,33 @@
           selectedData = cleanedData.slice();
         }
         selectedData = ensureScatterDataIds(selectedData);
-        var sm = renderStableScatterMatrix(selectedData, {
-          viewportWidth: scatterMatrixWidth,
-          viewportHeight: scatterViewportHeight,
-          selectedVariables:
-            typeof window !== "undefined" &&
-            window.__pendingScatterChartState &&
-            Array.isArray(window.__pendingScatterChartState.selectedVariables)
-              ? window.__pendingScatterChartState.selectedVariables.slice()
-              : [],
-        });
+        var sm = new ScatterMatrix("", selectedData, "#radarChart");
         sm.__viewportWidth = scatterMatrixWidth;
         sm.__viewportHeight = scatterViewportHeight;
         sm.__layout_width = scatterMatrixWidth;
         sm.__layout_height = scatterViewportHeight;
+        if (
+          typeof window !== "undefined" &&
+          window.__pendingScatterChartState &&
+          Array.isArray(window.__pendingScatterChartState.selectedVariables)
+        ) {
+          sm.__initial_selected_variables =
+            window.__pendingScatterChartState.selectedVariables.slice();
+        }
+        var scatterCellSize = Math.max((scatterMatrixWidth - 50) / 2, 60);
+        if (
+          preservedScatterLayout &&
+          !isRightChartFullScreenToggled &&
+          isFinite(preservedScatterLayout.cellSize) &&
+          preservedScatterLayout.cellSize > 0
+        ) {
+          scatterCellSize = Math.min(
+            scatterCellSize,
+            preservedScatterLayout.cellSize
+          );
+        }
+        sm.cellSize(scatterCellSize);
+        sm.render();
 
         // apply custom labels to scatter after render if available (with retry)
         setTimeout(function () {
