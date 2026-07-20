@@ -5975,6 +5975,20 @@
           applyMainVerticalSplitLayout({ immediate: true });
         }
 
+        function getDragClientY() {
+          if (
+            d3.event &&
+            d3.event.sourceEvent &&
+            isFinite(getClientY(d3.event.sourceEvent))
+          ) {
+            return getClientY(d3.event.sourceEvent);
+          }
+          if (d3.event && isFinite(d3.event.y)) {
+            return d3.event.y;
+          }
+          return null;
+        }
+
         d3.select(resizeBar).call(
           d3.behavior
             .drag()
@@ -5983,6 +5997,10 @@
               if (d3.event && d3.event.sourceEvent) {
                 d3.event.sourceEvent.preventDefault();
               }
+              resizeGrip.__mainVerticalDragState = {
+                startY: getDragClientY(),
+                startTopHeight: getMainVerticalLayoutTopHeight(),
+              };
               document.body.classList.add("is-main-vertical-resizing");
             })
             .on("drag", function () {
@@ -5990,15 +6008,35 @@
               if (d3.event && d3.event.sourceEvent) {
                 d3.event.sourceEvent.preventDefault();
               }
-              setMainVerticalLayoutTopHeight(
-                getMainVerticalLayoutTopHeight() + d3.event.dy
-              );
+              var dragState = resizeGrip.__mainVerticalDragState || null;
+              var currentY = getDragClientY();
+              var nextTopHeight = null;
+
+              if (
+                dragState &&
+                isFinite(dragState.startY) &&
+                isFinite(currentY) &&
+                isFinite(dragState.startTopHeight)
+              ) {
+                nextTopHeight =
+                  dragState.startTopHeight + (currentY - dragState.startY);
+              } else if (isFinite(d3.event.dy)) {
+                nextTopHeight =
+                  getMainVerticalLayoutTopHeight() + d3.event.dy;
+              }
+
+              if (!isFinite(nextTopHeight)) {
+                return;
+              }
+
+              setMainVerticalLayoutTopHeight(nextTopHeight);
               applyMainVerticalSplitLayout({
                 immediate: true,
                 skipScatterRefresh: true,
               });
             })
             .on("dragend", function () {
+              resizeGrip.__mainVerticalDragState = null;
               document.body.classList.remove("is-main-vertical-resizing");
               applyMainVerticalSplitLayout({ immediate: true });
             })

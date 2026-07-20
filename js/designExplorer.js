@@ -80,6 +80,10 @@ function getMainVerticalLayoutTopHeight() {
 }
 
 function setMainVerticalLayoutTopHeight(nextTopHeight) {
+  if (!isFinite(nextTopHeight)) {
+    return getMainVerticalLayoutTopHeight();
+  }
+
   var totalHeight = Math.max((window.innerHeight || 0) - 115, 0);
   var bounds = getMainVerticalLayoutBounds(totalHeight);
   var resolvedTopHeight = Math.max(
