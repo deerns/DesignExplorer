@@ -6116,11 +6116,12 @@
 
           function stopDrag() {
             document.body.classList.remove("is-main-vertical-resizing");
-            document.removeEventListener("mousemove", handleMove);
-            document.removeEventListener("mouseup", stopDrag);
-            document.removeEventListener("touchmove", handleMove);
-            document.removeEventListener("touchend", stopDrag);
-            document.removeEventListener("touchcancel", stopDrag);
+            window.removeEventListener("mousemove", handleMove, true);
+            window.removeEventListener("mouseup", stopDrag, true);
+            window.removeEventListener("touchmove", handleMove, true);
+            window.removeEventListener("touchend", stopDrag, true);
+            window.removeEventListener("touchcancel", stopDrag, true);
+            window.removeEventListener("blur", stopDrag, true);
 
             resizeGrip.__mainVerticalDragActive = false;
             resizeGrip.__mainVerticalDragState = null;
@@ -6130,13 +6131,12 @@
             }
           }
 
-          document.addEventListener("mousemove", handleMove);
-          document.addEventListener("mouseup", stopDrag);
-          document.addEventListener("touchmove", handleMove, {
-            passive: false,
-          });
-          document.addEventListener("touchend", stopDrag);
-          document.addEventListener("touchcancel", stopDrag);
+          window.addEventListener("mousemove", handleMove, true);
+          window.addEventListener("mouseup", stopDrag, true);
+          window.addEventListener("touchmove", handleMove, true);
+          window.addEventListener("touchend", stopDrag, true);
+          window.addEventListener("touchcancel", stopDrag, true);
+          window.addEventListener("blur", stopDrag, true);
         }
 
         function handleMouseStart(event) {
