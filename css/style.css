@@ -868,6 +868,26 @@ a#copyRightButton {
 g.cell text {
     font-size: 0.85em;
 }
+
+.scatter-matrix-svg g.cell {
+    float: none;
+    overflow: visible;
+    width: auto;
+    height: auto;
+    white-space: normal;
+}
+
+.scatter-matrix-svg g.cell circle,
+.scatter-matrix-svg g.cell rect,
+.scatter-matrix-svg g.cell text {
+    visibility: visible;
+}
+
+.scatter-matrix-svg svg {
+    display: block;
+    overflow: visible;
+}
+
 #folderLink{
     border-radius: 20px 0 0 20px;
     width: 300px;

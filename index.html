@@ -4761,6 +4761,272 @@
         return true;
       }
 
+      function getScatterNumericVariables(data) {
+        if (!Array.isArray(data) || data.length === 0) {
+          return [];
+        }
+
+        return d3.keys(data[0]).filter(function (key) {
+          if (key === "scid") return false;
+
+          var hasNumericValue = false;
+          for (var i = 0; i < data.length; i++) {
+            var value = data[i] ? data[i][key] : undefined;
+            if (value === undefined || value === null || value === "") {
+              continue;
+            }
+            if (isNaN(+value)) {
+              return false;
+            }
+            hasNumericValue = true;
+          }
+
+          return hasNumericValue;
+        });
+      }
+
+      function getScatterPointFill(d) {
+        if (
+          typeof color !== "function" ||
+          typeof valueToNumber !== "function" ||
+          !pcIsColoredBy
+        ) {
+          return "#0f4c81";
+        }
+
+        var fill = color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
+        return fill || "#0f4c81";
+      }
+
+      function renderStableScatterMatrix(data, options) {
+        options = options || {};
+        data = ensureScatterDataIds(Array.isArray(data) ? data.slice() : []);
+
+        var radarChart = d3.select("#radarChart");
+        radarChart.selectAll("*").remove();
+
+        var container = radarChart
+          .append("div")
+          .attr("class", "scatter-matrix-container");
+        var control = container
+          .append("div")
+          .attr("class", "scatter-matrix-control")
+          .classed("toggled", isScatterToggled)
+          .style("background-color", "#ffffff");
+        var svgWrapper = container
+          .append("div")
+          .attr("class", "scatter-matrix-svg");
+
+        var viewportWidth = Math.max(options.viewportWidth || 0, 180);
+        var viewportHeight = Math.max(options.viewportHeight || 0, 160);
+        svgWrapper.style("width", viewportWidth + "px");
+        control.style("height", viewportHeight + "px");
+
+        if (!data.length) {
+          svgWrapper.html("<em>No scatter data available</em>");
+          return {
+            __data: [],
+            __numeric_variables: [],
+            __selected_variables: [],
+            __cell_size: null,
+            clearSelection: function () {
+              return this;
+            },
+          };
+        }
+
+        var numericVariables = getScatterNumericVariables(data);
+        if (numericVariables.length < 2) {
+          svgWrapper.html("<em>No numeric dimensions available for scatterplots</em>");
+          return {
+            __data: data,
+            __numeric_variables: numericVariables.slice(),
+            __selected_variables: numericVariables.slice(),
+            __cell_size: null,
+            clearSelection: function () {
+              return this;
+            },
+          };
+        }
+
+        var requestedVariables =
+          options.selectedVariables && options.selectedVariables.length > 0
+            ? options.selectedVariables.filter(function (name) {
+                return numericVariables.indexOf(name) >= 0;
+              })
+            : [];
+        var selectedVariables =
+          requestedVariables.length >= 2
+            ? requestedVariables.slice(0, 3)
+            : numericVariables.slice(0, Math.min(3, numericVariables.length));
+        var variableCount = selectedVariables.length;
+        var labelMargin = 42;
+        var topMargin = 16;
+        var bottomMargin = 28;
+        var rightMargin = 10;
+        var availableWidth = Math.max(viewportWidth - labelMargin - rightMargin, 120);
+        var availableHeight = Math.max(viewportHeight - topMargin - bottomMargin, 120);
+        var cellSize = Math.max(
+          48,
+          Math.floor(
+            Math.min(
+              availableWidth / variableCount,
+              availableHeight / variableCount
+            )
+          )
+        );
+        var svgWidth = labelMargin + cellSize * variableCount + rightMargin;
+        var svgHeight = topMargin + cellSize * variableCount + bottomMargin;
+        var pointRadius = Math.max(2, Math.min(4, Math.round(cellSize / 42)));
+        var domains = {};
+
+        selectedVariables.forEach(function (key) {
+          var extent = d3.extent(data, function (row) {
+            return +row[key];
+          });
+          var min = extent[0];
+          var max = extent[1];
+
+          if (!isFinite(min) || !isFinite(max)) {
+            min = 0;
+            max = 1;
+          } else if (min === max) {
+            min -= 1;
+            max += 1;
+          }
+
+          domains[key] = [min, max];
+        });
+
+        var variableControl = control
+          .append("div")
+          .attr("class", "scatter-matrix-variable-control");
+        variableControl.append("p").text("Visible Variables:");
+        variableControl
+          .append("ul")
+          .selectAll("li")
+          .data(selectedVariables)
+          .enter()
+          .append("li")
+          .append("label")
+          .text(function (d) {
+            var idx = numericVariables.indexOf(d) + 1;
+            return idx + ": " + getDimLabel(d);
+          });
+
+        var svg = svgWrapper.append("svg").attr("width", svgWidth).attr("height", svgHeight);
+        var root = svg
+          .append("g")
+          .attr("transform", "translate(" + labelMargin + "," + topMargin + ")");
+
+        selectedVariables.forEach(function (yKey, rowIndex) {
+          selectedVariables.forEach(function (xKey, columnIndex) {
+            var xScale = d3.scale
+              .linear()
+              .domain(domains[xKey])
+              .range([8, cellSize - 8]);
+            var yScale = d3.scale
+              .linear()
+              .domain(domains[yKey])
+              .range([cellSize - 8, 8]);
+            var cellDatum = {
+              x: xKey,
+              y: yKey,
+              i: columnIndex,
+              j: rowIndex,
+            };
+            var cell = root
+              .append("g")
+              .datum(cellDatum)
+              .attr("class", "cell")
+              .attr(
+                "transform",
+                "translate(" + columnIndex * cellSize + "," + rowIndex * cellSize + ")"
+              );
+
+            cell
+              .append("rect")
+              .attr("class", "frame")
+              .attr("x", 0.5)
+              .attr("y", 0.5)
+              .attr("width", cellSize - 1)
+              .attr("height", cellSize - 1)
+              .style("fill", "#ffffff")
+              .style("stroke", "#b7bec7");
+
+            cell
+              .selectAll("circle")
+              .data(data)
+              .enter()
+              .append("circle")
+              .attr("id", function (d) {
+                return getCircleID(d);
+              })
+              .attr("cx", function (d) {
+                return xScale(+d[xKey]);
+              })
+              .attr("cy", function (d) {
+                return yScale(+d[yKey]);
+              })
+              .attr("r", pointRadius)
+              .style("fill", function (d) {
+                return getScatterPointFill(d);
+              })
+              .style("fill-opacity", 0.7);
+
+            if (columnIndex === 0) {
+              cell
+                .append("text")
+                .attr("x", -10)
+                .attr("y", cellSize / 2)
+                .attr("dy", ".32em")
+                .attr("text-anchor", "middle")
+                .attr("transform", "rotate(-90)")
+                .text(function (d) {
+                  var idx = numericVariables.indexOf(d.y) + 1;
+                  return idx + ": " + getDimLabel(d.y);
+                });
+            }
+
+            if (rowIndex === variableCount - 1) {
+              cell
+                .append("text")
+                .attr("x", 6)
+                .attr("y", cellSize + 16)
+                .text(function (d) {
+                  var idx = numericVariables.indexOf(d.x) + 1;
+                  return idx + ": " + getDimLabel(d.x);
+                });
+            }
+          });
+        });
+
+        return {
+          __data: data,
+          __numeric_variables: numericVariables.slice(),
+          __selected_variables: selectedVariables.slice(),
+          __cell_size: cellSize,
+          clearSelection: function () {
+            d3.select("#radarChart")
+              .selectAll(".scatter-matrix-svg .cell circle")
+              .classed("faded", false)
+              .classed("highlighted", false)
+              .attr("visibility", "visible");
+            if (
+              typeof window !== "undefined" &&
+              typeof window.handleScatterMatrixSelection === "function"
+            ) {
+              window.handleScatterMatrixSelection([], {
+                x: null,
+                y: null,
+                extent: null,
+              });
+            }
+            return this;
+          },
+        };
+      }
+
       // add scatter chart
       function addScatterChart() {
         updateScatterSelectionActionButtons();
@@ -4795,33 +5061,20 @@
           selectedData = cleanedData.slice();
         }
         selectedData = ensureScatterDataIds(selectedData);
-        var sm = new ScatterMatrix("", selectedData, "#radarChart");
+        var sm = renderStableScatterMatrix(selectedData, {
+          viewportWidth: scatterMatrixWidth,
+          viewportHeight: scatterViewportHeight,
+          selectedVariables:
+            typeof window !== "undefined" &&
+            window.__pendingScatterChartState &&
+            Array.isArray(window.__pendingScatterChartState.selectedVariables)
+              ? window.__pendingScatterChartState.selectedVariables.slice()
+              : [],
+        });
         sm.__viewportWidth = scatterMatrixWidth;
         sm.__viewportHeight = scatterViewportHeight;
         sm.__layout_width = scatterMatrixWidth;
         sm.__layout_height = scatterViewportHeight;
-        if (
-          typeof window !== "undefined" &&
-          window.__pendingScatterChartState &&
-          Array.isArray(window.__pendingScatterChartState.selectedVariables)
-        ) {
-          sm.__initial_selected_variables =
-            window.__pendingScatterChartState.selectedVariables.slice();
-        }
-        var scatterCellSize = Math.max((scatterMatrixWidth - 50) / 2, 60);
-        if (
-          preservedScatterLayout &&
-          !isRightChartFullScreenToggled &&
-          isFinite(preservedScatterLayout.cellSize) &&
-          preservedScatterLayout.cellSize > 0
-        ) {
-          scatterCellSize = Math.min(
-            scatterCellSize,
-            preservedScatterLayout.cellSize
-          );
-        }
-        sm.cellSize(scatterCellSize);
-        sm.render();
 
         // apply custom labels to scatter after render if available (with retry)
         setTimeout(function () {
@@ -4848,6 +5101,8 @@
 
         scatterChart = sm;
         applyPendingScatterLayoutState();
+        updateScatterChart();
+        highlightScatterDot();
         updatePinnedScatterDot();
 
         if (typeof window !== "undefined") {
