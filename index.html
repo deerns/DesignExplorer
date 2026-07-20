@@ -5945,13 +5945,8 @@
       }
 
       function initMainVerticalResizeHandle() {
-        var resizeBar = document.getElementById("mainVerticalResizeBar");
         var resizeGrip = document.getElementById("mainVerticalResizeGrip");
-        if (
-          !resizeBar ||
-          !resizeGrip ||
-          resizeGrip.__mainVerticalResizeBound
-        ) {
+        if (!resizeGrip || resizeGrip.__mainVerticalResizeBound) {
           return;
         }
 
@@ -5975,13 +5970,17 @@
           applyMainVerticalSplitLayout({ immediate: true });
         }
 
-        function startDrag(pointerId, startY) {
+        var activeDrag = null;
+
+        function startDrag(startY) {
           if (isResizeDisabled()) {
             return;
           }
+          if (activeDrag) {
+            return;
+          }
 
-          var dragState = {
-            pointerId: pointerId,
+          activeDrag = {
             startY: startY,
             startTopHeight: getMainVerticalLayoutTopHeight(),
           };
@@ -5989,53 +5988,85 @@
           document.body.classList.add("is-main-vertical-resizing");
 
           function applyDrag(clientY, skipScatterRefresh) {
-            var deltaY = clientY - dragState.startY;
-            setMainVerticalLayoutTopHeight(dragState.startTopHeight + deltaY);
+            var deltaY = clientY - activeDrag.startY;
+            setMainVerticalLayoutTopHeight(activeDrag.startTopHeight + deltaY);
             applyMainVerticalSplitLayout({
               immediate: true,
               skipScatterRefresh: !!skipScatterRefresh,
             });
           }
 
-          function handlePointerMove(moveEvent) {
-            if (moveEvent.pointerId !== dragState.pointerId) {
-              return;
+          function stopDrag(clientY) {
+            document.body.classList.remove("is-main-vertical-resizing");
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+            document.removeEventListener("touchmove", handleTouchMove);
+            document.removeEventListener("touchend", handleTouchEnd);
+            document.removeEventListener("touchcancel", handleTouchCancel);
+            activeDrag = null;
+
+            if (isFinite(clientY)) {
+              applyDrag(clientY, false);
+            } else {
+              applyMainVerticalSplitLayout({ immediate: true });
             }
+          }
+
+          function handleMouseMove(moveEvent) {
+            if (!activeDrag) return;
             if (moveEvent.cancelable) {
               moveEvent.preventDefault();
             }
             applyDrag(moveEvent.clientY, true);
           }
 
-          function stopDrag(endEvent) {
-            if (endEvent && endEvent.pointerId !== dragState.pointerId) {
-              return;
-            }
-            document.body.classList.remove("is-main-vertical-resizing");
-            document.removeEventListener("pointermove", handlePointerMove);
-            document.removeEventListener("pointerup", stopDrag);
-            document.removeEventListener("pointercancel", stopDrag);
-
-            if (endEvent && isFinite(endEvent.clientY)) {
-              applyDrag(endEvent.clientY, false);
-              return;
-            }
-
-            applyMainVerticalSplitLayout({ immediate: true });
+          function handleMouseUp(endEvent) {
+            stopDrag(endEvent ? endEvent.clientY : null);
           }
 
-          document.addEventListener("pointermove", handlePointerMove);
-          document.addEventListener("pointerup", stopDrag);
-          document.addEventListener("pointercancel", stopDrag);
+          function handleTouchMove(moveEvent) {
+            if (!activeDrag) return;
+            if (moveEvent.cancelable) {
+              moveEvent.preventDefault();
+            }
+            applyDrag(getClientY(moveEvent), true);
+          }
+
+          function handleTouchEnd(endEvent) {
+            stopDrag(getClientY(endEvent));
+          }
+
+          function handleTouchCancel() {
+            stopDrag(null);
+          }
+
+          document.addEventListener("mousemove", handleMouseMove);
+          document.addEventListener("mouseup", handleMouseUp);
+          document.addEventListener("touchmove", handleTouchMove, {
+            passive: false,
+          });
+          document.addEventListener("touchend", handleTouchEnd);
+          document.addEventListener("touchcancel", handleTouchCancel);
         }
 
-        resizeBar.addEventListener("pointerdown", function (event) {
-          if (event.pointerType === "mouse" && event.button !== 0) return;
+        resizeGrip.addEventListener("mousedown", function (event) {
+          if (event.button !== 0) return;
           if (event.cancelable) {
             event.preventDefault();
           }
-          startDrag(event.pointerId, event.clientY);
+          startDrag(event.clientY);
         });
+
+        resizeGrip.addEventListener(
+          "touchstart",
+          function (event) {
+            if (event.cancelable) {
+              event.preventDefault();
+            }
+            startDrag(getClientY(event));
+          },
+          { passive: false }
+        );
 
         resizeGrip.addEventListener("keydown", function (event) {
           if (isResizeDisabled()) return;
