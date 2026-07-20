@@ -230,16 +230,23 @@ body.is-main-vertical-resizing * {
 
 @media (min-width: 1200px) {
     #ScChartWrapper:not(.rightChartFullScreenToggled) .chartSide {
-        display: block;
-        flex: 0 0 auto;
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        justify-content: center;
+        align-items: stretch;
         width: 100%;
+        min-height: 0;
     }
 
     #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
         display: block;
+        flex: 0 0 auto;
         width: 100%;
         min-width: 0;
         max-width: none;
+        margin-top: auto;
+        margin-bottom: auto;
     }
 }
 
