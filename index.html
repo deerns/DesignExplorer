@@ -8811,9 +8811,12 @@
           return;
         }
 
-        d3.select("#radarChart").selectAll("*").remove();
+        d3.select("#radarChart").style("visibility", null).selectAll("*").remove();
         scatterChart = null;
-        scheduleScatterChartRefreshAfterShow();
+        if (typeof window !== "undefined") {
+          window.__scatterNeedsShowRefresh = false;
+        }
+        addScatterChart();
         scheduleScatterLayoutStabilization([120, 260, 520]);
       }
 
