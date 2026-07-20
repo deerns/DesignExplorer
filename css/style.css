@@ -229,6 +229,10 @@ body.is-main-vertical-resizing * {
 }
 
 @media (min-width: 1200px) {
+    #mainVerticalResizeBar {
+        margin-top: 24px;
+    }
+
     #ScChartWrapper:not(.rightChartFullScreenToggled) .chartSide {
         display: flex;
         flex: 1 1 auto;
@@ -250,7 +254,7 @@ body.is-main-vertical-resizing * {
     }
 
     #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
-        transform: translateY(clamp(28px, 4vh, 56px));
+        transform: none;
     }
 }
 
