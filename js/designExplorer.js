@@ -172,6 +172,12 @@ function setMainVerticalLayoutTopHeight(nextTopHeight) {
 
   mainVerticalLayoutState.topRatio =
     totalHeight > 0 ? resolvedTopHeight / totalHeight : mainVerticalLayoutState.topRatio;
+  if (
+    typeof window !== "undefined" &&
+    typeof window.syncLayoutRatiosToUserSetting === "function"
+  ) {
+    window.syncLayoutRatiosToUserSetting();
+  }
 
   return resolvedTopHeight;
 }
@@ -196,6 +202,12 @@ function calWidthAndHeight() {
 
   mainVerticalLayoutState.topRatio =
     cleanHeight > 0 ? topHeight / cleanHeight : 1 / 3;
+  if (
+    typeof window !== "undefined" &&
+    typeof window.syncLayoutRatiosToUserSetting === "function"
+  ) {
+    window.syncLayoutRatiosToUserSetting();
+  }
   graphHeight = Math.max(
     topHeight - topControlsHeight,
     80
@@ -249,6 +261,8 @@ function overwriteInitialGlobalValues() {
     dimSliderTickSizes: {},
     imageLabels: {},
     hideScatterPlots: false,
+    mainVerticalRatio: mainVerticalLayoutState.topRatio,
+    chartHorizontalRatio: null,
     labelSize:
       typeof defaultLabelSizeValue !== "undefined"
         ? defaultLabelSizeValue

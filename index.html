@@ -1063,6 +1063,8 @@
             dimSliderTickSizes: {},
             imageLabels: {},
             hideScatterPlots: false,
+            mainVerticalRatio: 0.58,
+            chartHorizontalRatio: null,
             labelSize: defaultLabelSizeValue,
             lineGradient: {
               enabled: false,
@@ -1351,6 +1353,25 @@
         source.sliderOrder,
         validSliderLookup
       );
+      if (Object.prototype.hasOwnProperty.call(source, "mainVerticalRatio")) {
+        sanitized.mainVerticalRatio = normalizeMainVerticalRatio(
+          source.mainVerticalRatio,
+          0.58
+        );
+      }
+      if (Object.prototype.hasOwnProperty.call(source, "chartHorizontalRatio")) {
+        if (
+          source.chartHorizontalRatio === null ||
+          source.chartHorizontalRatio === ""
+        ) {
+          sanitized.chartHorizontalRatio = null;
+        } else {
+          sanitized.chartHorizontalRatio = normalizeChartHorizontalRatio(
+            source.chartHorizontalRatio,
+            getDefaultChartHorizontalRatio()
+          );
+        }
+      }
 
       return sanitized;
     }
@@ -3390,6 +3411,14 @@
                 </div>
               </div>
               <!-- end of left side charts-->
+              <div id="chartHorizontalResizeBar">
+                <button
+                  type="button"
+                  id="chartHorizontalResizeGrip"
+                  title="Drag to resize the chart columns"
+                  aria-label="Drag to resize the chart columns horizontally"
+                ></button>
+              </div>
 
               <!-- start of right side charts-->
               <div id="ScChartWrapper" class="col-lg-3">
@@ -5395,6 +5424,13 @@
         minLegendHeight: 120,
         minSliderHeight: 160,
       };
+      var chartHorizontalLayoutState = {
+        scatterRatio: null,
+        useAutoRatio: true,
+        minScatterWidth: 280,
+        minPcWidth: 360,
+        handleWidth: 16,
+      };
 
       function normalizeBooleanSetting(value, fallback) {
         if (value === undefined || value === null) {
@@ -5625,6 +5661,32 @@
         var outerHeight = bounds.height + marginTop + marginBottom;
 
         return isFinite(outerHeight) && outerHeight > 0 ? outerHeight : null;
+      }
+
+      function getElementOuterWidth(selector) {
+        var node = d3.select(selector).node();
+        if (
+          !node ||
+          typeof node.getBoundingClientRect !== "function" ||
+          typeof window === "undefined"
+        ) {
+          return null;
+        }
+
+        var bounds = node.getBoundingClientRect();
+        var computedStyle =
+          typeof window.getComputedStyle === "function"
+            ? window.getComputedStyle(node)
+            : null;
+        var marginLeft = computedStyle
+          ? parseFloat(computedStyle.marginLeft) || 0
+          : 0;
+        var marginRight = computedStyle
+          ? parseFloat(computedStyle.marginRight) || 0
+          : 0;
+        var outerWidth = bounds.width + marginLeft + marginRight;
+
+        return isFinite(outerWidth) && outerWidth > 0 ? outerWidth : null;
       }
 
       function getMeasuredMainVerticalTopControlsHeight() {
@@ -5909,6 +5971,485 @@
         syncSidebarSectionHeights();
       }
 
+      function normalizeMainVerticalRatio(value, fallback) {
+        var numeric = parseFloat(value);
+        if (!isFinite(numeric)) {
+          return fallback;
+        }
+
+        return Math.max(0.2, Math.min(0.82, numeric));
+      }
+
+      function normalizeChartHorizontalRatio(value, fallback) {
+        if (value === undefined || value === null || value === "") {
+          return fallback;
+        }
+
+        var numeric = parseFloat(value);
+        if (!isFinite(numeric)) {
+          return fallback;
+        }
+
+        return Math.max(0.18, Math.min(0.68, numeric));
+      }
+
+      function getDefaultChartHorizontalRatio() {
+        var activeDimensionCount = getActiveGraphDimensionCount();
+        var ratio = 3 / 12;
+
+        if (activeDimensionCount === 0) {
+          ratio = 3 / 12;
+        } else if (activeDimensionCount <= 1) {
+          ratio = 7 / 12;
+        } else if (activeDimensionCount === 2) {
+          ratio = 6 / 12;
+        } else if (activeDimensionCount === 3) {
+          ratio = 4 / 12;
+        }
+
+        if (isScatterToggled) {
+          ratio = Math.max(ratio - 0.04, 0.2);
+        }
+
+        return normalizeChartHorizontalRatio(ratio, 3 / 12);
+      }
+
+      function getEffectiveChartHorizontalRatio() {
+        if (
+          !chartHorizontalLayoutState.useAutoRatio &&
+          isFinite(chartHorizontalLayoutState.scatterRatio)
+        ) {
+          return normalizeChartHorizontalRatio(
+            chartHorizontalLayoutState.scatterRatio,
+            getDefaultChartHorizontalRatio()
+          );
+        }
+
+        return getDefaultChartHorizontalRatio();
+      }
+
+      function getCurrentLayoutRatioSnapshot() {
+        return {
+          mainVerticalRatio: normalizeMainVerticalRatio(
+            mainVerticalLayoutState.topRatio,
+            0.58
+          ),
+          chartHorizontalRatio: getEffectiveChartHorizontalRatio(),
+        };
+      }
+
+      function syncLayoutRatiosToUserSetting() {
+        var ratioSnapshot = getCurrentLayoutRatioSnapshot();
+
+        _userSetting = _userSetting || {};
+        _userSetting.mainVerticalRatio = ratioSnapshot.mainVerticalRatio;
+        _userSetting.chartHorizontalRatio = chartHorizontalLayoutState.useAutoRatio
+          ? null
+          : ratioSnapshot.chartHorizontalRatio;
+
+        if (
+          typeof window !== "undefined" &&
+          window.__activeSettingsDraft &&
+          typeof window.__activeSettingsDraft === "object"
+        ) {
+          window.__activeSettingsDraft.mainVerticalRatio =
+            ratioSnapshot.mainVerticalRatio;
+          window.__activeSettingsDraft.chartHorizontalRatio =
+            chartHorizontalLayoutState.useAutoRatio
+              ? null
+              : ratioSnapshot.chartHorizontalRatio;
+        }
+      }
+
+      function resetLayoutResizeStatesToDefaults() {
+        mainVerticalLayoutState.topRatio = normalizeMainVerticalRatio(0.58, 0.58);
+        chartHorizontalLayoutState.scatterRatio = null;
+        chartHorizontalLayoutState.useAutoRatio = true;
+        syncLayoutRatiosToUserSetting();
+      }
+
+      function applyLayoutRatiosFromSetting(setting) {
+        var source = setting || {};
+
+        if (Object.prototype.hasOwnProperty.call(source, "mainVerticalRatio")) {
+          mainVerticalLayoutState.topRatio = normalizeMainVerticalRatio(
+            source.mainVerticalRatio,
+            mainVerticalLayoutState.topRatio
+          );
+        }
+
+        if (Object.prototype.hasOwnProperty.call(source, "chartHorizontalRatio")) {
+          if (
+            source.chartHorizontalRatio === null ||
+            source.chartHorizontalRatio === ""
+          ) {
+            chartHorizontalLayoutState.scatterRatio = null;
+            chartHorizontalLayoutState.useAutoRatio = true;
+          } else {
+            chartHorizontalLayoutState.scatterRatio =
+              normalizeChartHorizontalRatio(
+                source.chartHorizontalRatio,
+                getDefaultChartHorizontalRatio()
+              );
+            chartHorizontalLayoutState.useAutoRatio = false;
+          }
+        }
+
+        syncLayoutRatiosToUserSetting();
+      }
+
+      function shouldShowChartHorizontalResizeHandle(showScatterWrapper) {
+        return (
+          !!showScatterWrapper &&
+          !isRightChartFullScreenToggled &&
+          typeof window !== "undefined" &&
+          window.innerWidth >= 1200
+        );
+      }
+
+      function getAvailableChartHorizontalWidth() {
+        var rowWidth = getContainerContentWidth("#chartLayoutRow");
+        var handleWidth = getElementOuterWidth("#chartHorizontalResizeBar");
+
+        if (!isFinite(rowWidth) || rowWidth <= 0) {
+          var rowNode = d3.select("#chartLayoutRow").node();
+          rowWidth =
+            rowNode && typeof rowNode.getBoundingClientRect === "function"
+              ? rowNode.getBoundingClientRect().width
+              : 0;
+        }
+
+        if (!isFinite(handleWidth) || handleWidth <= 0) {
+          handleWidth = chartHorizontalLayoutState.handleWidth;
+        }
+
+        return Math.max((rowWidth || 0) - handleWidth, 0);
+      }
+
+      function getChartHorizontalLayoutBounds(totalWidth) {
+        var resolvedTotalWidth =
+          isFinite(totalWidth) && totalWidth > 0
+            ? totalWidth
+            : getAvailableChartHorizontalWidth();
+        var minScatterWidth = chartHorizontalLayoutState.minScatterWidth;
+        var minPcWidth = chartHorizontalLayoutState.minPcWidth;
+
+        if (minScatterWidth + minPcWidth > resolvedTotalWidth) {
+          minPcWidth = Math.max(
+            220,
+            Math.min(minPcWidth, resolvedTotalWidth * 0.55)
+          );
+          minScatterWidth = Math.max(180, resolvedTotalWidth - minPcWidth);
+        }
+
+        minScatterWidth = Math.max(
+          Math.min(minScatterWidth, resolvedTotalWidth),
+          0
+        );
+
+        return {
+          minScatter: minScatterWidth,
+          maxScatter: Math.max(minScatterWidth, resolvedTotalWidth - minPcWidth),
+        };
+      }
+
+      function getCurrentChartHorizontalScatterWidth() {
+        var availableWidth = getAvailableChartHorizontalWidth();
+        var bounds = getChartHorizontalLayoutBounds(availableWidth);
+        var desiredScatterWidth =
+          availableWidth * getEffectiveChartHorizontalRatio();
+
+        return Math.max(
+          bounds.minScatter,
+          Math.min(bounds.maxScatter, desiredScatterWidth)
+        );
+      }
+
+      function setChartHorizontalLayoutScatterWidth(nextScatterWidth, options) {
+        options = options || {};
+        if (!isFinite(nextScatterWidth)) {
+          return getCurrentChartHorizontalScatterWidth();
+        }
+
+        var availableWidth = getAvailableChartHorizontalWidth();
+        var bounds = getChartHorizontalLayoutBounds(availableWidth);
+        var resolvedScatterWidth = Math.max(
+          bounds.minScatter,
+          Math.min(bounds.maxScatter, nextScatterWidth)
+        );
+
+        chartHorizontalLayoutState.scatterRatio =
+          availableWidth > 0
+            ? resolvedScatterWidth / availableWidth
+            : chartHorizontalLayoutState.scatterRatio;
+        if (!options.preserveAuto) {
+          chartHorizontalLayoutState.useAutoRatio = false;
+        }
+        syncLayoutRatiosToUserSetting();
+
+        return resolvedScatterWidth;
+      }
+
+      function syncChartHorizontalSectionWidths(showScatterWrapper) {
+        var pcWrapper = d3.select("#PcChartWrapper");
+        var scWrapper = d3.select("#ScChartWrapper");
+        var resizeBar = d3.select("#chartHorizontalResizeBar");
+        var resizeGrip = d3.select("#chartHorizontalResizeGrip");
+        var canResize = shouldShowChartHorizontalResizeHandle(showScatterWrapper);
+
+        if (!resizeBar.empty()) {
+          resizeBar.style("display", canResize ? "flex" : "none");
+        }
+        if (!resizeGrip.empty()) {
+          resizeGrip
+            .attr("aria-disabled", canResize ? "false" : "true")
+            .attr("tabindex", canResize ? "0" : "-1");
+        }
+
+        if (pcWrapper.empty() || scWrapper.empty()) {
+          return;
+        }
+
+        if (!canResize) {
+          pcWrapper
+            .style("flex", null)
+            .style("width", null)
+            .style("max-width", null);
+          scWrapper
+            .style("flex", null)
+            .style("width", null)
+            .style("max-width", null);
+          return;
+        }
+
+        var availableWidth = getAvailableChartHorizontalWidth();
+        var scatterWidth = setChartHorizontalLayoutScatterWidth(
+          getCurrentChartHorizontalScatterWidth(),
+          {
+            preserveAuto: chartHorizontalLayoutState.useAutoRatio,
+          }
+        );
+        var pcWidth = Math.max(availableWidth - scatterWidth, 0);
+
+        pcWrapper
+          .style("flex", "0 0 " + pcWidth + "px")
+          .style("width", pcWidth + "px")
+          .style("max-width", pcWidth + "px");
+        scWrapper
+          .style("flex", "0 0 " + scatterWidth + "px")
+          .style("width", scatterWidth + "px")
+          .style("max-width", scatterWidth + "px");
+      }
+
+      function applyChartHorizontalSplitLayout(options) {
+        options = options || {};
+        var showScatterWrapper = shouldShowScatterPlots();
+
+        syncChartHorizontalSectionWidths(showScatterWrapper);
+
+        if (!graph) {
+          return;
+        }
+
+        reDrawPcChart({ immediate: !!options.immediate });
+
+        if (showScatterWrapper) {
+          if (options.skipScatterRefresh) {
+            if (!syncExistingScatterChartState()) {
+              scheduleDeferredScatterLayoutRefresh();
+            }
+          } else {
+            refreshScatterChartLayout();
+          }
+        }
+      }
+
+      var pendingChartHorizontalResizeFrame = null;
+      var pendingChartHorizontalResizeWidth = null;
+
+      function applyPendingChartHorizontalDragLayout(skipScatterRefresh) {
+        if (pendingChartHorizontalResizeWidth === null) {
+          return false;
+        }
+
+        if (pendingChartHorizontalResizeFrame !== null) {
+          if (
+            typeof window !== "undefined" &&
+            typeof window.cancelAnimationFrame === "function"
+          ) {
+            window.cancelAnimationFrame(pendingChartHorizontalResizeFrame);
+          } else {
+            clearTimeout(pendingChartHorizontalResizeFrame);
+          }
+          pendingChartHorizontalResizeFrame = null;
+        }
+
+        var nextScatterWidth = pendingChartHorizontalResizeWidth;
+        pendingChartHorizontalResizeWidth = null;
+        setChartHorizontalLayoutScatterWidth(nextScatterWidth);
+        applyChartHorizontalSplitLayout({
+          immediate: true,
+          skipScatterRefresh: !!skipScatterRefresh,
+        });
+        return true;
+      }
+
+      function scheduleChartHorizontalDragLayout(nextScatterWidth) {
+        pendingChartHorizontalResizeWidth = nextScatterWidth;
+        if (pendingChartHorizontalResizeFrame !== null) {
+          return;
+        }
+
+        var runLayout = function () {
+          pendingChartHorizontalResizeFrame = null;
+          applyPendingChartHorizontalDragLayout(true);
+        };
+
+        if (
+          typeof window !== "undefined" &&
+          typeof window.requestAnimationFrame === "function"
+        ) {
+          pendingChartHorizontalResizeFrame =
+            window.requestAnimationFrame(runLayout);
+        } else {
+          pendingChartHorizontalResizeFrame = setTimeout(runLayout, 0);
+        }
+      }
+
+      function initChartHorizontalResizeHandle() {
+        var resizeBar = document.getElementById("chartHorizontalResizeBar");
+        var resizeGrip = document.getElementById("chartHorizontalResizeGrip");
+        if (
+          !resizeBar ||
+          !resizeGrip ||
+          resizeGrip.__chartHorizontalResizeBound
+        ) {
+          return;
+        }
+
+        function getClientX(event) {
+          if (event.touches && event.touches.length > 0) {
+            return event.touches[0].clientX;
+          }
+          if (event.changedTouches && event.changedTouches.length > 0) {
+            return event.changedTouches[0].clientX;
+          }
+          return event.clientX;
+        }
+
+        function stepChartHorizontalLayout(step) {
+          setChartHorizontalLayoutScatterWidth(
+            getCurrentChartHorizontalScatterWidth() + step
+          );
+          applyChartHorizontalSplitLayout({ immediate: true });
+        }
+
+        function startDrag(startEvent) {
+          if (!shouldShowChartHorizontalResizeHandle(shouldShowScatterPlots())) {
+            return;
+          }
+          if (resizeGrip.__chartHorizontalDragActive) {
+            return;
+          }
+
+          var startX = getClientX(startEvent);
+          if (!isFinite(startX)) {
+            return;
+          }
+
+          resizeGrip.__chartHorizontalDragActive = true;
+          resizeGrip.__chartHorizontalDragState = {
+            startX: startX,
+            startScatterWidth: getCurrentChartHorizontalScatterWidth(),
+          };
+
+          document.body.classList.add("is-chart-horizontal-resizing");
+
+          function handleMove(moveEvent) {
+            var dragState = resizeGrip.__chartHorizontalDragState || null;
+            if (!dragState) {
+              return;
+            }
+            if (moveEvent.cancelable) {
+              moveEvent.preventDefault();
+            }
+
+            var currentX = getClientX(moveEvent);
+            if (!isFinite(currentX)) {
+              return;
+            }
+
+            scheduleChartHorizontalDragLayout(
+              dragState.startScatterWidth - (currentX - dragState.startX)
+            );
+          }
+
+          function stopDrag() {
+            document.body.classList.remove("is-chart-horizontal-resizing");
+            window.removeEventListener("mousemove", handleMove, true);
+            window.removeEventListener("mouseup", stopDrag, true);
+            window.removeEventListener("touchmove", handleMove, true);
+            window.removeEventListener("touchend", stopDrag, true);
+            window.removeEventListener("touchcancel", stopDrag, true);
+            window.removeEventListener("blur", stopDrag, true);
+
+            resizeGrip.__chartHorizontalDragActive = false;
+            resizeGrip.__chartHorizontalDragState = null;
+
+            if (!applyPendingChartHorizontalDragLayout(false)) {
+              applyChartHorizontalSplitLayout({ immediate: true });
+            }
+          }
+
+          window.addEventListener("mousemove", handleMove, true);
+          window.addEventListener("mouseup", stopDrag, true);
+          window.addEventListener("touchmove", handleMove, true);
+          window.addEventListener("touchend", stopDrag, true);
+          window.addEventListener("touchcancel", stopDrag, true);
+          window.addEventListener("blur", stopDrag, true);
+        }
+
+        function handleMouseStart(event) {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          event.stopPropagation();
+          startDrag(event);
+        }
+
+        function handleTouchStart(event) {
+          if (event.cancelable) {
+            event.preventDefault();
+          }
+          event.stopPropagation();
+          startDrag(event);
+        }
+
+        resizeGrip.addEventListener("mousedown", handleMouseStart);
+        resizeBar.addEventListener("mousedown", handleMouseStart);
+        resizeGrip.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
+        resizeBar.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
+        resizeGrip.addEventListener("keydown", function (event) {
+          if (!shouldShowChartHorizontalResizeHandle(shouldShowScatterPlots())) {
+            return;
+          }
+
+          if (event.key === "ArrowLeft" || event.keyCode === 37) {
+            event.preventDefault();
+            stepChartHorizontalLayout(20);
+          } else if (event.key === "ArrowRight" || event.keyCode === 39) {
+            event.preventDefault();
+            stepChartHorizontalLayout(-20);
+          }
+        });
+
+        resizeGrip.__chartHorizontalResizeBound = true;
+        syncChartHorizontalSectionWidths(shouldShowScatterPlots());
+      }
+
       function getScatterChartBaseHeight() {
         var graphHeightValue = parseFloat(d3.select("#graph").style("height"));
         var radarHeight = getContainerContentHeight("#radarChart");
@@ -6104,6 +6645,7 @@
         if (!scWrapper.empty()) {
           setChartWrapperBootstrapClass(scWrapper, scClass);
         }
+        syncChartHorizontalSectionWidths(showScatterWrapper);
       }
 
       function syncBottomPanelHeights() {
@@ -6238,6 +6780,7 @@
       function applyMainVerticalSplitLayout(options) {
         options = options || {};
         calWidthAndHeight();
+        syncChartHorizontalSectionWidths(shouldShowScatterPlots());
         syncMainVerticalSectionHeights();
 
         if (graph) {
@@ -6618,6 +7161,7 @@
 
         syncMainVerticalSectionHeights();
         syncMainVerticalResizeHandleState();
+        syncChartHorizontalSectionWidths(shouldShowScatterPlots());
 
         if (
           graph &&
@@ -6639,7 +7183,11 @@
 
         d3.select("#ScChartWrapper").style(
           "display",
-          showScatterWrapper ? "block" : "none"
+          showScatterWrapper
+            ? isRightChartFullScreenToggled
+              ? "block"
+              : "flex"
+            : "none"
         );
         syncScatterControlLayoutState();
 
@@ -8674,6 +9222,7 @@
       function reDrawPcChart(options) {
         options = options || {};
         calWidthAndHeight();
+        syncChartHorizontalSectionWidths(shouldShowScatterPlots());
         syncMainVerticalSectionHeights();
 
         var newGraphWidth = getPcChartBaseWidth();
@@ -9579,6 +10128,8 @@
           update_colors(pcIsColoredBy);
 
           setSettings(graph, _userSetting);
+          applyLayoutRatiosFromSetting(_userSetting);
+          applyMainVerticalSplitLayout({ immediate: true });
         });
 
         function updateGraph(newData) {
@@ -9731,6 +10282,7 @@
         var deferScatterInit = !!options.deferScatterInit;
         deferScatterLayoutUntilReady = deferScatterInit;
         overwriteInitialGlobalValues();
+        resetLayoutResizeStatesToDefaults();
         resetDatasetScopedUserSettings();
         clearScatterSelectionState();
         pinnedComparisonData = null;
@@ -9901,6 +10453,8 @@
         updateScatterSelectionActionButtons();
         initSidebarResizeHandle();
         syncSidebarSectionHeights();
+        initChartHorizontalResizeHandle();
+        syncChartHorizontalSectionWidths(shouldShowScatterPlots());
         initMainVerticalResizeHandle();
         syncMainVerticalResizeHandleState();
 
@@ -11269,6 +11823,10 @@
           ),
           imageLabels: effectiveImageLabels,
           hideScatterPlots: isScatterPlotsHidden(_userSetting),
+          mainVerticalRatio: getCurrentLayoutRatioSnapshot().mainVerticalRatio,
+          chartHorizontalRatio: chartHorizontalLayoutState.useAutoRatio
+            ? null
+            : getCurrentLayoutRatioSnapshot().chartHorizontalRatio,
           labelSize:
             _userSetting.labelSizeBase ||
             _userSetting.labelSize ||
@@ -12749,9 +13307,18 @@
           newUserSetting.hideScatterPlots = d3
             .select("#hideScatterPlotsInput")
             .property("checked");
+          var currentLayoutRatios = getCurrentLayoutRatioSnapshot();
+          newUserSetting.mainVerticalRatio =
+            currentLayoutRatios.mainVerticalRatio;
+          newUserSetting.chartHorizontalRatio =
+            chartHorizontalLayoutState.useAutoRatio
+              ? null
+              : currentLayoutRatios.chartHorizontalRatio;
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           setSettings(chart, newUserSetting);
+          applyLayoutRatiosFromSetting(newUserSetting);
+          applyMainVerticalSplitLayout({ immediate: true });
           forceMainSliderSync(newUserSetting, {
             skipSettingsPanels: true,
           });
@@ -13628,6 +14195,7 @@
       }
 
       function saveSetting(globalUserSetting, newUserSetting) {
+        var currentLayoutRatios = getCurrentLayoutRatioSnapshot();
         Object.assign(globalUserSetting.dimMark, newUserSetting.dimMark);
         Object.assign(globalUserSetting.dimScales, newUserSetting.dimScales);
         Object.assign(globalUserSetting.dimTicks, newUserSetting.dimTicks);
@@ -13672,6 +14240,12 @@
           newUserSetting.hideScatterPlots,
           globalUserSetting.hideScatterPlots
         );
+        globalUserSetting.mainVerticalRatio =
+          currentLayoutRatios.mainVerticalRatio;
+        globalUserSetting.chartHorizontalRatio =
+          chartHorizontalLayoutState.useAutoRatio
+            ? null
+            : currentLayoutRatios.chartHorizontalRatio;
         if (newUserSetting.hasOwnProperty("labelSize")) {
           if (
             newUserSetting.labelSize === null ||
@@ -13941,6 +14515,8 @@
           setImageLabels(_userSetting.imageLabels);
           setDimLabels(mergedSetting.dimLabels);
           setSettings(graph, mergedSetting);
+          applyLayoutRatiosFromSetting(mergedSetting);
+          applyMainVerticalSplitLayout({ immediate: true });
           if (graph) {
             applyLineGradientSetting(_userSetting.lineGradient, true);
             updateLabels();
