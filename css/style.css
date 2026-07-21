@@ -105,8 +105,8 @@ body {
 #chartHorizontalResizeGrip {
     position: relative;
     display: block;
-    width: 6px;
-    height: 34px;
+    width: 8px;
+    height: 26px;
     padding: 0;
     border: 1px solid #b7c3d6;
     border-radius: 999px;
@@ -123,7 +123,7 @@ body {
     top: 50%;
     left: 50%;
     width: 2px;
-    height: 14px;
+    height: 10px;
     border-radius: 999px;
     background: #7f8da3;
     transform: translate(-50%, -50%);
