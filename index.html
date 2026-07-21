@@ -1048,37 +1048,143 @@
     var defaultLabelSizePercent = 90;
     var defaultLabelSizeValue = defaultLabelSizePercent + "%";
 
-    _userSetting =
-      typeof _userSetting !== "undefined"
-        ? _userSetting
-        : {
-            studyInfo: {
-              name: "",
-              date: "",
-            },
-            dimScales: {},
-            dimTicks: {},
-            dimMark: {},
-            dimLabels: {},
-            dimHidden: {},
-            dimReversed: {},
-            dimOrder: [],
-            sliderOrder: [],
-            dimSliderTitleSizes: {},
-            dimSliderTickSizes: {},
-            imageLabels: {},
-            thumbnailSortBy: "",
-            thumbnailSortAscending: true,
-            hideScatterPlots: false,
-            mainVerticalRatio: 0.58,
-            chartHorizontalRatio: null,
-            labelSize: defaultLabelSizeValue,
-            lineGradient: {
-              enabled: false,
-              start: defaultLineGradientColors[0],
-              end: defaultLineGradientColors[1],
-            },
-          };
+    function createDefaultUserSettingState() {
+      return {
+        studyInfo: {
+          name: "",
+          date: "",
+        },
+        dimScales: {},
+        dimTicks: {},
+        dimMark: {},
+        dimLabels: {},
+        dimLabelsNormalized: {},
+        dimHidden: {},
+        dimHiddenNormalized: {},
+        dimReversed: {},
+        dimReversedNormalized: {},
+        dimOrder: [],
+        sliderOrder: [],
+        dimSliderTitleSizes: {},
+        dimSliderTickSizes: {},
+        imageLabels: {},
+        thumbnailSortBy: "",
+        thumbnailSortAscending: true,
+        hideScatterPlots: false,
+        mainVerticalRatio: 0.58,
+        chartHorizontalRatio: null,
+        labelSize: defaultLabelSizeValue,
+        labelSizeBase: defaultLabelSizeValue,
+        lineGradient: {
+          enabled: false,
+          start: defaultLineGradientColors[0],
+          end: defaultLineGradientColors[1],
+        },
+      };
+    }
+
+    function mergeUserSettingWithDefaults(setting) {
+      var source =
+        setting && typeof setting === "object" && !Array.isArray(setting)
+          ? setting
+          : {};
+      var defaults = createDefaultUserSettingState();
+
+      return {
+        studyInfo: Object.assign({}, defaults.studyInfo, source.studyInfo || {}),
+        dimScales: Object.assign({}, defaults.dimScales, source.dimScales || {}),
+        dimTicks: Object.assign({}, defaults.dimTicks, source.dimTicks || {}),
+        dimMark: Object.assign({}, defaults.dimMark, source.dimMark || {}),
+        dimLabels: Object.assign({}, defaults.dimLabels, source.dimLabels || {}),
+        dimLabelsNormalized: Object.assign(
+          {},
+          defaults.dimLabelsNormalized,
+          source.dimLabelsNormalized || {}
+        ),
+        dimHidden: Object.assign({}, defaults.dimHidden, source.dimHidden || {}),
+        dimHiddenNormalized: Object.assign(
+          {},
+          defaults.dimHiddenNormalized,
+          source.dimHiddenNormalized || {}
+        ),
+        dimReversed: Object.assign(
+          {},
+          defaults.dimReversed,
+          source.dimReversed || {}
+        ),
+        dimReversedNormalized: Object.assign(
+          {},
+          defaults.dimReversedNormalized,
+          source.dimReversedNormalized || {}
+        ),
+        dimOrder: Array.isArray(source.dimOrder)
+          ? source.dimOrder.slice()
+          : defaults.dimOrder.slice(),
+        sliderOrder: Array.isArray(source.sliderOrder)
+          ? source.sliderOrder.slice()
+          : defaults.sliderOrder.slice(),
+        dimSliderTitleSizes: Object.assign(
+          {},
+          defaults.dimSliderTitleSizes,
+          source.dimSliderTitleSizes || {}
+        ),
+        dimSliderTickSizes: Object.assign(
+          {},
+          defaults.dimSliderTickSizes,
+          source.dimSliderTickSizes || {}
+        ),
+        imageLabels: Object.assign(
+          {},
+          defaults.imageLabels,
+          source.imageLabels || {}
+        ),
+        thumbnailSortBy:
+          source.thumbnailSortBy !== undefined &&
+          source.thumbnailSortBy !== null
+            ? String(source.thumbnailSortBy).trim()
+            : defaults.thumbnailSortBy,
+        thumbnailSortAscending:
+          source.thumbnailSortAscending !== undefined
+            ? !!source.thumbnailSortAscending
+            : defaults.thumbnailSortAscending,
+        hideScatterPlots:
+          source.hideScatterPlots !== undefined
+            ? !!source.hideScatterPlots
+            : defaults.hideScatterPlots,
+        mainVerticalRatio:
+          source.mainVerticalRatio !== undefined
+            ? source.mainVerticalRatio
+            : defaults.mainVerticalRatio,
+        chartHorizontalRatio:
+          source.chartHorizontalRatio !== undefined
+            ? source.chartHorizontalRatio
+            : defaults.chartHorizontalRatio,
+        labelSize:
+          source.labelSize !== undefined && source.labelSize !== null
+            ? source.labelSize
+            : defaults.labelSize,
+        labelSizeBase:
+          source.labelSizeBase !== undefined && source.labelSizeBase !== null
+            ? source.labelSizeBase
+            : source.labelSize !== undefined && source.labelSize !== null
+            ? source.labelSize
+            : defaults.labelSizeBase,
+        lineGradient: Object.assign(
+          {},
+          defaults.lineGradient,
+          source.lineGradient || {}
+        ),
+      };
+    }
+
+    if (typeof window !== "undefined") {
+      window.createDefaultUserSettingState = createDefaultUserSettingState;
+      window.mergeUserSettingWithDefaults = mergeUserSettingWithDefaults;
+    }
+
+    _userSetting = mergeUserSettingWithDefaults(
+      typeof _userSetting !== "undefined" ? _userSetting : null
+    );
     var imageLinkKeys = [];
     var imageKeyAliases = {};
 
@@ -1324,7 +1430,10 @@
       var source = setting || {};
       var validDimLookup = buildNormalizedDimLookup(getCurrentDatasetDimKeys());
       var validSliderLookup = buildNormalizedDimLookup(getCurrentDatasetSliderKeys());
-      var sanitized = Object.assign({}, source);
+      var sanitized =
+        typeof mergeUserSettingWithDefaults === "function"
+          ? mergeUserSettingWithDefaults(source)
+          : Object.assign({}, source);
 
       sanitized.dimScales = filterDimScopedSettingMap(
         source.dimScales,
@@ -1371,14 +1480,33 @@
           validDimLookup[normalizeDimKey(source.thumbnailSortBy)] || "";
         sanitized.thumbnailSortBy = canonicalSortKey;
       }
-      if (
+      sanitized.thumbnailSortAscending = normalizeBooleanSetting(
         Object.prototype.hasOwnProperty.call(source, "thumbnailSortAscending")
-      ) {
-        sanitized.thumbnailSortAscending = normalizeBooleanSetting(
-          source.thumbnailSortAscending,
-          true
-        );
-      }
+          ? source.thumbnailSortAscending
+          : sanitized.thumbnailSortAscending,
+        true
+      );
+      sanitized.hideScatterPlots = normalizeBooleanSetting(
+        Object.prototype.hasOwnProperty.call(source, "hideScatterPlots")
+          ? source.hideScatterPlots
+          : sanitized.hideScatterPlots,
+        false
+      );
+      sanitized.lineGradient = normalizeLineGradientSetting(
+        source.lineGradient || sanitized.lineGradient
+      );
+      sanitized.labelSize =
+        source.labelSize !== undefined &&
+        source.labelSize !== null &&
+        String(source.labelSize).trim().length > 0
+          ? source.labelSize
+          : sanitized.labelSize;
+      sanitized.labelSizeBase =
+        source.labelSizeBase !== undefined &&
+        source.labelSizeBase !== null &&
+        String(source.labelSizeBase).trim().length > 0
+          ? source.labelSizeBase
+          : sanitized.labelSizeBase;
       if (Object.prototype.hasOwnProperty.call(source, "mainVerticalRatio")) {
         sanitized.mainVerticalRatio = normalizeMainVerticalRatio(
           source.mainVerticalRatio,
@@ -14901,6 +15029,42 @@
           return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
         }
 
+        function getDefaultSettingState() {
+          if (typeof createDefaultUserSettingState === "function") {
+            return createDefaultUserSettingState();
+          }
+
+          return {
+            studyInfo: {
+              name: "",
+              date: "",
+            },
+            dimScales: {},
+            dimTicks: {},
+            dimMark: {},
+            dimLabels: {},
+            dimHidden: {},
+            dimReversed: {},
+            dimOrder: [],
+            sliderOrder: [],
+            dimSliderTitleSizes: {},
+            dimSliderTickSizes: {},
+            imageLabels: {},
+            thumbnailSortBy: "",
+            thumbnailSortAscending: true,
+            hideScatterPlots: false,
+            mainVerticalRatio: 0.58,
+            chartHorizontalRatio: null,
+            labelSize: defaultLabelSizeValue,
+            labelSizeBase: defaultLabelSizeValue,
+            lineGradient: {
+              enabled: false,
+              start: defaultLineGradientColors[0],
+              end: defaultLineGradientColors[1],
+            },
+          };
+        }
+
         if (isExplicitPath) {
           jsonFileLink = settingFilePath;
         } else {
@@ -15060,35 +15224,35 @@
             ? d.scatterHidden
             : d.scatterplotsHidden;
 
-          var currentDimOrder = normalizeDimOrder(_userSetting.dimOrder);
-          var currentSliderOrder = normalizeDimOrder(_userSetting.sliderOrder);
-          // Merge with current settings to keep optional fields
-          var mergedSetting = Object.assign({}, _userSetting, d);
+          var defaultSetting = getDefaultSettingState();
+          var currentDimOrder = normalizeDimOrder(defaultSetting.dimOrder);
+          var currentSliderOrder = normalizeDimOrder(defaultSetting.sliderOrder);
+          var mergedSetting = Object.assign({}, defaultSetting, d);
           mergedSetting.studyInfo = hasStudyInfo
-            ? Object.assign({}, _userSetting.studyInfo || {}, loadedStudyInfo || {})
-            : Object.assign({}, _userSetting.studyInfo || {});
+            ? Object.assign({}, defaultSetting.studyInfo || {}, loadedStudyInfo || {})
+            : Object.assign({}, defaultSetting.studyInfo || {});
           mergedSetting.dimLabels = hasDimLabels
-            ? Object.assign({}, _userSetting.dimLabels || {}, loadedDimLabels || {})
-            : Object.assign({}, _userSetting.dimLabels || {});
+            ? Object.assign({}, defaultSetting.dimLabels || {}, loadedDimLabels || {})
+            : Object.assign({}, defaultSetting.dimLabels || {});
           mergedSetting.dimScales = hasDimScales
-            ? Object.assign({}, _userSetting.dimScales || {}, loadedDimScales || {})
-            : Object.assign({}, _userSetting.dimScales || {});
+            ? Object.assign({}, defaultSetting.dimScales || {}, loadedDimScales || {})
+            : Object.assign({}, defaultSetting.dimScales || {});
           mergedSetting.dimTicks = hasDimTicks
-            ? Object.assign({}, _userSetting.dimTicks || {}, loadedDimTicks || {})
-            : Object.assign({}, _userSetting.dimTicks || {});
+            ? Object.assign({}, defaultSetting.dimTicks || {}, loadedDimTicks || {})
+            : Object.assign({}, defaultSetting.dimTicks || {});
           mergedSetting.dimMark = hasDimMark
-            ? Object.assign({}, _userSetting.dimMark || {}, loadedDimMark || {})
-            : Object.assign({}, _userSetting.dimMark || {});
+            ? Object.assign({}, defaultSetting.dimMark || {}, loadedDimMark || {})
+            : Object.assign({}, defaultSetting.dimMark || {});
           mergedSetting.dimHidden = hasDimHidden
-            ? Object.assign({}, _userSetting.dimHidden || {}, loadedDimHidden || {})
-            : Object.assign({}, _userSetting.dimHidden || {});
+            ? Object.assign({}, defaultSetting.dimHidden || {}, loadedDimHidden || {})
+            : Object.assign({}, defaultSetting.dimHidden || {});
           mergedSetting.dimReversed = hasDimReversed
             ? Object.assign(
                 {},
-                _userSetting.dimReversed || {},
+                defaultSetting.dimReversed || {},
                 loadedDimReversed || {}
               )
-            : Object.assign({}, _userSetting.dimReversed || {});
+            : Object.assign({}, defaultSetting.dimReversed || {});
           mergedSetting.dimOrder = hasDimOrder
             ? loadedDimOrder.slice()
             : hasSliderOrder && loadedSliderOrder.length > 0
@@ -15105,36 +15269,40 @@
           mergedSetting.dimSliderTitleSizes = hasDimSliderTitleSizes
             ? Object.assign(
                 {},
-                _userSetting.dimSliderTitleSizes || {},
+                defaultSetting.dimSliderTitleSizes || {},
                 loadedDimSliderTitleSizes || {}
               )
-            : Object.assign({}, _userSetting.dimSliderTitleSizes || {});
+            : Object.assign({}, defaultSetting.dimSliderTitleSizes || {});
           mergedSetting.dimSliderTickSizes = hasDimSliderTickSizes
             ? Object.assign(
                 {},
-                _userSetting.dimSliderTickSizes || {},
+                defaultSetting.dimSliderTickSizes || {},
                 loadedDimSliderTickSizes || {}
               )
-            : Object.assign({}, _userSetting.dimSliderTickSizes || {});
+            : Object.assign({}, defaultSetting.dimSliderTickSizes || {});
           mergedSetting.imageLabels = hasImageLabels
-            ? Object.assign({}, _userSetting.imageLabels || {}, loadedImageLabels || {})
-            : Object.assign({}, _userSetting.imageLabels || {});
+            ? Object.assign({}, defaultSetting.imageLabels || {}, loadedImageLabels || {})
+            : Object.assign({}, defaultSetting.imageLabels || {});
           mergedSetting.thumbnailSortBy = hasThumbnailSortBy
             ? loadedThumbnailSortBy
-            : (_userSetting.thumbnailSortBy || "").trim();
+            : (defaultSetting.thumbnailSortBy || "").trim();
           mergedSetting.thumbnailSortAscending = hasThumbnailSortAscending
             ? normalizeBooleanSetting(loadedThumbnailSortAscending, true)
-            : normalizeBooleanSetting(_userSetting.thumbnailSortAscending, true);
+            : normalizeBooleanSetting(defaultSetting.thumbnailSortAscending, true);
           mergedSetting.hideScatterPlots = hasHideScatterPlots
             ? normalizeBooleanSetting(loadedHideScatterPlots, false)
-            : normalizeBooleanSetting(_userSetting.hideScatterPlots, false);
+            : normalizeBooleanSetting(defaultSetting.hideScatterPlots, false);
           mergedSetting.lineGradient = hasLineGradient
             ? normalizeLineGradientSetting(rawLoadedLineGradient)
-            : cloneLineGradientSetting(_userSetting.lineGradient);
+            : cloneLineGradientSetting(defaultSetting.lineGradient);
           mergedSetting.labelSize =
             hasLabelSize && d.labelSize !== null
               ? d.labelSize
-              : _userSetting.labelSize;
+              : defaultSetting.labelSize;
+          mergedSetting.labelSizeBase =
+            hasLabelSize && d.labelSize !== null
+              ? d.labelSize
+              : defaultSetting.labelSizeBase;
           mergedSetting = sanitizeSettingForCurrentData(mergedSetting);
 
           // update the global _userSetting

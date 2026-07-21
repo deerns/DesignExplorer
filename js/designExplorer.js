@@ -244,45 +244,62 @@ function overwriteInitialGlobalValues() {
     window.__allDimensions = {};
   }
 
-  _userSetting = {
-    studyInfo: {
-      name: "",
-      date: "",
-    },
-    dimScales: {},
-    dimTicks: {},
-    dimMark: {},
-    dimLabels: {},
-    dimHidden: {},
-    dimReversed: {},
-    dimOrder: [],
-    sliderOrder: [],
-    dimSliderTitleSizes: {},
-    dimSliderTickSizes: {},
-    imageLabels: {},
-    hideScatterPlots: false,
-    mainVerticalRatio: mainVerticalLayoutState.topRatio,
-    chartHorizontalRatio: null,
-    labelSize:
-      typeof defaultLabelSizeValue !== "undefined"
-        ? defaultLabelSizeValue
-        : "90%",
-    labelSizeBase:
-      typeof defaultLabelSizeValue !== "undefined"
-        ? defaultLabelSizeValue
-        : "90%",
-    lineGradient: {
-      enabled: false,
-      start:
-        typeof defaultLineGradientColors !== "undefined"
-          ? defaultLineGradientColors[0]
-          : "#102F86",
-      end:
-        typeof defaultLineGradientColors !== "undefined"
-          ? defaultLineGradientColors[1]
-          : "#2FADDD",
-    },
-  };
+  var defaultUserSetting =
+    typeof createDefaultUserSettingState === "function"
+      ? createDefaultUserSettingState()
+      : {
+          studyInfo: {
+            name: "",
+            date: "",
+          },
+          dimScales: {},
+          dimTicks: {},
+          dimMark: {},
+          dimLabels: {},
+          dimHidden: {},
+          dimReversed: {},
+          dimOrder: [],
+          sliderOrder: [],
+          dimSliderTitleSizes: {},
+          dimSliderTickSizes: {},
+          imageLabels: {},
+          thumbnailSortBy: "",
+          thumbnailSortAscending: true,
+          hideScatterPlots: false,
+          mainVerticalRatio: 0.58,
+          chartHorizontalRatio: null,
+          labelSize:
+            typeof defaultLabelSizeValue !== "undefined"
+              ? defaultLabelSizeValue
+              : "90%",
+          labelSizeBase:
+            typeof defaultLabelSizeValue !== "undefined"
+              ? defaultLabelSizeValue
+              : "90%",
+          lineGradient: {
+            enabled: false,
+            start:
+              typeof defaultLineGradientColors !== "undefined"
+                ? defaultLineGradientColors[0]
+                : "#102F86",
+            end:
+              typeof defaultLineGradientColors !== "undefined"
+                ? defaultLineGradientColors[1]
+                : "#2FADDD",
+          },
+        };
+
+  _userSetting =
+    typeof mergeUserSettingWithDefaults === "function"
+      ? mergeUserSettingWithDefaults(defaultUserSetting)
+      : defaultUserSetting;
+
+  if (typeof window !== "undefined") {
+    window.sortBy = "";
+    window.__thumbnailSortAscending = true;
+  }
+  sortBy = "";
+  ascending = true;
 
   if (
     typeof color !== "undefined" &&
