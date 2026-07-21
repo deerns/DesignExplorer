@@ -2102,26 +2102,15 @@
         orderLookup[normalizeDimKey(dim.name)] = index;
       });
 
-      var firstRect = legendSvg.select("g rect.legend-box");
-      if (firstRect.empty()) {
-        firstRect = legendSvg.select("g rect");
-      }
-      var legendSquareSize = parseFloat(firstRect.attr("width"));
-      if (!isFinite(legendSquareSize) || legendSquareSize <= 0) {
-        legendSquareSize = 16;
-      }
-
       legendGroups
         .sort(function (a, b) {
           return (
             orderLookup[normalizeDimKey(a && a.name)] -
             orderLookup[normalizeDimKey(b && b.name)]
           );
-        })
-        .attr("transform", function (d) {
-          var index = orderLookup[normalizeDimKey(d && d.name)] || 0;
-          return "translate(10," + (legendSquareSize + 3) * index + ")";
         });
+
+      syncLegendLayoutMetrics(legendSvg, dimensions.length);
     }
 
     function refreshOrderedDataViews() {
@@ -9935,6 +9924,79 @@
         });
       }
 
+      function getLegendSquareSize(legendHeight, itemCount) {
+        var resolvedHeight =
+          isFinite(legendHeight) && legendHeight > 0
+            ? legendHeight
+            : getSidebarLegendHeight();
+        var resolvedCount =
+          isFinite(itemCount) && itemCount > 0 ? itemCount : 1;
+
+        return Math.max(
+          12,
+          Math.min(18, resolvedHeight / Math.max(resolvedCount + 4, 1))
+        );
+      }
+
+      function syncLegendLayoutMetrics(legendSvg, itemCount) {
+        if (!legendSvg || legendSvg.empty()) return;
+
+        var legendWidth = parseFloat(d3.select("#legend").style("width"));
+        var legendHeight = getContainerContentHeight("#legend");
+        var legendNode = d3.select("#legend").node();
+
+        if (!isFinite(legendWidth) || legendWidth <= 0) {
+          legendWidth = legendNode ? legendNode.clientWidth : 220;
+        }
+        if (!isFinite(legendHeight) || legendHeight <= 0) {
+          legendHeight = getSidebarLegendHeight();
+        }
+
+        var resolvedCount =
+          isFinite(itemCount) && itemCount > 0
+            ? itemCount
+            : legendSvg.selectAll("g").size();
+        var legendSquareSize = getLegendSquareSize(
+          legendHeight,
+          resolvedCount
+        );
+        var rowSpacing = legendSquareSize + 3;
+
+        legendSvg
+          .attr("width", legendWidth)
+          .attr(
+            "height",
+            Math.max(rowSpacing * resolvedCount + legendSquareSize + 8, 0)
+          );
+
+        legendSvg.selectAll("g").attr("transform", function (d, i) {
+          return "translate(10," + rowSpacing * i + ")";
+        });
+
+        legendSvg
+          .selectAll("rect.legend-hit-area")
+          .attr("x", -4)
+          .attr("y", -3)
+          .attr("width", Math.max(legendWidth - 16, legendSquareSize + 24))
+          .attr("height", legendSquareSize + 6);
+
+        legendSvg
+          .selectAll("rect.legend-box")
+          .attr("width", legendSquareSize)
+          .attr("height", legendSquareSize);
+
+        legendSvg
+          .selectAll("text.legend-check")
+          .attr("x", legendSquareSize / 2)
+          .attr("y", legendSquareSize / 2)
+          .style("font-size", Math.max(legendSquareSize * 0.8, 10) + "px");
+
+        legendSvg
+          .selectAll("text.legend-label")
+          .attr("x", legendSquareSize + 6)
+          .attr("y", legendSquareSize / 2);
+      }
+
       function toggleLegendDimensionHidden(dimName) {
         var name = dimName || "";
         var fixedOff = name === "Rating" || String(name) === "Description";
@@ -10034,8 +10096,7 @@
 
         // find size of the square based on the height
         var keyCounts = d3.keys(cleanedKeys4pc).length;
-        //var legendSquareSize = 16;
-        var legendSquareSize = Math.max(legendHeight / (keyCounts + 4), 12);
+        var legendSquareSize = getLegendSquareSize(legendHeight, keyCounts);
 
         var legend = d3.select("#legend").style("height", legendHeight + "px");
 
@@ -10111,6 +10172,7 @@
             return getDimLabel(d.name);
           });
 
+        syncLegendLayoutMetrics(d3.select("#legend svg"), keyCounts);
         bindLegendInteractions();
         updateLegendCheckboxVisuals();
       }
