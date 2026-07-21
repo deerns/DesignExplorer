@@ -9468,6 +9468,30 @@
         ctx.restore();
       }
 
+      function reapplyTargetMarksToGraph() {
+        if (
+          !graph ||
+          typeof graph.dimensions !== "function" ||
+          typeof setAllTargetMarks !== "function"
+        ) {
+          return;
+        }
+
+        var activeMarks =
+          _userSetting &&
+          _userSetting.dimMark &&
+          typeof _userSetting.dimMark === "object"
+            ? _userSetting.dimMark
+            : null;
+
+        if (!activeMarks || Object.keys(activeMarks).length === 0) {
+          d3.selectAll("#graph .axis .mark").remove();
+          return;
+        }
+
+        setAllTargetMarks(graph, activeMarks);
+      }
+
       function drawParallelCoordinates() {
         // remove Rating for on page load
         var iniDimensions = d3
@@ -9514,6 +9538,7 @@
         graph.on("render", function () {
           syncGraphDimensionTitles();
           updateLabels();
+          reapplyTargetMarksToGraph();
           refreshSidebarControlLayout();
           if (typeof applySliderFontOverrides === "function") {
             applySliderFontOverrides(_userSetting || {});
@@ -9525,6 +9550,8 @@
         graph.on("resize.pinnedReference", drawPinnedReferenceLineInPc);
         graph.on("axesreorder.pinnedReference", drawPinnedReferenceLineInPc);
         graph.on("highlight.pinnedReference", drawPinnedReferenceLineInPc);
+        graph.on("resize.targetMarks", reapplyTargetMarksToGraph);
+        graph.on("axesreorder.targetMarks", reapplyTargetMarksToGraph);
         graph.on("axesreorder.orderSync", function (orderedKeys) {
           syncDimOrderFromGraphAxes(orderedKeys);
           refreshScatterChartLayout();
@@ -10125,6 +10152,7 @@
         if (highlightedData.length > 0) graph.highlight(highlightedData);
         updateLabels();
         update_colors(pcIsColoredBy);
+        setTimeout(reapplyTargetMarksToGraph, 0);
       }
 
       function setupEvents() {
