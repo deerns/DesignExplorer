@@ -1067,6 +1067,8 @@
             dimSliderTitleSizes: {},
             dimSliderTickSizes: {},
             imageLabels: {},
+            thumbnailSortBy: "",
+            thumbnailSortAscending: true,
             hideScatterPlots: false,
             mainVerticalRatio: 0.58,
             chartHorizontalRatio: null,
@@ -1100,6 +1102,8 @@
       _userSetting.dimSliderTitleSizes = {};
       _userSetting.dimSliderTickSizes = {};
       _userSetting.imageLabels = {};
+      _userSetting.thumbnailSortBy = "";
+      _userSetting.thumbnailSortAscending = true;
       imageLinkKeys = [];
       imageKeyAliases = {};
       var navbarStudyInfo = d3.select("#navbar-studyInfo");
@@ -1118,7 +1122,11 @@
       if (typeof window !== "undefined") {
         window.__activeSettingsDraft = null;
         window.__allDimensions = {};
+        window.sortBy = "";
+        window.__thumbnailSortAscending = true;
       }
+      sortBy = "";
+      ascending = true;
     }
 
     function getDimLabel(dimName) {
@@ -1358,6 +1366,19 @@
         source.sliderOrder,
         validSliderLookup
       );
+      if (Object.prototype.hasOwnProperty.call(source, "thumbnailSortBy")) {
+        var canonicalSortKey =
+          validDimLookup[normalizeDimKey(source.thumbnailSortBy)] || "";
+        sanitized.thumbnailSortBy = canonicalSortKey;
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(source, "thumbnailSortAscending")
+      ) {
+        sanitized.thumbnailSortAscending = normalizeBooleanSetting(
+          source.thumbnailSortAscending,
+          true
+        );
+      }
       if (Object.prototype.hasOwnProperty.call(source, "mainVerticalRatio")) {
         sanitized.mainVerticalRatio = normalizeMainVerticalRatio(
           source.mainVerticalRatio,
@@ -2139,8 +2160,114 @@
     }
 
     function getCurrentSortByValue() {
-      if (typeof window === "undefined") return "";
-      return window.sortBy || "";
+      if (typeof window !== "undefined" && window.sortBy) {
+        return window.sortBy;
+      }
+      return sortBy || "";
+    }
+
+    function getCurrentSortAscendingValue() {
+      if (
+        typeof window !== "undefined" &&
+        typeof window.__thumbnailSortAscending === "boolean"
+      ) {
+        return window.__thumbnailSortAscending;
+      }
+      return typeof ascending === "boolean" ? ascending : true;
+    }
+
+    function syncThumbnailSortDraftState(sortKey, isAscending) {
+      _userSetting = _userSetting || {};
+      _userSetting.thumbnailSortBy = sortKey || "";
+      _userSetting.thumbnailSortAscending = normalizeBooleanSetting(
+        isAscending,
+        true
+      );
+
+      if (
+        typeof window !== "undefined" &&
+        window.__activeSettingsDraft &&
+        typeof window.__activeSettingsDraft === "object"
+      ) {
+        window.__activeSettingsDraft.thumbnailSortBy =
+          _userSetting.thumbnailSortBy;
+        window.__activeSettingsDraft.thumbnailSortAscending =
+          _userSetting.thumbnailSortAscending;
+      }
+    }
+
+    function syncThumbnailSortButtonUi() {
+      var sortingBtn = d3.select("#reverseSortOrder");
+      if (sortingBtn.empty()) return;
+
+      var isAscending = getCurrentSortAscendingValue();
+      sortingBtn
+        .selectAll("span")
+        .attr(
+          "class",
+          isAscending
+            ? "glyphicon glyphicon-circle-arrow-up"
+            : "glyphicon glyphicon-circle-arrow-down"
+        );
+    }
+
+    function setThumbnailSortState(sortKey, isAscending, options) {
+      options = options || {};
+
+      var orderedKeys = getOrderedThumbnailSortKeys(_userSetting);
+      var preferredSortBy =
+        sortKey ||
+        (_userSetting && _userSetting.thumbnailSortBy) ||
+        getCurrentSortByValue() ||
+        pcIsColoredBy;
+      var nextSortBy = getNextAvailableThumbnailSortKey(
+        preferredSortBy,
+        orderedKeys,
+        _userSetting
+      );
+      var nextAscending = normalizeBooleanSetting(
+        isAscending,
+        _userSetting && _userSetting.thumbnailSortAscending
+      );
+
+      sortBy = nextSortBy || "";
+      ascending = nextAscending;
+
+      if (typeof window !== "undefined") {
+        window.sortBy = sortBy;
+        window.__thumbnailSortAscending = ascending;
+      }
+
+      syncThumbnailSortDraftState(sortBy, ascending);
+
+      if (options.refreshDropdown !== false) {
+        refreshThumbnailSortDropdown({
+          preferredSortBy: sortBy,
+          syncGrid: false,
+        });
+      } else {
+        var select = d3.select(".sorting select.thumbnail-sort-select");
+        if (!select.empty() && sortBy) {
+          select.property("value", sortBy);
+        }
+      }
+
+      syncThumbnailSortButtonUi();
+
+      if (
+        options.syncGrid !== false &&
+        typeof updateImageGrid === "function" &&
+        graph
+      ) {
+        var dataForGrid =
+          graph && graph.brushed && graph.brushed() ? graph.brushed() : graph.data();
+        updateImageGrid(dataForGrid, false);
+      }
+
+      return {
+        sortBy: sortBy,
+        ascending: ascending,
+      };
     }
 
     function getNextAvailableThumbnailSortKey(preferredSortBy, orderedKeys, setting) {
@@ -2196,6 +2323,7 @@
       var currentSelectValue = select.property("value");
       var preferredSortBy =
         options.preferredSortBy ||
+        (_userSetting && _userSetting.thumbnailSortBy) ||
         currentSelectValue ||
         getCurrentSortByValue() ||
         pcIsColoredBy;
@@ -2206,9 +2334,11 @@
       );
 
       var changed = getCurrentSortByValue() !== nextSortBy;
+      sortBy = nextSortBy || "";
       if (typeof window !== "undefined") {
-        window.sortBy = nextSortBy;
+        window.sortBy = sortBy;
       }
+      syncThumbnailSortDraftState(sortBy, getCurrentSortAscendingValue());
 
       select.selectAll("option").remove();
 
@@ -10181,7 +10311,10 @@
     <!-- add sorting dropdowns -->
     <script type="text/javascript">
       function addSortDropdowns() {
-        ascending = true;
+        ascending = normalizeBooleanSetting(
+          _userSetting && _userSetting.thumbnailSortAscending,
+          true
+        );
 
         var sorting = d3.select(".sorting");
         sorting.html("");
@@ -10198,21 +10331,10 @@
 
         // add change event to resort images
         select.on("change", function (d) {
-          sortBy = d3.select(this).property("value");
-
-          // update the value in other dropdown menu
-          d3.selectAll(".sorting select option")
-            .filter(function (d) {
-              return d == sortBy;
-            })
-            .attr("selected", "true");
-
-          updateImageGrid(graph.brushed(), false);
-        });
-
-        refreshThumbnailSortDropdown({
-          preferredSortBy: getCurrentSortByValue(),
-          syncGrid: false,
+          setThumbnailSortState(
+            d3.select(this).property("value"),
+            getCurrentSortAscendingValue()
+          );
         });
 
         // add option to reverse sorting order
@@ -10231,16 +10353,21 @@
           .attr("aria-hidden", "true");
 
         sortingBtn.on("click", function () {
-          ascending = !ascending;
-
-          sortingBtn.selectAll("span").attr("class", function () {
-            return ascending
-              ? "glyphicon glyphicon-circle-arrow-up"
-              : "glyphicon glyphicon-circle-arrow-down";
-          });
-
-          updateImageGrid(graph.brushed(), false);
+          setThumbnailSortState(
+            getCurrentSortByValue(),
+            !getCurrentSortAscendingValue()
+          );
         });
+
+        setThumbnailSortState(
+          (_userSetting && _userSetting.thumbnailSortBy) ||
+            getCurrentSortByValue() ||
+            pcIsColoredBy,
+          _userSetting && _userSetting.thumbnailSortAscending,
+          {
+            syncGrid: false,
+          }
+        );
 
         // keep thumbnail controls in place inside the sorting bar
         ensureThumbControls();
@@ -10429,16 +10556,26 @@
         var fgridSize = 1; //gridSizes[gridSize];
 
         if (!data) data = graph.data(); //if data is false then use graph data
-        //var xFloat = parseFloat(valueToNumber(, sortBy));
-        //var yFloat = parseFloat(valueToNumber(y[sortBy], sortBy));
+        var activeSortBy = getCurrentSortByValue();
+        if (!activeSortBy) {
+          var orderedKeys = getOrderedThumbnailSortKeys(_userSetting);
+          activeSortBy = orderedKeys.length > 0 ? orderedKeys[0] : "";
+          sortBy = activeSortBy;
+          if (typeof window !== "undefined") {
+            window.sortBy = activeSortBy;
+          }
+        }
+
+        var activeAscending = getCurrentSortAscendingValue();
+
         // sort data based on dropdown selecion
-        if (ascending) {
+        if (activeSortBy && activeAscending) {
           data.sort(function (x, y) {
-            return d3.ascending(x[sortBy], y[sortBy]);
+            return d3.ascending(x[activeSortBy], y[activeSortBy]);
           });
-        } else {
+        } else if (activeSortBy) {
           data.sort(function (x, y) {
-            return d3.descending(x[sortBy], y[sortBy]);
+            return d3.descending(x[activeSortBy], y[activeSortBy]);
           });
         }
 
@@ -12234,6 +12371,12 @@
             _userSetting.dimSliderTickSizes || {}
           ),
           imageLabels: effectiveImageLabels,
+          thumbnailSortBy:
+            (_userSetting && _userSetting.thumbnailSortBy) ||
+            getCurrentSortByValue() ||
+            pcIsColoredBy ||
+            "",
+          thumbnailSortAscending: getCurrentSortAscendingValue(),
           hideScatterPlots: isScatterPlotsHidden(_userSetting),
           mainVerticalRatio: getCurrentLayoutRatioSnapshot().mainVerticalRatio,
           chartHorizontalRatio: chartHorizontalLayoutState.useAutoRatio
@@ -13920,6 +14063,15 @@
           userSetting.dimSliderTickSizes
         );
         var userImageLabels = asPlainObject(userSetting.imageLabels);
+        var userThumbnailSortBy =
+          userSetting.thumbnailSortBy !== undefined &&
+          userSetting.thumbnailSortBy !== null
+            ? String(userSetting.thumbnailSortBy).trim()
+            : "";
+        var userThumbnailSortAscending = normalizeBooleanSetting(
+          userSetting.thumbnailSortAscending,
+          _userSetting && _userSetting.thumbnailSortAscending
+        );
         var userHideScatterPlots = normalizeBooleanSetting(
           userSetting.hideScatterPlots,
           _userSetting && _userSetting.hideScatterPlots
@@ -13963,6 +14115,8 @@
           {},
           userDimSliderTickSizes
         );
+        _userSetting.thumbnailSortBy = userThumbnailSortBy;
+        _userSetting.thumbnailSortAscending = userThumbnailSortAscending;
         _userSetting.hideScatterPlots = userHideScatterPlots;
         if (userSliderOrder.length === 0) {
           userSliderOrder = deriveSliderOrderFromDimOrder(
@@ -14068,6 +14222,13 @@
         }
 
         applyScatterPlotVisibilitySetting(userHideScatterPlots);
+        setThumbnailSortState(
+          userThumbnailSortBy ||
+            _userSetting.thumbnailSortBy ||
+            getCurrentSortByValue() ||
+            pcIsColoredBy,
+          userThumbnailSortAscending
+        );
         if (
           isThereNewDimScales &&
           typeof refreshScatterChartLayout === "function" &&
@@ -14658,6 +14819,14 @@
           globalUserSetting.imageLabels,
           newUserSetting.imageLabels
         );
+        globalUserSetting.thumbnailSortBy =
+          (newUserSetting.thumbnailSortBy || getCurrentSortByValue() || "").trim();
+        globalUserSetting.thumbnailSortAscending = normalizeBooleanSetting(
+          newUserSetting.hasOwnProperty("thumbnailSortAscending")
+            ? newUserSetting.thumbnailSortAscending
+            : getCurrentSortAscendingValue(),
+          globalUserSetting.thumbnailSortAscending
+        );
         globalUserSetting.lineGradient = cloneLineGradientSetting(
           newUserSetting.lineGradient || globalUserSetting.lineGradient
         );
@@ -14686,6 +14855,10 @@
 
         var exportJson = Object.assign({}, globalUserSetting);
         delete exportJson.labelSizeBase;
+        delete exportJson.sortBy;
+        delete exportJson.ascending;
+        delete exportJson.thumbnailSort;
+        delete exportJson.sortAscending;
         var jsonString = JSON.stringify(exportJson, null, 2);
         var jsonBlob = new Blob([jsonString], {
           type: "application/json;charset=utf-8",
@@ -14787,6 +14960,14 @@
           var hasDimSliderTitleSizes = hasOwnKey(d, "dimSliderTitleSizes");
           var hasDimSliderTickSizes = hasOwnKey(d, "dimSliderTickSizes");
           var hasImageLabels = hasOwnKey(d, "imageLabels");
+          var hasThumbnailSortBy =
+            hasOwnKey(d, "thumbnailSortBy") ||
+            hasOwnKey(d, "sortBy") ||
+            hasOwnKey(d, "thumbnailSort");
+          var hasThumbnailSortAscending =
+            hasOwnKey(d, "thumbnailSortAscending") ||
+            hasOwnKey(d, "sortAscending") ||
+            hasOwnKey(d, "ascending");
           var hasHideScatterPlots =
             hasOwnKey(d, "hideScatterPlots") ||
             hasOwnKey(d, "scatterHidden") ||
@@ -14841,6 +15022,24 @@
             loadedDimReversed = asPlainObject(d.reversedDims || d.dimFlip);
           }
           var loadedImageLabels = asPlainObject(d.imageLabels);
+          var loadedThumbnailSortBy = hasOwnKey(d, "thumbnailSortBy")
+            ? d.thumbnailSortBy
+            : hasOwnKey(d, "sortBy")
+            ? d.sortBy
+            : d.thumbnailSort;
+          loadedThumbnailSortBy =
+            loadedThumbnailSortBy !== undefined &&
+            loadedThumbnailSortBy !== null
+              ? String(loadedThumbnailSortBy).trim()
+              : "";
+          var loadedThumbnailSortAscending = hasOwnKey(
+            d,
+            "thumbnailSortAscending"
+          )
+            ? d.thumbnailSortAscending
+            : hasOwnKey(d, "sortAscending")
+            ? d.sortAscending
+            : d.ascending;
           var rawLoadedLineGradient = asPlainObject(d.lineGradient);
           if (Object.keys(rawLoadedLineGradient).length === 0) {
             if (
@@ -14920,6 +15119,12 @@
           mergedSetting.imageLabels = hasImageLabels
             ? Object.assign({}, _userSetting.imageLabels || {}, loadedImageLabels || {})
             : Object.assign({}, _userSetting.imageLabels || {});
+          mergedSetting.thumbnailSortBy = hasThumbnailSortBy
+            ? loadedThumbnailSortBy
+            : (_userSetting.thumbnailSortBy || "").trim();
+          mergedSetting.thumbnailSortAscending = hasThumbnailSortAscending
+            ? normalizeBooleanSetting(loadedThumbnailSortAscending, true)
+            : normalizeBooleanSetting(_userSetting.thumbnailSortAscending, true);
           mergedSetting.hideScatterPlots = hasHideScatterPlots
             ? normalizeBooleanSetting(loadedHideScatterPlots, false)
             : normalizeBooleanSetting(_userSetting.hideScatterPlots, false);
