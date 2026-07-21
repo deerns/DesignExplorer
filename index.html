@@ -2102,7 +2102,10 @@
         orderLookup[normalizeDimKey(dim.name)] = index;
       });
 
-      var firstRect = legendSvg.select("g rect");
+      var firstRect = legendSvg.select("g rect.legend-box");
+      if (firstRect.empty()) {
+        firstRect = legendSvg.select("g rect");
+      }
       var legendSquareSize = parseFloat(firstRect.attr("width"));
       if (!isFinite(legendSquareSize) || legendSquareSize <= 0) {
         legendSquareSize = 16;
