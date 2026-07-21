@@ -674,6 +674,11 @@
       #mainVerticalResizeGrip[aria-disabled="true"] {
         cursor: not-allowed;
         opacity: 0.45;
+        pointer-events: none;
+      }
+
+      #mainVerticalResizeBar.is-disabled {
+        cursor: not-allowed;
       }
 
       body.is-main-vertical-resizing #mainVerticalResizeGrip {
@@ -4299,6 +4304,9 @@
         unloadPageContent();
 
         d3.select("div#welcome").style("display", "none");
+        if (typeof syncMainVerticalResizeHandleState === "function") {
+          syncMainVerticalResizeHandleState();
+        }
 
         // load the new file
         loadCsvWithEncodingFallback(
@@ -6805,7 +6813,41 @@
         );
       }
 
+      function isBlockingPopupWindowVisible() {
+        if (
+          typeof document === "undefined" ||
+          typeof window === "undefined" ||
+          typeof window.getComputedStyle !== "function"
+        ) {
+          return false;
+        }
+
+        return Array.prototype.some.call(
+          document.querySelectorAll(".popupWindow"),
+          function (node) {
+            if (!node) return false;
+
+            var computedStyle = window.getComputedStyle(node);
+            if (!computedStyle) return false;
+
+            return (
+              computedStyle.display !== "none" &&
+              computedStyle.visibility !== "hidden" &&
+              (parseFloat(computedStyle.opacity || "1") || 0) > 0
+            );
+          }
+        );
+      }
+
       function getMainVerticalResizeDisabledReason() {
+        if (isBlockingPopupWindowVisible()) {
+          return "Close the open dialog to enable top chart resizing.";
+        }
+
+        if (deferScatterLayoutUntilReady) {
+          return "Wait for the charts to finish loading before resizing.";
+        }
+
         if (!graph || !Array.isArray(cleanedData) || cleanedData.length === 0) {
           return "Load data to enable top chart resizing.";
         }
@@ -10490,6 +10532,7 @@
         ) {
           // this is old user with google drive files.
           d3.select("#welcome").style("display", "none");
+          syncMainVerticalResizeHandleState();
           MP_getGoogleIDandLoad("URL");
         } else {
           // load default data
@@ -10515,6 +10558,7 @@
         //function to close intro window div
         d3.selectAll(".popupWindowClose").on("click", function () {
           d3.selectAll(".popupWindow").style("display", "none");
+          syncMainVerticalResizeHandleState();
         });
 
         // click outside content to close welcome overlay
@@ -10523,6 +10567,7 @@
           // only close when clicking the backdrop itself
           if (evt && evt.target === this) {
             d3.selectAll(".popupWindow").style("display", "none");
+            syncMainVerticalResizeHandleState();
           }
         });
 
@@ -10530,6 +10575,7 @@
         document.addEventListener("keydown", function (e) {
           if (e.key === "Escape" || e.keyCode === 27) {
             d3.selectAll(".popupWindow").style("display", "none");
+            syncMainVerticalResizeHandleState();
           }
         });
 
@@ -10542,6 +10588,7 @@
 
           d3.select("#loadFileLocally").style("display", "block");
           d3.select("#showStaticLink").classed("Show", false);
+          syncMainVerticalResizeHandleState();
 
           //clean previous inputs
           document.getElementById("csv-file").value = "";
@@ -10627,6 +10674,7 @@
             reader.readAsText(file);
           }
           d3.select("#welcome").style("display", "none");
+          syncMainVerticalResizeHandleState();
         });
       }; // end of window.onload
 
@@ -11818,6 +11866,9 @@
         d3.select("#loadDataContainer").style("display", "none");
 
         d3.select("#showSetting").style("display", "flex");
+        if (typeof syncMainVerticalResizeHandleState === "function") {
+          syncMainVerticalResizeHandleState();
+        }
 
         _userSetting = sanitizeSettingForCurrentData(_userSetting || {});
 
@@ -13447,6 +13498,7 @@
           );
           syncRadioLabelsFromCurrentInputs();
           d3.select("#showSetting").style("display", "none");
+          syncMainVerticalResizeHandleState();
           if (typeof window !== "undefined") {
             window.__activeSettingsDraft = null;
             if (window.__dimSettingOrderObserver) {

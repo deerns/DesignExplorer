@@ -318,6 +318,11 @@ body.is-chart-horizontal-resizing * {
 #mainVerticalResizeBar.is-disabled #mainVerticalResizeGrip {
     opacity: 0.45;
     cursor: not-allowed;
+    pointer-events: none;
+}
+
+#mainVerticalResizeBar.is-disabled {
+    cursor: not-allowed;
 }
 
 .main-vertical-resize-helper {
