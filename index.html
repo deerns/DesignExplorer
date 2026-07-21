@@ -2765,6 +2765,69 @@
       return committedOrder.dimOrder;
     }
 
+    function suppressPageSliderLabelClicks(durationMs) {
+      if (typeof window === "undefined") return;
+      var duration = Math.max(0, Number(durationMs) || 0);
+      window.__pageSliderLabelClickSuppressedUntil = Date.now() + duration;
+    }
+
+    function isPageSliderLabelClickSuppressed() {
+      if (typeof window === "undefined") return false;
+      if (window.__pageSliderLabelDragActive) {
+        return true;
+      }
+
+      var suppressedUntil = Number(window.__pageSliderLabelClickSuppressedUntil);
+      return isFinite(suppressedUntil) && Date.now() < suppressedUntil;
+    }
+
+    function movePageSliderToFront(dimName) {
+      var normalizedTarget = normalizeDimKey(dimName);
+      if (!normalizedTarget) return false;
+
+      var currentSliderOrder = getCurrentPageSliderDomOrder();
+      if (currentSliderOrder.length < 2) {
+        return false;
+      }
+
+      var targetDim = null;
+      var remainingDims = [];
+
+      currentSliderOrder.forEach(function (name) {
+        if (!targetDim && normalizeDimKey(name) === normalizedTarget) {
+          targetDim = name;
+          return;
+        }
+        remainingDims.push(name);
+      });
+
+      if (!targetDim) {
+        return false;
+      }
+
+      var nextSliderOrder = [targetDim].concat(remainingDims);
+      if (areDimOrdersEqual(nextSliderOrder, currentSliderOrder)) {
+        return false;
+      }
+
+      var currentDimOrder = getCurrentSettingPanelOrder();
+      if (currentDimOrder.length === 0) {
+        currentDimOrder =
+          (_userSetting && _userSetting.dimOrder) ||
+          getCurrentGraphDimensionOrder() ||
+          [];
+      }
+
+      var nextDimOrder = mergeSliderDimOrderIntoDimOrder(
+        nextSliderOrder,
+        currentDimOrder,
+        getAllOrderableDimKeys()
+      );
+
+      commitDimensionAndSliderOrder(nextDimOrder, nextSliderOrder);
+      return true;
+    }
+
     function initPageSliderSortable() {
       var $sliderContainer = $("#inputSliders");
       if (
@@ -2792,10 +2855,18 @@
         placeholder: "page-slider-placeholder",
         distance: 4,
         start: function (event, ui) {
+          if (typeof window !== "undefined") {
+            window.__pageSliderLabelDragActive = true;
+          }
+          suppressPageSliderLabelClicks(250);
           ui.item.addClass("is-dragging");
           ui.placeholder.height(ui.item.outerHeight());
         },
         stop: function (event, ui) {
+          if (typeof window !== "undefined") {
+            window.__pageSliderLabelDragActive = false;
+          }
+          suppressPageSliderLabelClicks(250);
           ui.item.removeClass("is-dragging");
           syncDimOrderFromPageSliders();
         },
@@ -11658,6 +11729,44 @@
             label
               .append("span")
               .attr("class", "inputSliderLabelText")
+              .attr("role", "button")
+              .attr("tabindex", "0")
+              .attr("title", "Click to move slider to the top")
+              .attr("aria-label", function () {
+                return "Move " + getDimLabel(d.name) + " slider to the top";
+              })
+              .on("click", function () {
+                var event = d3.event;
+                if (event) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
+                if (isPageSliderLabelClickSuppressed()) {
+                  return;
+                }
+                movePageSliderToFront(d.name);
+              })
+              .on("keydown", function () {
+                var event = d3.event;
+                var key = event ? event.key || event.keyCode : null;
+                if (
+                  key !== "Enter" &&
+                  key !== " " &&
+                  key !== "Spacebar" &&
+                  key !== 13 &&
+                  key !== 32
+                ) {
+                  return;
+                }
+                if (event) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
+                if (isPageSliderLabelClickSuppressed()) {
+                  return;
+                }
+                movePageSliderToFront(d.name);
+              })
               .text(getDimLabel(d.name));
 
             wrapper
@@ -15164,13 +15273,22 @@
         syncGraphDimensionTitles();
 
         // Update slider labels if they exist
-        d3.selectAll("#inputSliders .inputSlider .inputSliderLabelText").text(
-          function () {
+        d3.selectAll("#inputSliders .inputSlider .inputSliderLabelText")
+          .text(function () {
             var parent = this.parentNode;
             var dimName = parent ? parent.getAttribute("data-dim") : "";
             return getDimLabel(dimName);
-          }
-        );
+          })
+          .attr("title", function () {
+            var parent = this.parentNode;
+            var dimName = parent ? parent.getAttribute("data-dim") : "";
+            return "Click to move " + getDimLabel(dimName) + " to the top";
+          })
+          .attr("aria-label", function () {
+            var parent = this.parentNode;
+            var dimName = parent ? parent.getAttribute("data-dim") : "";
+            return "Move " + getDimLabel(dimName) + " slider to the top";
+          });
         if (typeof applySliderFontOverrides === "function") {
           applySliderFontOverrides(_userSetting || {});
         }
