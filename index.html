@@ -5574,6 +5574,8 @@
         var iconClass = isPcGraphCollapsed
           ? "glyphicon glyphicon-triangle-top"
           : "glyphicon glyphicon-triangle-bottom";
+
+        toggleButton.attr("title", buttonTitle).attr("aria-label", buttonTitle);
         toggleButton.select("span").attr("class", iconClass).attr("aria-hidden", "true");
       }
 
@@ -7411,7 +7413,10 @@
 
       function syncScatterPlotLayout(skipResize) {
         var hideScatterPlots = syncHideScatterPlotsSettingState(_userSetting);
-        var showScatterWrapper = !hideScatterPlots && !isLeftChartFullScreenToggled;
+        var showScatterWrapper =
+          !isPcGraphCollapsed &&
+          !hideScatterPlots &&
+          !isLeftChartFullScreenToggled;
         var chartLayoutRow = d3.select("#chartLayoutRow");
 
         d3.select("#ScChartWrapper").style(
