@@ -5174,10 +5174,7 @@
           "height",
           scatterViewportHeight + "px"
         );
-        d3.select(".scatter-matrix-control").classed(
-          "toggled",
-          isScatterToggled
-        );
+        syncScatterControlLayoutState();
 
         scatterChart = sm;
         applyPendingScatterLayoutState();
@@ -5506,6 +5503,20 @@
 
         toggleButton.attr("title", buttonTitle).attr("aria-label", buttonTitle);
         icon.attr("class", iconClass);
+      }
+
+      function syncScatterControlLayoutState() {
+        var scatterWrapper = d3.select("#ScChartWrapper");
+        if (!scatterWrapper.empty()) {
+          scatterWrapper.classed("scatter-control-hidden", !!isScatterToggled);
+        }
+
+        var radarChart = d3.select("#radarChart");
+        if (!radarChart.empty()) {
+          radarChart.classed("scatter-control-hidden", !!isScatterToggled);
+        }
+
+        d3.select(".scatter-matrix-control").classed("toggled", isScatterToggled);
       }
 
       function setScatterPlotsVisibilityFromMainScreen(shouldShowScatter) {
@@ -6630,6 +6641,7 @@
           "display",
           showScatterWrapper ? "block" : "none"
         );
+        syncScatterControlLayoutState();
 
         if (!chartLayoutRow.empty()) {
           chartLayoutRow.classed("scatter-hidden", !showScatterWrapper);
@@ -6895,10 +6907,7 @@
           return false;
         }
 
-        d3.select(".scatter-matrix-control").classed(
-          "toggled",
-          isScatterToggled
-        );
+        syncScatterControlLayoutState();
         applyPendingScatterLayoutState();
         updateScatterChart();
         if (_userSetting && _userSetting.dimLabels) {
@@ -7025,10 +7034,13 @@
         e.preventDefault();
         e.stopPropagation();
         isScatterToggled = !isScatterToggled;
-        d3.select(".scatter-matrix-control").classed(
-          "toggled",
-          isScatterToggled
-        );
+        syncScatterControlLayoutState();
+        schedulePcLayoutRefresh({
+          immediate: true,
+          refreshSidebar: false,
+          refreshScatter: true,
+          forceScatterRefresh: false,
+        });
       });
       $("#radarChart")
         .off("click", ".scatter-matrix-control")
