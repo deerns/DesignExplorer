@@ -638,6 +638,7 @@ div#thumbnails-btm.col-lg-12{
 }
 
 #sidebarResizeBar {
+    display: none !important;
     display: flex;
     align-items: center;
     justify-content: center;

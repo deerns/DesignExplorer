@@ -2874,6 +2874,13 @@
 
       _userSetting.dimHidden = cleaned;
       _userSetting.dimHiddenNormalized = buildDimHiddenNormalizedMap(cleaned);
+      if (
+        typeof window !== "undefined" &&
+        window.__activeSettingsDraft &&
+        typeof window.__activeSettingsDraft === "object"
+      ) {
+        window.__activeSettingsDraft.dimHidden = Object.assign({}, cleaned);
+      }
 
       updateSliderVisibilityFromSettings();
       syncHiddenSettingCheckboxes();
@@ -2908,6 +2915,17 @@
           );
           enabledNames = [firstAvailable.name];
         }
+      }
+
+      if (
+        typeof window !== "undefined" &&
+        window.__activeSettingsDraft &&
+        typeof window.__activeSettingsDraft === "object"
+      ) {
+        window.__activeSettingsDraft.dimHidden = Object.assign(
+          {},
+          _userSetting.dimHidden || {}
+        );
       }
 
       syncHiddenSettingCheckboxes();
@@ -3263,14 +3281,6 @@
           ></div>
           <div class="legend col-xs-12" id="legend">
             <!--place holder for legends-->
-          </div>
-          <div class="col-xs-12" id="sidebarResizeBar">
-            <button
-              type="button"
-              id="sidebarResizeGrip"
-              title="Drag to resize legend and sliders"
-              aria-label="Drag to resize legend and sliders vertically"
-            ></button>
           </div>
           <!--<div id="sliders-heading" class="sidebar-brand" style="text-align:center">
                     LOAD YOUR DATA!
@@ -5758,14 +5768,13 @@
         var paddingBottom = computedStyle
           ? parseFloat(computedStyle.paddingBottom) || 0
           : 0;
-        var reservedHeight = [
-          "#legend-heading",
-          "#sidebarResizeBar",
-          "#sliders-report",
-        ].reduce(function (total, selector) {
-          var sectionHeight = getElementOuterHeight(selector);
-          return total + (isFinite(sectionHeight) ? sectionHeight : 0);
-        }, 0);
+        var reservedHeight = ["#legend-heading", "#sliders-report"].reduce(
+          function (total, selector) {
+            var sectionHeight = getElementOuterHeight(selector);
+            return total + (isFinite(sectionHeight) ? sectionHeight : 0);
+          },
+          0
+        );
         var availableHeight =
           bounds.height - paddingTop - paddingBottom - reservedHeight;
 
@@ -10382,73 +10391,40 @@
 
         //events for legend click
         d3.selectAll("#legend rect").on("click", function (d) {
-          var rect = d3.select(this);
-          var name = d.name;
-          var enabled = true;
+          var name = d && d.name ? d.name : "";
+          var fixedOff =
+            name === "Rating" || String(name) === "Description";
 
-          if (rect.classed("disabled")) {
-            rect.attr("class", "legend");
-          } else {
-            rect.attr("class", "legend disabled");
-            enabled = false;
+          if (!name || fixedOff) {
+            return;
           }
 
-          // update dimensions
-          dimensions.forEach(function (dim) {
-            if (d.name === name) d.enabled = enabled;
-          });
+          _userSetting.dimHidden = Object.assign(
+            {},
+            (_userSetting && _userSetting.dimHidden) || {}
+          );
 
-          // get active dimensios to update parallel coordinate charts
-          var activeDimensions = dimensions
-            .filter(function (d) {
-              return d.enabled;
-            })
-            .map(function (d) {
-              return d.name;
-            });
-
-          var baseDims = ensureAllDimensionsCache();
-          if (!baseDims || Object.keys(baseDims).length === 0) {
-            baseDims = graph.dimensions() || {};
-          }
-
-          var validDimensions = validDimensionKeys(baseDims, activeDimensions);
-
-          if (validDimensions.length > 0) {
-            graph.dimensions(toDimensionObject(validDimensions, baseDims));
-          }
-
-          //if removed the pcIsColoredBy's dim, then update color by the first
-          if (activeDimensions.lastIndexOf(pcIsColoredBy) == -1) {
-            update_colors(activeDimensions[0]);
-          }
-
-          if (graph.highlighted().length !== 0)
-            graph.highlight(graph.highlighted());
-
-          _userSetting.dimHidden = _userSetting.dimHidden || {};
-          if (enabled) {
+          if (
+            isDimHiddenBySetting(
+              name,
+              _userSetting.dimHidden,
+              _userSetting.dimHiddenNormalized
+            )
+          ) {
             clearDimHiddenEntry(name, _userSetting.dimHidden);
           } else {
             _userSetting.dimHidden[name] = true;
           }
+
           _userSetting.dimHiddenNormalized = buildDimHiddenNormalizedMap(
             _userSetting.dimHidden
           );
-          updateSliderVisibilityFromSettings();
-          syncHiddenSettingCheckboxes();
-          updateLegendCheckboxVisuals();
-          refreshThumbnailSortDropdown({
-            preferredSortBy: getCurrentSortByValue(),
-          });
+          setDimHidden(_userSetting.dimHidden);
 
-          updateLabels();
           // re-apply custom labels to sliders/scatter after legend toggles
           if (_userSetting && _userSetting.dimLabels) {
             setDimLabels(_userSetting.dimLabels);
           }
-
-          syncScatterPlotLayout(false);
         });
 
         //turn off rating rectangle
