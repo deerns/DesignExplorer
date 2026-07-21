@@ -5427,6 +5427,7 @@
       var isScatterToggled = true;
       var isLeftChartFullScreenToggled = false;
       var isRightChartFullScreenToggled = false;
+      var isPcGraphCollapsed = false;
       var sidebarLayoutState = {
         legendRatio: 0.33,
         minLegendHeight: 120,
@@ -5561,6 +5562,19 @@
         }
 
         d3.select(".scatter-matrix-control").classed("toggled", isScatterToggled);
+      }
+
+      function syncPcGraphToggleUi() {
+        var toggleButton = d3.select("#pcgraph");
+        if (toggleButton.empty()) return;
+
+        var buttonTitle = isPcGraphCollapsed
+          ? "Show top charts"
+          : "Hide top charts";
+        var iconClass = isPcGraphCollapsed
+          ? "glyphicon glyphicon-triangle-top"
+          : "glyphicon glyphicon-triangle-bottom";
+        toggleButton.select("span").attr("class", iconClass).attr("aria-hidden", "true");
       }
 
       function setScatterPlotsVisibilityFromMainScreen(shouldShowScatter) {
@@ -6681,7 +6695,9 @@
 
       function shouldShowScatterPlots() {
         return (
-          !isScatterPlotsHidden(_userSetting) && !isLeftChartFullScreenToggled
+          !isPcGraphCollapsed &&
+          !isScatterPlotsHidden(_userSetting) &&
+          !isLeftChartFullScreenToggled
         );
       }
 
@@ -6761,6 +6777,27 @@
           return;
         }
 
+        if (isPcGraphCollapsed) {
+          var collapsedTopHeight = getMeasuredMainVerticalTopControlsHeight();
+          var collapsedBottomHeight = Math.max(
+            cleanHeight - collapsedTopHeight,
+            0
+          );
+
+          if (hasZoomedArea) {
+            d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
+              "height",
+              collapsedBottomHeight + "px"
+            );
+          } else {
+            d3.select("#thumbnails-btm_container").style(
+              "height",
+              collapsedBottomHeight + "px"
+            );
+          }
+          return;
+        }
+
         if (hasZoomedArea) {
           d3.selectAll("#thumbnails-btm_container, #zoomedArea").style(
             "height",
@@ -6789,6 +6826,37 @@
         }
 
         var topControlsHeight = getMeasuredMainVerticalTopControlsHeight();
+
+        if (isPcGraphCollapsed) {
+          var collapsedTopHeight = Math.max(topControlsHeight, 0);
+          var collapsedBottomHeight = Math.max(
+            cleanHeight - collapsedTopHeight,
+            0
+          );
+
+          d3.select("#topChartsSection").style(
+            "height",
+            collapsedTopHeight + "px"
+          );
+          d3.select("#chartLayoutRow").style(
+            "height",
+            collapsedTopHeight + "px"
+          );
+          d3.selectAll("#PcChartWrapper, #ScChartWrapper").style(
+            "height",
+            collapsedTopHeight + "px"
+          );
+          d3.select("#PcChartWrapper > .row-fluid")
+            .style("display", "none")
+            .style("height", "0px");
+          d3.select("#ScChartWrapper .chartSide").style("height", "0px");
+          d3.select("#bottomContentLayout").style(
+            "height",
+            collapsedBottomHeight + "px"
+          );
+          return;
+        }
+
         var graphAreaHeight = Math.max(graphHeight, 0);
         var topSectionHeight = Math.max(graphAreaHeight + topControlsHeight, 0);
 
@@ -6798,10 +6866,9 @@
           "height",
           topSectionHeight + "px"
         );
-        d3.select("#PcChartWrapper > .row-fluid").style(
-          "height",
-          graphAreaHeight + "px"
-        );
+        d3.select("#PcChartWrapper > .row-fluid")
+          .style("display", null)
+          .style("height", graphAreaHeight + "px");
         d3.select("#ScChartWrapper .chartSide").style(
           "height",
           graphAreaHeight + "px"
@@ -6862,7 +6929,7 @@
       }
 
       function shouldShowMainVerticalResizeHandle() {
-        if (isRightChartFullScreenToggled) {
+        if (isRightChartFullScreenToggled || isPcGraphCollapsed) {
           return false;
         }
 
@@ -6910,19 +6977,25 @@
         syncMainVerticalSectionHeights();
 
         if (graph) {
-          var targetWidth = getPcChartBaseWidth();
-          var targetHeight = graphHeight;
+          if (isPcGraphCollapsed) {
+            d3.select("#graph")
+              .attr("class", "parcoords collapse 2s")
+              .style("height", "0px");
+          } else {
+            var targetWidth = getPcChartBaseWidth();
+            var targetHeight = graphHeight;
 
-          resizePcChart(targetWidth, targetHeight, {
-            immediate: !!options.immediate,
-          });
+            resizePcChart(targetWidth, targetHeight, {
+              immediate: !!options.immediate,
+            });
+          }
         } else {
           d3.select("#graph").style("height", graphHeight + "px");
         }
 
         syncBottomPanelHeights();
 
-        if (shouldShowScatterPlots()) {
+        if (!isPcGraphCollapsed && shouldShowScatterPlots()) {
           if (options.skipScatterRefresh) {
             if (!syncExistingScatterChartState()) {
               scheduleDeferredScatterLayoutRefresh();
@@ -6934,6 +7007,40 @@
 
         refreshSidebarControlLayout();
         syncMainVerticalResizeHandleState();
+      }
+
+      function setPcGraphCollapsed(nextState) {
+        if (!Array.isArray(cleanedData) || cleanedData.length === 0) {
+          return;
+        }
+
+        isPcGraphCollapsed = !!nextState;
+        syncPcGraphToggleUi();
+
+        d3.select("#reset").classed("disabled", isPcGraphCollapsed);
+        d3.select("#remove").classed("disabled", isPcGraphCollapsed);
+        d3.select("#keep").classed("disabled", isPcGraphCollapsed);
+
+        if (isPcGraphCollapsed) {
+          d3.select("#graph")
+            .attr("class", "parcoords collapse 2s")
+            .style("height", "0px");
+          $("#radarChart").collapse("hide");
+        } else {
+          d3.select("#graph")
+            .attr("class", "parcoords collapse in")
+            .style("height", Math.max(graphHeight, 0) + "px");
+
+          if (!isScatterPlotsHidden(_userSetting) && !isLeftChartFullScreenToggled) {
+            $("#radarChart").collapse("show");
+          }
+        }
+
+        syncScatterPlotLayout(true);
+        applyMainVerticalSplitLayout({
+          immediate: true,
+          skipScatterRefresh: isPcGraphCollapsed,
+        });
       }
 
       var pendingMainVerticalResizeFrame = null;
@@ -7914,56 +8021,7 @@
       // hide/show parallel coordinates
       d3.select("#pcgraph").on("click", function () {
         if (cleanedData.length === 0) return; // don't let the user change the size before loading the file
-
-        var height = d3.select("#graph").style("height").replace("px", "");
-
-        if (height > 0) {
-          // collapse
-          d3.select("#graph")
-            .attr("class", "parcoords collapse 2s")
-            .style("height", "0px");
-
-          //mirror collapse behavior with radar chart
-          $("#radarChart").collapse("hide");
-
-          //disable buttons
-          d3.select("#reset").classed("disabled", true);
-          d3.select("#remove").classed("disabled", true);
-          d3.select("#keep").classed("disabled", true);
-
-          if (graph.highlight().length !== 0) {
-            d3.selectAll("#zoomedArea").style("height", cleanHeight + "px");
-          }
-
-          d3.select("#thumbnails-btm_container").style(
-            "height",
-            cleanHeight + "px"
-          );
-        } else {
-          // collapse in
-          var pcHeight = graphHeight;
-          d3.select("#graph")
-            .attr("class", "parcoords collapse in")
-            .transition("ease out")
-            .style("height", pcHeight + "px");
-
-          //mirror collapse behavior with radar chart
-          $("#radarChart").collapse("show");
-
-          //enable buttons
-          d3.select("#reset").classed("disabled", false);
-          d3.select("#remove").classed("disabled", false);
-          d3.select("#keep").classed("disabled", false);
-
-          if (graph.highlight().length !== 0) {
-            d3.selectAll("#zoomedArea").style("height", zoomedHeight + "px");
-          }
-          d3.select("#thumbnails-btm_container").style(
-            "height",
-            zoomedHeight + "px"
-          );
-        }
-        syncMainVerticalResizeHandleState();
+        setPcGraphCollapsed(!isPcGraphCollapsed);
       });
     </script>
 
@@ -9351,6 +9409,15 @@
         syncChartHorizontalSectionWidths(shouldShowScatterPlots());
         syncMainVerticalSectionHeights();
 
+        if (isPcGraphCollapsed) {
+          d3.select("#graph")
+            .attr("class", "parcoords collapse 2s")
+            .style("height", "0px");
+          syncBottomPanelHeights();
+          syncMainVerticalResizeHandleState();
+          return;
+        }
+
         var newGraphWidth = getPcChartBaseWidth();
         var newGraphHeight = graphHeight;
 
@@ -10435,8 +10502,10 @@
         options = options || {};
         var deferScatterInit = !!options.deferScatterInit;
         deferScatterLayoutUntilReady = deferScatterInit;
+        isPcGraphCollapsed = false;
         overwriteInitialGlobalValues();
         resetLayoutResizeStatesToDefaults();
+        syncPcGraphToggleUi();
         resetDatasetScopedUserSettings();
         clearScatterSelectionState();
         pinnedComparisonData = null;
