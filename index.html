@@ -6091,6 +6091,8 @@
 
           $resizeBar.draggable({
             axis: "y",
+            handle: "#mainVerticalResizeGrip",
+            cancel: false,
             helper: function () {
               return window.jQuery("<div class='main-vertical-resize-helper'></div>");
             },

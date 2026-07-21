@@ -45,6 +45,41 @@ var mainVerticalLayoutState = {
   minBottomHeight: 150,
 };
 
+function getAvailableMainViewportHeight() {
+  var viewportHeight =
+    typeof window !== "undefined" && isFinite(window.innerHeight)
+      ? window.innerHeight
+      : 0;
+
+  if (!(viewportHeight > 0) || typeof document === "undefined") {
+    return Math.max(viewportHeight, 0);
+  }
+
+  var anchorNode =
+    document.getElementById("mainContentLayout") ||
+    document.getElementById("page-content-wrapper");
+  var pageContentNode = document.getElementById("page-content-wrapper");
+  var topOffset = 0;
+  var bottomPadding = 0;
+
+  if (
+    anchorNode &&
+    typeof anchorNode.getBoundingClientRect === "function"
+  ) {
+    topOffset = anchorNode.getBoundingClientRect().top;
+  }
+
+  if (
+    pageContentNode &&
+    typeof window.getComputedStyle === "function"
+  ) {
+    bottomPadding =
+      parseFloat(window.getComputedStyle(pageContentNode).paddingBottom) || 0;
+  }
+
+  return Math.max(viewportHeight - topOffset - bottomPadding, 0);
+}
+
 function resolveMainVerticalTopControlsHeight() {
   var measuredTopControlsHeight = null;
 
@@ -70,7 +105,7 @@ function getMainVerticalLayoutBounds(totalHeight) {
   var resolvedTotalHeight =
     isFinite(totalHeight) && totalHeight > 0
       ? totalHeight
-      : Math.max((window.innerHeight || 0) - 115, 0);
+      : getAvailableMainViewportHeight();
   var minTopHeight =
     topControlsHeight + mainVerticalLayoutState.minGraphHeight;
   var minBottomHeight = mainVerticalLayoutState.minBottomHeight;
@@ -105,7 +140,7 @@ function setMainVerticalLayoutTopHeight(nextTopHeight) {
     return getMainVerticalLayoutTopHeight();
   }
 
-  var totalHeight = Math.max((window.innerHeight || 0) - 115, 0);
+  var totalHeight = getAvailableMainViewportHeight();
   var bounds = getMainVerticalLayoutBounds(totalHeight);
   var resolvedTopHeight = Math.max(
     bounds.minTop,
@@ -122,8 +157,8 @@ function calWidthAndHeight() {
   var topControlsHeight = resolveMainVerticalTopControlsHeight();
   windowWidth = window.innerWidth;
   windowHeight = window.innerHeight;
-  cleanHeight = windowHeight - 115; // 2
-  cleanWidth = windowWidth - 100;
+  cleanHeight = getAvailableMainViewportHeight();
+  cleanWidth = windowWidth;
 
   var bounds = getMainVerticalLayoutBounds(cleanHeight);
   var desiredTopHeight = cleanHeight * mainVerticalLayoutState.topRatio;
