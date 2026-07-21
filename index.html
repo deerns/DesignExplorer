@@ -1564,6 +1564,54 @@
       );
     }
 
+    function buildSliderFirstDimensionOrder(
+      orderedSliderDims,
+      trailingDimOrder,
+      allDimKeys
+    ) {
+      var sliderOrder = normalizeDimOrder(orderedSliderDims);
+      if (sliderOrder.length === 0) {
+        return normalizeDimOrder(trailingDimOrder);
+      }
+
+      var knownDimKeys = Array.isArray(allDimKeys) ? allDimKeys.slice() : [];
+      normalizeDimOrder(trailingDimOrder).forEach(function (key) {
+        knownDimKeys.push(key);
+      });
+      sliderOrder.forEach(function (key) {
+        knownDimKeys.push(key);
+      });
+
+      var baseOrder = orderDimensionKeys(knownDimKeys, trailingDimOrder);
+      var sliderLookup = {};
+      var used = {};
+      var result = [];
+
+      sliderOrder.forEach(function (key) {
+        var normalized = normalizeDimKey(key);
+        if (!normalized || used[normalized]) return;
+        sliderLookup[normalized] = key;
+        used[normalized] = true;
+        result.push(key);
+      });
+
+      baseOrder.forEach(function (key) {
+        var normalized = normalizeDimKey(key);
+        if (!normalized || sliderLookup[normalized] || used[normalized]) return;
+        used[normalized] = true;
+        result.push(key);
+      });
+
+      return normalizeDimOrder(result);
+    }
+
+    function isSettingPanelSyncSuspended() {
+      return (
+        typeof window !== "undefined" &&
+        !!window.__suspendSettingPanelOrderSync
+      );
+    }
+
     function applyVisualSliderOrder(dimOrder) {
       var normalizedOrder = normalizeDimOrder(dimOrder);
       var orderLookup = {};
@@ -1711,12 +1759,23 @@
         panelDims.push(dimName);
       });
 
-      orderDimensionKeys(panelDims, dimOrder).forEach(function (dimName) {
-        var panel = panelByNormalized[normalizeDimKey(dimName)];
-        if (panel) {
-          panelContainer.appendChild(panel);
+      if (typeof window !== "undefined") {
+        window.__suspendSettingPanelOrderSync = true;
+      }
+      try {
+        orderDimensionKeys(panelDims, dimOrder).forEach(function (dimName) {
+          var panel = panelByNormalized[normalizeDimKey(dimName)];
+          if (panel) {
+            panelContainer.appendChild(panel);
+          }
+        });
+      } finally {
+        if (typeof window !== "undefined") {
+          setTimeout(function () {
+            window.__suspendSettingPanelOrderSync = false;
+          }, 0);
         }
-      });
+      }
 
       if (
         typeof window !== "undefined" &&
@@ -2434,7 +2493,24 @@
         }
       );
 
-      applyDimensionOrderToSettingPanels(committedOrder.dimOrder);
+      var currentSettingPanelOrder = getCurrentSettingPanelOrder();
+      var syncedSettingPanelOrder = buildSliderFirstDimensionOrder(
+        orderedSliderDims,
+        currentSettingPanelOrder.length > 0
+          ? currentSettingPanelOrder
+          : committedOrder.dimOrder,
+        getAllOrderableDimKeys()
+      );
+
+      applyDimensionOrderToSettingPanels(syncedSettingPanelOrder);
+      if (
+        typeof window !== "undefined" &&
+        window.__activeSettingsDraft &&
+        typeof window.__activeSettingsDraft === "object"
+      ) {
+        window.__activeSettingsDraft.dimOrder =
+          syncedSettingPanelOrder.slice();
+      }
 
       return committedOrder.dimOrder;
     }
@@ -2622,7 +2698,23 @@
       });
 
       if (!options.skipSettingsPanels && nextDimOrder.length > 0) {
-        applyDimensionOrderToSettingPanels(nextDimOrder);
+        var currentSettingPanelOrder = getCurrentSettingPanelOrder();
+        var syncedSettingPanelOrder = buildSliderFirstDimensionOrder(
+          nextSliderOrder,
+          currentSettingPanelOrder.length > 0
+            ? currentSettingPanelOrder
+            : nextDimOrder,
+          getAllOrderableDimKeys()
+        );
+        applyDimensionOrderToSettingPanels(syncedSettingPanelOrder);
+        if (
+          typeof window !== "undefined" &&
+          window.__activeSettingsDraft &&
+          typeof window.__activeSettingsDraft === "object"
+        ) {
+          window.__activeSettingsDraft.dimOrder =
+            syncedSettingPanelOrder.slice();
+        }
       }
 
       if (!options.skipGraphDimensions && nextDimOrder.length > 0) {
@@ -13108,6 +13200,10 @@
         var pendingSettingOrderSync = null;
 
         function queueSyncDimOrderFromSettingPanels() {
+          if (isSettingPanelSyncSuspended()) {
+            return;
+          }
+
           if (pendingSettingOrderSync !== null) {
             clearTimeout(pendingSettingOrderSync);
           }
@@ -13119,6 +13215,10 @@
         }
 
         function syncDimOrderFromSettingPanels() {
+          if (isSettingPanelSyncSuspended()) {
+            return normalizeDimOrder(newUserSetting.sliderOrder);
+          }
+
           var panelContainer = document.getElementById("dimSettingList");
           if (!panelContainer) return [];
 
@@ -13405,6 +13505,10 @@
           window.__dimSettingOrderObserver = new MutationObserver(function (
             mutations
           ) {
+            if (isSettingPanelSyncSuspended()) {
+              return;
+            }
+
             var changed = mutations.some(function (mutation) {
               return mutation.type === "childList";
             });
