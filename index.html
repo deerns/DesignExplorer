@@ -5427,8 +5427,8 @@
       var chartHorizontalLayoutState = {
         scatterRatio: null,
         useAutoRatio: true,
-        minScatterWidth: 280,
-        minPcWidth: 360,
+        minScatterWidth: 240,
+        minPcWidth: 320,
         handleWidth: 16,
       };
 
@@ -6126,24 +6126,67 @@
         return Math.max((rowWidth || 0) - handleWidth, 0);
       }
 
+      function getChartHorizontalMinimumPcWidth(totalWidth) {
+        var activeDimensionCount = getActiveGraphDimensionCount();
+        var minimumPcWidth = chartHorizontalLayoutState.minPcWidth;
+
+        if (activeDimensionCount <= 1) {
+          minimumPcWidth = 180;
+        } else if (activeDimensionCount === 2) {
+          minimumPcWidth = 220;
+        } else if (activeDimensionCount === 3) {
+          minimumPcWidth = 250;
+        } else if (activeDimensionCount === 4) {
+          minimumPcWidth = 280;
+        } else if (activeDimensionCount === 5) {
+          minimumPcWidth = 300;
+        }
+
+        return isFinite(totalWidth) && totalWidth > 0
+          ? Math.min(minimumPcWidth, totalWidth)
+          : minimumPcWidth;
+      }
+
+      function getChartHorizontalMinimumScatterWidth(totalWidth) {
+        var minimumScatterWidth = chartHorizontalLayoutState.minScatterWidth;
+
+        if (isScatterToggled) {
+          minimumScatterWidth = Math.max(minimumScatterWidth - 60, 180);
+        }
+
+        return isFinite(totalWidth) && totalWidth > 0
+          ? Math.min(minimumScatterWidth, totalWidth)
+          : minimumScatterWidth;
+      }
+
       function getChartHorizontalLayoutBounds(totalWidth) {
         var resolvedTotalWidth =
           isFinite(totalWidth) && totalWidth > 0
             ? totalWidth
             : getAvailableChartHorizontalWidth();
-        var minScatterWidth = chartHorizontalLayoutState.minScatterWidth;
-        var minPcWidth = chartHorizontalLayoutState.minPcWidth;
+        var minScatterFloor = isScatterToggled ? 160 : 180;
+        var minPcFloor = getActiveGraphDimensionCount() <= 2 ? 180 : 200;
+        var minScatterWidth =
+          getChartHorizontalMinimumScatterWidth(resolvedTotalWidth);
+        var minPcWidth = getChartHorizontalMinimumPcWidth(resolvedTotalWidth);
 
         if (minScatterWidth + minPcWidth > resolvedTotalWidth) {
           minPcWidth = Math.max(
-            220,
-            Math.min(minPcWidth, resolvedTotalWidth * 0.55)
+            minPcFloor,
+            Math.min(minPcWidth, resolvedTotalWidth - minScatterFloor)
           );
-          minScatterWidth = Math.max(180, resolvedTotalWidth - minPcWidth);
+          minScatterWidth = Math.max(
+            minScatterFloor,
+            resolvedTotalWidth - minPcWidth
+          );
         }
 
         minScatterWidth = Math.max(
           Math.min(minScatterWidth, resolvedTotalWidth),
+          0
+        );
+        minPcWidth = Math.max(
+          Math.min(minPcWidth, Math.max(resolvedTotalWidth - minScatterWidth, 0)),
           0
         );
 
