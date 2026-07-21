@@ -5220,6 +5220,423 @@
         return result;
       }
 
+      function getDefaultScatterCandidateVariables(numericVariables) {
+        var ordered = Array.isArray(numericVariables)
+          ? numericVariables.slice()
+          : [];
+        var filtered = ordered.filter(function (name) {
+          var normalized =
+            typeof normalizeDimKey === "function"
+              ? normalizeDimKey(name)
+              : (name || "").toString().trim().toLowerCase();
+          return normalized !== "rating" && normalized !== "description";
+        });
+
+        return filtered.length >= 2 ? filtered : ordered;
+      }
+
+      function getScatterSeriesMean(values) {
+        if (!Array.isArray(values) || values.length === 0) {
+          return 0;
+        }
+
+        var total = 0;
+        for (var i = 0; i < values.length; i++) {
+          total += values[i];
+        }
+
+        return total / values.length;
+      }
+
+      function getScatterPairSeries(data, xKey, yKey) {
+        var xs = [];
+        var ys = [];
+        var uniqueX = {};
+        var uniqueY = {};
+        var uniqueXCount = 0;
+        var uniqueYCount = 0;
+
+        if (!Array.isArray(data)) {
+          return {
+            xs: xs,
+            ys: ys,
+            uniqueXCount: uniqueXCount,
+            uniqueYCount: uniqueYCount,
+          };
+        }
+
+        data.forEach(function (row) {
+          var rawX = row ? row[xKey] : undefined;
+          var rawY = row ? row[yKey] : undefined;
+          if (
+            rawX === undefined ||
+            rawX === null ||
+            rawY === undefined ||
+            rawY === null
+          ) {
+            return;
+          }
+
+          if (
+            (typeof rawX === "string" && rawX.trim() === "") ||
+            (typeof rawY === "string" && rawY.trim() === "")
+          ) {
+            return;
+          }
+
+          var x = Number(rawX);
+          var y = Number(rawY);
+          if (!isFinite(x) || !isFinite(y)) {
+            return;
+          }
+
+          xs.push(x);
+          ys.push(y);
+
+          var xId = String(x);
+          var yId = String(y);
+
+          if (!Object.prototype.hasOwnProperty.call(uniqueX, xId)) {
+            uniqueX[xId] = true;
+            uniqueXCount += 1;
+          }
+
+          if (!Object.prototype.hasOwnProperty.call(uniqueY, yId)) {
+            uniqueY[yId] = true;
+            uniqueYCount += 1;
+          }
+        });
+
+        return {
+          xs: xs,
+          ys: ys,
+          uniqueXCount: uniqueXCount,
+          uniqueYCount: uniqueYCount,
+        };
+      }
+
+      function getScatterPearsonCorrelation(xs, ys) {
+        if (
+          !Array.isArray(xs) ||
+          !Array.isArray(ys) ||
+          xs.length !== ys.length ||
+          xs.length < 2
+        ) {
+          return 0;
+        }
+
+        var meanX = getScatterSeriesMean(xs);
+        var meanY = getScatterSeriesMean(ys);
+        var xx = 0;
+        var yy = 0;
+        var xy = 0;
+
+        for (var i = 0; i < xs.length; i++) {
+          var dx = xs[i] - meanX;
+          var dy = ys[i] - meanY;
+          xx += dx * dx;
+          yy += dy * dy;
+          xy += dx * dy;
+        }
+
+        if (xx <= 0 || yy <= 0) {
+          return 0;
+        }
+
+        return xy / Math.sqrt(xx * yy);
+      }
+
+      function getScatterRankValues(values) {
+        if (!Array.isArray(values) || values.length === 0) {
+          return [];
+        }
+
+        var indexed = values
+          .map(function (value, index) {
+            return {
+              value: value,
+              index: index,
+            };
+          })
+          .sort(function (a, b) {
+            return d3.ascending(a.value, b.value);
+          });
+        var ranks = new Array(values.length);
+
+        for (var i = 0; i < indexed.length; ) {
+          var end = i;
+          while (
+            end + 1 < indexed.length &&
+            indexed[end + 1].value === indexed[i].value
+          ) {
+            end += 1;
+          }
+
+          var averageRank = (i + end + 2) / 2;
+          for (var j = i; j <= end; j++) {
+            ranks[indexed[j].index] = averageRank;
+          }
+          i = end + 1;
+        }
+
+        return ranks;
+      }
+
+      function getScatterRegressionRSquared(actualValues, predictedValues) {
+        if (
+          !Array.isArray(actualValues) ||
+          !Array.isArray(predictedValues) ||
+          actualValues.length !== predictedValues.length ||
+          actualValues.length < 2
+        ) {
+          return 0;
+        }
+
+        var actualMean = getScatterSeriesMean(actualValues);
+        var totalVariance = 0;
+        var residualVariance = 0;
+
+        for (var i = 0; i < actualValues.length; i++) {
+          var totalDelta = actualValues[i] - actualMean;
+          var residualDelta = actualValues[i] - predictedValues[i];
+          totalVariance += totalDelta * totalDelta;
+          residualVariance += residualDelta * residualDelta;
+        }
+
+        if (totalVariance <= 0) {
+          return 0;
+        }
+
+        return Math.max(0, 1 - residualVariance / totalVariance);
+      }
+
+      function getScatterLinearRSquared(xs, ys) {
+        if (
+          !Array.isArray(xs) ||
+          !Array.isArray(ys) ||
+          xs.length !== ys.length ||
+          xs.length < 2
+        ) {
+          return 0;
+        }
+
+        var meanX = getScatterSeriesMean(xs);
+        var meanY = getScatterSeriesMean(ys);
+        var xx = 0;
+        var xy = 0;
+
+        for (var i = 0; i < xs.length; i++) {
+          var dx = xs[i] - meanX;
+          xx += dx * dx;
+          xy += dx * (ys[i] - meanY);
+        }
+
+        if (xx <= 0) {
+          return 0;
+        }
+
+        var slope = xy / xx;
+        var intercept = meanY - slope * meanX;
+        var predicted = xs.map(function (x) {
+          return intercept + slope * x;
+        });
+
+        return getScatterRegressionRSquared(ys, predicted);
+      }
+
+      function solveScatter3x3LinearSystem(matrix, vector) {
+        if (
+          !Array.isArray(matrix) ||
+          matrix.length !== 3 ||
+          !Array.isArray(vector) ||
+          vector.length !== 3
+        ) {
+          return null;
+        }
+
+        var m = matrix.map(function (row) {
+          return Array.isArray(row) ? row.slice() : [];
+        });
+        var v = vector.slice();
+
+        for (var i = 0; i < 3; i++) {
+          var pivot = i;
+          for (var row = i + 1; row < 3; row++) {
+            if (Math.abs(m[row][i]) > Math.abs(m[pivot][i])) {
+              pivot = row;
+            }
+          }
+
+          if (!isFinite(m[pivot][i]) || Math.abs(m[pivot][i]) < 1e-12) {
+            return null;
+          }
+
+          if (pivot !== i) {
+            var tempRow = m[i];
+            m[i] = m[pivot];
+            m[pivot] = tempRow;
+
+            var tempValue = v[i];
+            v[i] = v[pivot];
+            v[pivot] = tempValue;
+          }
+
+          var divisor = m[i][i];
+          for (var column = i; column < 3; column++) {
+            m[i][column] /= divisor;
+          }
+          v[i] /= divisor;
+
+          for (var eliminateRow = 0; eliminateRow < 3; eliminateRow++) {
+            if (eliminateRow === i) {
+              continue;
+            }
+
+            var factor = m[eliminateRow][i];
+            if (!factor) {
+              continue;
+            }
+
+            for (var eliminateColumn = i; eliminateColumn < 3; eliminateColumn++) {
+              m[eliminateRow][eliminateColumn] -= factor * m[i][eliminateColumn];
+            }
+            v[eliminateRow] -= factor * v[i];
+          }
+        }
+
+        return v;
+      }
+
+      function getScatterQuadraticRSquared(xs, ys) {
+        if (
+          !Array.isArray(xs) ||
+          !Array.isArray(ys) ||
+          xs.length !== ys.length ||
+          xs.length < 5
+        ) {
+          return 0;
+        }
+
+        var sumX = 0;
+        var sumX2 = 0;
+        var sumX3 = 0;
+        var sumX4 = 0;
+        var sumY = 0;
+        var sumXY = 0;
+        var sumX2Y = 0;
+
+        for (var i = 0; i < xs.length; i++) {
+          var x = xs[i];
+          var y = ys[i];
+          var x2 = x * x;
+          sumX += x;
+          sumX2 += x2;
+          sumX3 += x2 * x;
+          sumX4 += x2 * x2;
+          sumY += y;
+          sumXY += x * y;
+          sumX2Y += x2 * y;
+        }
+
+        var coefficients = solveScatter3x3LinearSystem(
+          [
+            [xs.length, sumX, sumX2],
+            [sumX, sumX2, sumX3],
+            [sumX2, sumX3, sumX4],
+          ],
+          [sumY, sumXY, sumX2Y]
+        );
+
+        if (!coefficients) {
+          return 0;
+        }
+
+        var predicted = xs.map(function (value) {
+          return (
+            coefficients[0] +
+            coefficients[1] * value +
+            coefficients[2] * value * value
+          );
+        });
+
+        return getScatterRegressionRSquared(ys, predicted);
+      }
+
+      function scoreDefaultScatterVariablePair(data, xKey, yKey) {
+        var series = getScatterPairSeries(data, xKey, yKey);
+        if (
+          series.xs.length < 10 ||
+          series.uniqueXCount < 5 ||
+          series.uniqueYCount < 5
+        ) {
+          return null;
+        }
+
+        var linearCorrelation = Math.abs(
+          getScatterPearsonCorrelation(series.xs, series.ys)
+        );
+        var rankCorrelation = Math.abs(
+          getScatterPearsonCorrelation(
+            getScatterRankValues(series.xs),
+            getScatterRankValues(series.ys)
+          )
+        );
+        var linearR2 = getScatterLinearRSquared(series.xs, series.ys);
+        var quadraticR2 = getScatterQuadraticRSquared(series.xs, series.ys);
+
+        return {
+          score:
+            Math.max(0, rankCorrelation - linearCorrelation) +
+            Math.max(0, quadraticR2 - linearR2) * 1.5,
+          quadraticR2: quadraticR2,
+          linearR2: linearR2,
+        };
+      }
+
+      function chooseInterestingDefaultScatterVariables(data, numericVariables) {
+        var candidates = getDefaultScatterCandidateVariables(numericVariables);
+        if (candidates.length < 2) {
+          return candidates.slice(0, Math.min(2, candidates.length));
+        }
+
+        var bestPair = null;
+        var bestMetrics = null;
+
+        for (var i = 0; i < candidates.length; i++) {
+          for (var j = i + 1; j < candidates.length; j++) {
+            var xKey = candidates[i];
+            var yKey = candidates[j];
+            var metrics = scoreDefaultScatterVariablePair(data, xKey, yKey);
+
+            if (!metrics) {
+              continue;
+            }
+
+            var isBetter =
+              !bestMetrics ||
+              metrics.score > bestMetrics.score + 1e-6 ||
+              (Math.abs(metrics.score - bestMetrics.score) <= 1e-6 &&
+                metrics.quadraticR2 > bestMetrics.quadraticR2);
+
+            if (isBetter) {
+              bestPair = [xKey, yKey];
+              bestMetrics = metrics;
+            }
+          }
+        }
+
+        if (
+          bestPair &&
+          bestMetrics &&
+          bestMetrics.score >= 0.08 &&
+          bestMetrics.quadraticR2 >= 0.2
+        ) {
+          return bestPair;
+        }
+
+        return candidates.slice(-2);
+      }
+
       function getScatterPointFill(d) {
         if (
           typeof color !== "function" ||
@@ -5295,15 +5712,7 @@
         var selectedVariables =
           requestedVariables.length >= 2
             ? requestedVariables.slice(0, 2)
-            : numericVariables
-                .filter(function (name) {
-                  var normalized =
-                    typeof normalizeDimKey === "function"
-                      ? normalizeDimKey(name)
-                      : (name || "").toString().trim().toLowerCase();
-                  return normalized !== "rating" && normalized !== "description";
-                })
-                .slice(-2);
+            : chooseInterestingDefaultScatterVariables(data, numericVariables);
         if (selectedVariables.length < 2) {
           selectedVariables = numericVariables.slice(0, Math.min(2, numericVariables.length));
         }
