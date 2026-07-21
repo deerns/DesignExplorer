@@ -3236,10 +3236,18 @@
           <div class="legend col-xs-12" id="legend">
             <!--place holder for legends-->
           </div>
+          <div class="col-xs-12" id="sidebarResizeBar">
+            <button
+              type="button"
+              id="sidebarResizeGrip"
+              title="Drag to resize legend and sliders"
+              aria-label="Drag to resize legend and sliders vertically"
+            ></button>
+          </div>
           <!--<div id="sliders-heading" class="sidebar-brand" style="text-align:center">
                     LOAD YOUR DATA!
                 </div>-->
-          <div class="inputSliders col-xs-11" id="inputSliders">
+          <div class="inputSliders col-xs-12" id="inputSliders">
             <form class="sliders">
               <!-- I will use this form to disable all the sliders together. -->
             </form>
@@ -5383,6 +5391,11 @@
       var isScatterToggled = true;
       var isLeftChartFullScreenToggled = false;
       var isRightChartFullScreenToggled = false;
+      var sidebarLayoutState = {
+        legendRatio: 0.33,
+        minLegendHeight: 120,
+        minSliderHeight: 160,
+      };
 
       function normalizeBooleanSetting(value, fallback) {
         if (value === undefined || value === null) {
@@ -5623,6 +5636,264 @@
       if (typeof window !== "undefined") {
         window.getMeasuredMainVerticalTopControlsHeight =
           getMeasuredMainVerticalTopControlsHeight;
+      }
+
+      function getAvailableSidebarContentHeight() {
+        var sidebarNav = d3.select("#sidebar-wrapper .sidebar-nav").node();
+        if (
+          !sidebarNav ||
+          typeof sidebarNav.getBoundingClientRect !== "function" ||
+          typeof window === "undefined"
+        ) {
+          return 0;
+        }
+
+        var bounds = sidebarNav.getBoundingClientRect();
+        var computedStyle =
+          typeof window.getComputedStyle === "function"
+            ? window.getComputedStyle(sidebarNav)
+            : null;
+        var paddingTop = computedStyle
+          ? parseFloat(computedStyle.paddingTop) || 0
+          : 0;
+        var paddingBottom = computedStyle
+          ? parseFloat(computedStyle.paddingBottom) || 0
+          : 0;
+        var reservedHeight = [
+          "#legend-heading",
+          "#sidebarResizeBar",
+          "#sliders-report",
+        ].reduce(function (total, selector) {
+          var sectionHeight = getElementOuterHeight(selector);
+          return total + (isFinite(sectionHeight) ? sectionHeight : 0);
+        }, 0);
+        var availableHeight =
+          bounds.height - paddingTop - paddingBottom - reservedHeight;
+
+        return isFinite(availableHeight) && availableHeight > 0
+          ? availableHeight
+          : 0;
+      }
+
+      function getSidebarLayoutBounds(totalHeight) {
+        var resolvedTotalHeight =
+          isFinite(totalHeight) && totalHeight > 0
+            ? totalHeight
+            : getAvailableSidebarContentHeight();
+        var minLegendHeight = sidebarLayoutState.minLegendHeight;
+        var minSliderHeight = sidebarLayoutState.minSliderHeight;
+
+        if (minLegendHeight + minSliderHeight > resolvedTotalHeight) {
+          minSliderHeight = Math.max(
+            100,
+            Math.min(minSliderHeight, resolvedTotalHeight * 0.45)
+          );
+          minLegendHeight = Math.max(80, resolvedTotalHeight - minSliderHeight);
+        }
+
+        return {
+          minLegend: Math.max(Math.min(minLegendHeight, resolvedTotalHeight), 0),
+          maxLegend: Math.max(
+            Math.max(Math.min(minLegendHeight, resolvedTotalHeight), 0),
+            resolvedTotalHeight - minSliderHeight
+          ),
+        };
+      }
+
+      function getSidebarLegendHeight() {
+        var availableHeight = getAvailableSidebarContentHeight();
+        var bounds = getSidebarLayoutBounds(availableHeight);
+        var desiredLegendHeight = availableHeight * sidebarLayoutState.legendRatio;
+
+        if (!isFinite(desiredLegendHeight) || desiredLegendHeight <= 0) {
+          desiredLegendHeight = Math.max(availableHeight / 3, bounds.minLegend);
+        }
+
+        return Math.max(
+          bounds.minLegend,
+          Math.min(bounds.maxLegend, desiredLegendHeight)
+        );
+      }
+
+      function setSidebarLegendHeight(nextLegendHeight) {
+        if (!isFinite(nextLegendHeight)) {
+          return getSidebarLegendHeight();
+        }
+
+        var availableHeight = getAvailableSidebarContentHeight();
+        var bounds = getSidebarLayoutBounds(availableHeight);
+        var resolvedLegendHeight = Math.max(
+          bounds.minLegend,
+          Math.min(bounds.maxLegend, nextLegendHeight)
+        );
+
+        sidebarLayoutState.legendRatio =
+          availableHeight > 0
+            ? resolvedLegendHeight / availableHeight
+            : sidebarLayoutState.legendRatio;
+
+        return resolvedLegendHeight;
+      }
+
+      function syncSidebarSectionHeights() {
+        var legendSelection = d3.select("#legend");
+        var sliderSelection = d3.select("#inputSliders");
+        if (legendSelection.empty() || sliderSelection.empty()) return;
+
+        var availableHeight = getAvailableSidebarContentHeight();
+        if (!(availableHeight > 0)) {
+          legendSelection.style("height", null).style("flex-basis", null);
+          sliderSelection.style("height", null).style("flex-basis", null);
+          return;
+        }
+
+        var legendHeight = setSidebarLegendHeight(getSidebarLegendHeight());
+        var sliderHeight = Math.max(availableHeight - legendHeight, 0);
+
+        legendSelection
+          .style("height", legendHeight + "px")
+          .style("flex-basis", legendHeight + "px");
+        sliderSelection
+          .style("height", sliderHeight + "px")
+          .style("flex-basis", sliderHeight + "px");
+      }
+
+      function initSidebarResizeHandle() {
+        var resizeBar = document.getElementById("sidebarResizeBar");
+        var resizeGrip = document.getElementById("sidebarResizeGrip");
+        if (!resizeBar || !resizeGrip || resizeGrip.__sidebarResizeBound) {
+          return;
+        }
+
+        function getClientY(event) {
+          if (event.touches && event.touches.length > 0) {
+            return event.touches[0].clientY;
+          }
+          if (event.changedTouches && event.changedTouches.length > 0) {
+            return event.changedTouches[0].clientY;
+          }
+          return event.clientY;
+        }
+
+        function stepSidebarLayout(step) {
+          setSidebarLegendHeight(getSidebarLegendHeight() + step);
+          syncSidebarSectionHeights();
+          refreshSidebarControlLayout(true);
+        }
+
+        function startDrag(startEvent) {
+          if (resizeGrip.__sidebarDragActive) {
+            return;
+          }
+
+          var startY = getClientY(startEvent);
+          if (!isFinite(startY)) {
+            return;
+          }
+
+          resizeGrip.__sidebarDragActive = true;
+          resizeGrip.__sidebarDragState = {
+            startY: startY,
+            startLegendHeight: getSidebarLegendHeight(),
+          };
+
+          document.body.classList.add("is-sidebar-resizing");
+
+          function handleMove(moveEvent) {
+            var dragState = resizeGrip.__sidebarDragState || null;
+            if (!dragState) return;
+            if (moveEvent.cancelable) {
+              moveEvent.preventDefault();
+            }
+
+            var currentY = getClientY(moveEvent);
+            if (!isFinite(currentY)) {
+              return;
+            }
+
+            setSidebarLegendHeight(
+              dragState.startLegendHeight + (currentY - dragState.startY)
+            );
+            syncSidebarSectionHeights();
+          }
+
+          function stopDrag() {
+            document.body.classList.remove("is-sidebar-resizing");
+            window.removeEventListener("mousemove", handleMove, true);
+            window.removeEventListener("mouseup", stopDrag, true);
+            window.removeEventListener("touchmove", handleMove, true);
+            window.removeEventListener("touchend", stopDrag, true);
+            window.removeEventListener("touchcancel", stopDrag, true);
+            window.removeEventListener("blur", stopDrag, true);
+
+            resizeGrip.__sidebarDragActive = false;
+            resizeGrip.__sidebarDragState = null;
+            refreshSidebarControlLayout(true);
+          }
+
+          window.addEventListener("mousemove", handleMove, true);
+          window.addEventListener("mouseup", stopDrag, true);
+          window.addEventListener("touchmove", handleMove, true);
+          window.addEventListener("touchend", stopDrag, true);
+          window.addEventListener("touchcancel", stopDrag, true);
+          window.addEventListener("blur", stopDrag, true);
+        }
+
+        function handleMouseStart(event) {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          event.stopPropagation();
+          startDrag(event);
+        }
+
+        function handleTouchStart(event) {
+          if (event.cancelable) {
+            event.preventDefault();
+          }
+          event.stopPropagation();
+          startDrag(event);
+        }
+
+        resizeGrip.addEventListener("mousedown", handleMouseStart);
+        resizeBar.addEventListener("mousedown", handleMouseStart);
+        resizeGrip.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
+        resizeBar.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
+        resizeGrip.addEventListener(
+          "wheel",
+          function (event) {
+            if (event.cancelable) {
+              event.preventDefault();
+            }
+            stepSidebarLayout(event.deltaY > 0 ? 18 : -18);
+          },
+          { passive: false }
+        );
+        resizeBar.addEventListener(
+          "wheel",
+          function (event) {
+            if (event.cancelable) {
+              event.preventDefault();
+            }
+            stepSidebarLayout(event.deltaY > 0 ? 18 : -18);
+          },
+          { passive: false }
+        );
+        resizeGrip.addEventListener("keydown", function (event) {
+          if (event.key === "ArrowUp" || event.keyCode === 38) {
+            event.preventDefault();
+            stepSidebarLayout(-20);
+          } else if (event.key === "ArrowDown" || event.keyCode === 40) {
+            event.preventDefault();
+            stepSidebarLayout(20);
+          }
+        });
+
+        resizeGrip.__sidebarResizeBound = true;
+        syncSidebarSectionHeights();
       }
 
       function getScatterChartBaseHeight() {
@@ -6266,6 +6537,8 @@
       }
 
       function refreshSidebarControlLayout(forceLegendRebuild) {
+        syncSidebarSectionHeights();
+
         if (forceLegendRebuild) {
           d3.select("#legend").selectAll("*").remove();
         }
@@ -8827,20 +9100,19 @@
 
         // get width and height for legend area
         var legendNode = d3.select("#legend").node();
-        var sidebarNode = d3.select("#sidebar-wrapper").node();
         var legendWidth = parseFloat(d3.select("#legend").style("width"));
-        var sidebarHeight = parseFloat(
-          d3.select("#sidebar-wrapper").style("height")
+        var legendHeight = getContainerContentHeight("#legend");
+        var sidebarBounds = getSidebarLayoutBounds(
+          getAvailableSidebarContentHeight()
         );
 
         if (!isFinite(legendWidth) || legendWidth <= 0) {
           legendWidth = legendNode ? legendNode.clientWidth : 220;
         }
-        if (!isFinite(sidebarHeight) || sidebarHeight <= 0) {
-          sidebarHeight = sidebarNode ? sidebarNode.clientHeight : 600;
+        if (!isFinite(legendHeight) || legendHeight <= 0) {
+          legendHeight = getSidebarLegendHeight();
         }
-
-        var legendHeight = Math.max(sidebarHeight / 3, 120);
+        legendHeight = Math.max(legendHeight, sidebarBounds.minLegend);
 
         // legend boxes are diminsions of the graph
         //console.log(Object.keys(graph.dimensions()));
@@ -9665,6 +9937,8 @@
           resetScatterSelectionAction();
         });
         updateScatterSelectionActionButtons();
+        initSidebarResizeHandle();
+        syncSidebarSectionHeights();
         initMainVerticalResizeHandle();
         syncMainVerticalResizeHandleState();
 
