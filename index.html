@@ -5990,7 +5990,21 @@
           return fallback;
         }
 
-        return Math.max(0.18, Math.min(0.68, numeric));
+        return Math.max(0.12, Math.min(0.68, numeric));
+      }
+
+      function getHeightDrivenScatterTargetWidth() {
+        var scatterBaseHeight = getScatterChartBaseHeight();
+        var minimumWidth = isScatterToggled ? 120 : 150;
+
+        if (!isFinite(scatterBaseHeight) || scatterBaseHeight <= 0) {
+          return minimumWidth;
+        }
+
+        var targetWidth = scatterBaseHeight - 10;
+        targetWidth += isScatterToggled ? -8 : 24;
+
+        return Math.max(targetWidth, minimumWidth);
       }
 
       function getDefaultChartHorizontalRatio() {
@@ -6009,6 +6023,20 @@
 
         if (isScatterToggled) {
           ratio = Math.max(ratio - 0.04, 0.2);
+        }
+
+        if (!isRightChartFullScreenToggled) {
+          var availableWidth = getAvailableChartHorizontalWidth();
+          var heightDrivenWidth = getHeightDrivenScatterTargetWidth();
+
+          if (
+            isFinite(availableWidth) &&
+            availableWidth > 0 &&
+            isFinite(heightDrivenWidth) &&
+            heightDrivenWidth > 0
+          ) {
+            ratio = Math.min(ratio, heightDrivenWidth / availableWidth);
+          }
         }
 
         return normalizeChartHorizontalRatio(ratio, 3 / 12);
@@ -6149,10 +6177,18 @@
 
       function getChartHorizontalMinimumScatterWidth(totalWidth) {
         var minimumScatterWidth = chartHorizontalLayoutState.minScatterWidth;
+        var heightDrivenWidth = getHeightDrivenScatterTargetWidth();
+        var minimumFloor = isScatterToggled ? 120 : 150;
 
         if (isScatterToggled) {
-          minimumScatterWidth = Math.max(minimumScatterWidth - 60, 180);
+          minimumScatterWidth = Math.max(minimumScatterWidth - 60, minimumFloor);
         }
+
+        if (isFinite(heightDrivenWidth) && heightDrivenWidth > 0) {
+          minimumScatterWidth = Math.min(minimumScatterWidth, heightDrivenWidth);
+        }
+
+        minimumScatterWidth = Math.max(minimumScatterWidth, minimumFloor);
 
         return isFinite(totalWidth) && totalWidth > 0
           ? Math.min(minimumScatterWidth, totalWidth)
@@ -6545,6 +6581,8 @@
       function getScatterChartLayoutMetrics() {
         var scatterBaseHeight = getScatterChartBaseHeight();
         var scatterContainerWidth = getEffectiveScatterContainerWidth();
+        var minimumViewportWidth = isScatterToggled ? 120 : 140;
+        var minimumViewportHeight = isScatterToggled ? 120 : 140;
         var hasMeasuredWidth =
           isFinite(scatterContainerWidth) && scatterContainerWidth >= 160;
 
@@ -6564,8 +6602,11 @@
           baseHeight: scatterBaseHeight,
           containerWidth: scatterContainerWidth,
           hasMeasuredWidth: hasMeasuredWidth,
-          viewportWidth: Math.max(scatterMatrixWidth, 180),
-          viewportHeight: Math.max(scatterBaseHeight - 30, 160),
+          viewportWidth: Math.max(scatterMatrixWidth, minimumViewportWidth),
+          viewportHeight: Math.max(
+            scatterBaseHeight - 30,
+            minimumViewportHeight
+          ),
         };
       }
 
