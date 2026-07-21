@@ -1948,7 +1948,9 @@
         }
       }
 
-      return Array.isArray(cleanedData) ? cleanedData : [];
+      return typeof cleanedData !== "undefined" && Array.isArray(cleanedData)
+        ? cleanedData
+        : [];
     }
 
     function getOrderedLegendDimensions(legendDimensions, setting) {
@@ -4361,7 +4363,7 @@
           }
         }
 
-        return Array.isArray(cleanedData)
+        return typeof cleanedData !== "undefined" && Array.isArray(cleanedData)
           ? ensureScatterDataIds(cleanedData.slice())
           : [];
       }

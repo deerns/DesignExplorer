@@ -1,3 +1,26 @@
+function ensureInitialGlobalDataState() {
+  if (typeof originalData === "undefined") originalData = "";
+  if (typeof cleanedData === "undefined") cleanedData = [];
+  if (typeof numericalData === "undefined") numericalData = [];
+  if (typeof inputData === "undefined") inputData = [];
+  if (typeof outputData === "undefined") outputData = [];
+  if (typeof slidersInfo === "undefined") slidersInfo = [];
+  if (typeof currentSliderValues === "undefined") currentSliderValues = {};
+  if (typeof allDataCollector === "undefined") allDataCollector = {};
+  if (typeof slidersMapping === "undefined") slidersMapping = {};
+  if (typeof ids === "undefined") ids = [];
+  if (typeof cleanedKeys4pc === "undefined") cleanedKeys4pc = {};
+  if (typeof googleFolderLink === "undefined") googleFolderLink = "";
+  if (typeof inputDataKeys === "undefined") inputDataKeys = [];
+  if (typeof outputDataKeys === "undefined") outputDataKeys = [];
+  if (typeof image1LinkKeys === "undefined") image1LinkKeys = [];
+  if (typeof image2LinkKeys === "undefined") image2LinkKeys = [];
+  if (typeof imageLinkKeys === "undefined") imageLinkKeys = [];
+  if (typeof imageKeyAliases === "undefined") imageKeyAliases = {};
+}
+
+ensureInitialGlobalDataState();
+
 function unloadPageContent() {
   /*
     	// This function removes current contents from the page
