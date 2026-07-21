@@ -6346,66 +6346,16 @@
           stepMainVerticalLayout(direction * 18);
         }
 
-        var hasJqueryUiResizeDrag =
+        if (
           typeof window !== "undefined" &&
           window.jQuery &&
           window.jQuery.fn &&
-          typeof window.jQuery.fn.draggable === "function";
-
-        if (hasJqueryUiResizeDrag) {
+          typeof window.jQuery.fn.draggable === "function"
+        ) {
           var $resizeBar = window.jQuery(resizeBar);
           if ($resizeBar.data("ui-draggable")) {
             $resizeBar.draggable("destroy");
           }
-
-          var jqueryDragState = null;
-
-          $resizeBar.draggable({
-            axis: "y",
-            handle: "#mainVerticalResizeGrip",
-            cancel: false,
-            helper: function () {
-              return window.jQuery("<div class='main-vertical-resize-helper'></div>");
-            },
-            appendTo: "body",
-            distance: 0,
-            scroll: false,
-            start: function (event) {
-              if (isResizeDisabled()) {
-                return false;
-              }
-
-              jqueryDragState = {
-                startY: event.pageY,
-                startTopHeight: getMainVerticalLayoutTopHeight(),
-              };
-              document.body.classList.add("is-main-vertical-resizing");
-            },
-            drag: function (event) {
-              if (
-                !jqueryDragState ||
-                !isFinite(jqueryDragState.startY) ||
-                !isFinite(jqueryDragState.startTopHeight) ||
-                !isFinite(event.pageY)
-              ) {
-                return false;
-              }
-
-              scheduleMainVerticalDragLayout(
-                jqueryDragState.startTopHeight +
-                  (event.pageY - jqueryDragState.startY)
-              );
-              return false;
-            },
-            stop: function () {
-              document.body.classList.remove("is-main-vertical-resizing");
-              jqueryDragState = null;
-
-              if (!applyPendingMainVerticalDragLayout(false)) {
-                applyMainVerticalSplitLayout({ immediate: true });
-              }
-            },
-          });
         }
 
         function startDrag(startEvent) {
@@ -6487,16 +6437,14 @@
           startDrag(event);
         }
 
-        if (!hasJqueryUiResizeDrag) {
-          resizeGrip.addEventListener("mousedown", handleMouseStart);
-          resizeBar.addEventListener("mousedown", handleMouseStart);
-          resizeGrip.addEventListener("touchstart", handleTouchStart, {
-            passive: false,
-          });
-          resizeBar.addEventListener("touchstart", handleTouchStart, {
-            passive: false,
-          });
-        }
+        resizeGrip.addEventListener("mousedown", handleMouseStart);
+        resizeBar.addEventListener("mousedown", handleMouseStart);
+        resizeGrip.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
+        resizeBar.addEventListener("touchstart", handleTouchStart, {
+          passive: false,
+        });
         resizeGrip.addEventListener(
           "wheel",
           function (event) {
