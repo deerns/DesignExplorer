@@ -9827,7 +9827,8 @@
           var enabled = d && d.enabled === true;
 
           group
-            .select("rect")
+            .select("rect.legend-box")
+            .attr("class", enabled ? "legend legend-box" : "legend legend-box disabled")
             .style("fill", "#ffffff")
             .style("stroke", enabled ? "#033899" : "#b8b8b8")
             .style("stroke-width", 1.5);
@@ -9837,6 +9838,70 @@
             .style("display", enabled ? null : "none")
             .style("fill", "#033899");
         });
+      }
+
+      function toggleLegendDimensionHidden(dimName) {
+        var name = dimName || "";
+        var fixedOff = name === "Rating" || String(name) === "Description";
+
+        if (!name || fixedOff) {
+          return;
+        }
+
+        _userSetting.dimHidden = Object.assign(
+          {},
+          (_userSetting && _userSetting.dimHidden) || {}
+        );
+
+        if (
+          isDimHiddenBySetting(
+            name,
+            _userSetting.dimHidden,
+            _userSetting.dimHiddenNormalized
+          )
+        ) {
+          clearDimHiddenEntry(name, _userSetting.dimHidden);
+        } else {
+          _userSetting.dimHidden[name] = true;
+        }
+
+        _userSetting.dimHiddenNormalized = buildDimHiddenNormalizedMap(
+          _userSetting.dimHidden
+        );
+        setDimHidden(_userSetting.dimHidden);
+
+        if (_userSetting && _userSetting.dimLabels) {
+          setDimLabels(_userSetting.dimLabels);
+        }
+      }
+
+      function bindLegendInteractions() {
+        d3.selectAll("#legend svg g")
+          .style("cursor", function (d) {
+            var name = d && d.name ? d.name : "";
+            var fixedOff =
+              name === "Rating" || String(name) === "Description";
+            return fixedOff ? "default" : "pointer";
+          })
+          .on("click", function (d) {
+            toggleLegendDimensionHidden(d && d.name ? d.name : "");
+          })
+          .on("keydown", function (d) {
+            var event = d3.event;
+            if (!event) return;
+
+            var isActivateKey =
+              event.key === "Enter" ||
+              event.key === " " ||
+              event.key === "Spacebar" ||
+              event.keyCode === 13 ||
+              event.keyCode === 32;
+
+            if (!isActivateKey) return;
+
+            event.preventDefault();
+            toggleLegendDimensionHidden(d && d.name ? d.name : "");
+          });
       }
 
       function drawLegend() {
@@ -9863,9 +9928,10 @@
         //console.log(Object.keys(graph.dimensions()));
         dimensions = getOrderedLegendDimensions(
           d3.keys(cleanedKeys4pc).map(function (d) {
+            var fixedOff = d === "Rating" || String(d) === "Description";
             return {
               name: d,
-              enabled: true,
+              enabled: !fixedOff && !isDimHiddenBySetting(d),
             };
           }),
           _userSetting
@@ -9888,15 +9954,40 @@
           .data(dimensions)
           .enter()
           .append("g")
+          .attr("tabindex", function (d) {
+            var name = d && d.name ? d.name : "";
+            var fixedOff =
+              name === "Rating" || String(name) === "Description";
+            return fixedOff ? null : 0;
+          })
+          .attr("role", function (d) {
+            var name = d && d.name ? d.name : "";
+            var fixedOff =
+              name === "Rating" || String(name) === "Description";
+            return fixedOff ? null : "button";
+          })
           .attr("transform", function (d, i) {
             return "translate(10," + (legendSquareSize + 3) * i + ")";
           });
 
         legend
           .append("rect")
+          .attr("class", "legend-hit-area")
+          .attr("x", -4)
+          .attr("y", -3)
+          .attr("width", Math.max(legendWidth - 16, legendSquareSize + 24))
+          .attr("height", legendSquareSize + 6)
+          .style("fill", "transparent");
+
+        legend
+          .append("rect")
+          .attr("class", function (d) {
+            return d && d.enabled
+              ? "legend legend-box"
+              : "legend legend-box disabled";
+          })
           .attr("width", legendSquareSize)
           .attr("height", legendSquareSize)
-          .attr("class", "legend")
           .style("fill", "#ffffff")
           .style("stroke", "#033899")
           .style("stroke-width", 1.5)
@@ -9925,6 +10016,7 @@
             return getDimLabel(d.name);
           });
 
+        bindLegendInteractions();
         updateLegendCheckboxVisuals();
       }
     </script>
@@ -10388,56 +10480,6 @@
           updateSlidersTickValues(newData);
           drawTable(newData);
         }
-
-        //events for legend click
-        d3.selectAll("#legend rect").on("click", function (d) {
-          var name = d && d.name ? d.name : "";
-          var fixedOff =
-            name === "Rating" || String(name) === "Description";
-
-          if (!name || fixedOff) {
-            return;
-          }
-
-          _userSetting.dimHidden = Object.assign(
-            {},
-            (_userSetting && _userSetting.dimHidden) || {}
-          );
-
-          if (
-            isDimHiddenBySetting(
-              name,
-              _userSetting.dimHidden,
-              _userSetting.dimHiddenNormalized
-            )
-          ) {
-            clearDimHiddenEntry(name, _userSetting.dimHidden);
-          } else {
-            _userSetting.dimHidden[name] = true;
-          }
-
-          _userSetting.dimHiddenNormalized = buildDimHiddenNormalizedMap(
-            _userSetting.dimHidden
-          );
-          setDimHidden(_userSetting.dimHidden);
-
-          // re-apply custom labels to sliders/scatter after legend toggles
-          if (_userSetting && _userSetting.dimLabels) {
-            setDimLabels(_userSetting.dimLabels);
-          }
-        });
-
-        //turn off rating rectangle
-        d3.selectAll("#legend rect").attr("class", function (d) {
-          var fixedOff = d.name == "Rating" || d.name == "Description";
-          if (fixedOff) {
-            d.enabled = false;
-          } else if (typeof d.enabled !== "boolean") {
-            d.enabled = true;
-          }
-          return d.enabled ? "legend" : "legend disabled";
-        });
-        updateLegendCheckboxVisuals();
 
         d3.select("#pcFullScreen-toggle").on("click", function () {
           isLeftChartFullScreenToggled = !isLeftChartFullScreenToggled;
