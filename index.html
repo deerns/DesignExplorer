@@ -10058,6 +10058,22 @@
         ) + "px";
       }
 
+      function getTargetMarkMetrics(value) {
+        var size = normalizeTargetMarkFontSize(
+          value,
+          defaultTargetMarkFontSize
+        );
+        var halfLineLength = Math.max(6, Math.round(size * (8 / 12)));
+        var strokeWidth = Math.max(2, Math.round(size * (4 / 12)));
+        return {
+          size: size,
+          fontSize: size,
+          halfLineLength: halfLineLength,
+          strokeWidth: strokeWidth,
+          textOffset: -(halfLineLength + 1),
+        };
+      }
+
       function syncSliderTagHighlightColorUI(value) {
         var normalized = normalizeSliderTagHighlightColor(
           value,
@@ -10127,10 +10143,8 @@
       }
 
       function applyTargetMarkFontSize(value, syncUi) {
-        var normalized = normalizeTargetMarkFontSize(
-          value,
-          defaultTargetMarkFontSize
-        );
+        var metrics = getTargetMarkMetrics(value);
+        var normalized = metrics.size;
         if (
           typeof document !== "undefined" &&
           document.documentElement &&
@@ -10145,10 +10159,18 @@
         if (syncUi !== false) {
           syncTargetMarkFontSizeUI(normalized);
         }
-        d3.selectAll("#graph svg g.mark text").style(
-          "font-size",
-          normalized + "px"
-        );
+        d3.selectAll("#graph svg g.mark").each(function () {
+          var mark = d3.select(this);
+          mark
+            .select("line")
+            .attr("x1", metrics.halfLineLength)
+            .attr("x2", -metrics.halfLineLength)
+            .style("stroke-width", metrics.strokeWidth + "px");
+          mark
+            .select("text")
+            .attr("x", metrics.textOffset)
+            .style("font-size", metrics.fontSize + "px");
+        });
         return normalized;
       }
 
@@ -15984,9 +16006,8 @@
 
         var markValue = dimMark.value;
         var markPrefix = "";
-        var markFontSize = normalizeTargetMarkFontSize(
+        var markMetrics = getTargetMarkMetrics(
           _userSetting && _userSetting.targetMarkFontSize,
-          defaultTargetMarkFontSize
         );
 
         if (dimMark.prefix !== undefined) {
@@ -16017,14 +16038,18 @@
             .append("g")
             .attr("class", "tick mark")
             .attr("transform", "translate(0," + yHeight + ")");
-          dimSelection.append("line").attr("x2", "-8").attr("x1", "8");
+          dimSelection
+            .append("line")
+            .attr("x2", -markMetrics.halfLineLength)
+            .attr("x1", markMetrics.halfLineLength)
+            .style("stroke-width", markMetrics.strokeWidth + "px");
           dimSelection
             .append("text")
-            .attr("x", "-9")
+            .attr("x", markMetrics.textOffset)
             .attr("y", "0")
             .attr("dy", ".32em")
             .attr("text-anchor", "end")
-            .style("font-size", markFontSize + "px")
+            .style("font-size", markMetrics.fontSize + "px")
             .text(markPrefix + ": " + markValue);
         }
       }
