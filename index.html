@@ -1298,11 +1298,17 @@
             : defaults.thumbnailSortBy,
         thumbnailSortAscending:
           source.thumbnailSortAscending !== undefined
-            ? !!source.thumbnailSortAscending
+            ? normalizeBooleanSetting(
+                source.thumbnailSortAscending,
+                defaults.thumbnailSortAscending
+              )
             : defaults.thumbnailSortAscending,
         hideScatterPlots:
           source.hideScatterPlots !== undefined
-            ? !!source.hideScatterPlots
+            ? normalizeBooleanSetting(
+                source.hideScatterPlots,
+                defaults.hideScatterPlots
+              )
             : defaults.hideScatterPlots,
         showInputOutputBars:
           source.showInputOutputBars !== undefined
@@ -1353,28 +1359,10 @@
     var imageKeyAliases = {};
 
     function resetDatasetScopedUserSettings() {
-      _userSetting = _userSetting || {};
-      _userSetting.studyInfo = {
-        name: "",
-        date: "",
-      };
-      _userSetting.dimScales = {};
-      _userSetting.dimTicks = {};
-      _userSetting.dimMark = {};
-      _userSetting.dimLabels = {};
-      _userSetting.dimLabelsNormalized = {};
-      _userSetting.dimHidden = {};
-      _userSetting.dimHiddenNormalized = {};
-      _userSetting.dimReversed = {};
-      _userSetting.dimReversedNormalized = {};
-      _userSetting.dimOrder = [];
-      _userSetting.sliderOrder = [];
-      _userSetting.dimSliderTitleSizes = {};
-      _userSetting.dimSliderTickSizes = {};
-      _userSetting.imageLabels = {};
-      _userSetting.thumbnailSortBy = "";
-      _userSetting.thumbnailSortAscending = true;
-      _userSetting.showInputOutputBars = false;
+      _userSetting =
+        typeof createDefaultUserSettingState === "function"
+          ? createDefaultUserSettingState()
+          : mergeUserSettingWithDefaults(null);
       imageLinkKeys = [];
       imageKeyAliases = {};
       var navbarStudyInfo = d3.select("#navbar-studyInfo");
