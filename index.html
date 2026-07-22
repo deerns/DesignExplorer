@@ -887,6 +887,52 @@
         z-index: 2;
       }
 
+      #graph #pcDimensionGroupBars {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 4;
+      }
+
+      #graph #pcDimensionGroupBars .pc-dimension-group-bar {
+        position: absolute;
+        box-sizing: border-box;
+        height: 18px;
+        border-top: 4px solid currentColor;
+      }
+
+      #graph #pcDimensionGroupBars .pc-dimension-group-bar::before,
+      #graph #pcDimensionGroupBars .pc-dimension-group-bar::after {
+        content: "";
+        position: absolute;
+        top: -4px;
+        width: 2px;
+        height: 18px;
+        background: currentColor;
+      }
+
+      #graph #pcDimensionGroupBars .pc-dimension-group-bar::before {
+        left: 0;
+      }
+
+      #graph #pcDimensionGroupBars .pc-dimension-group-bar::after {
+        right: 0;
+      }
+
+      #graph #pcDimensionGroupBars .pc-dimension-group-bar-label {
+        position: absolute;
+        top: -11px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 0 6px;
+        background: #ffffff;
+        color: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
       #graph > svg {
         z-index: 3;
       }
@@ -1176,6 +1222,7 @@
         thumbnailSortBy: "",
         thumbnailSortAscending: true,
         hideScatterPlots: false,
+        showInputOutputBars: false,
         mainVerticalRatio: 0.58,
         chartHorizontalRatio: null,
         labelSize: defaultLabelSizeValue,
@@ -1257,6 +1304,13 @@
           source.hideScatterPlots !== undefined
             ? !!source.hideScatterPlots
             : defaults.hideScatterPlots,
+        showInputOutputBars:
+          source.showInputOutputBars !== undefined
+            ? normalizeBooleanSetting(
+                source.showInputOutputBars,
+                defaults.showInputOutputBars
+              )
+            : defaults.showInputOutputBars,
         mainVerticalRatio:
           source.mainVerticalRatio !== undefined
             ? source.mainVerticalRatio
@@ -1320,6 +1374,7 @@
       _userSetting.imageLabels = {};
       _userSetting.thumbnailSortBy = "";
       _userSetting.thumbnailSortAscending = true;
+      _userSetting.showInputOutputBars = false;
       imageLinkKeys = [];
       imageKeyAliases = {};
       var navbarStudyInfo = d3.select("#navbar-studyInfo");
@@ -1600,6 +1655,12 @@
         Object.prototype.hasOwnProperty.call(source, "hideScatterPlots")
           ? source.hideScatterPlots
           : sanitized.hideScatterPlots,
+        false
+      );
+      sanitized.showInputOutputBars = normalizeBooleanSetting(
+        Object.prototype.hasOwnProperty.call(source, "showInputOutputBars")
+          ? source.showInputOutputBars
+          : sanitized.showInputOutputBars,
         false
       );
       sanitized.lineGradient = normalizeLineGradientSetting(
@@ -4541,6 +4602,16 @@
                 <div id="settingStudyInfo" class="panel-collapse collapse in">
                   <div class="panel-body">
                     <ul class="list-group">
+                      <li
+                        class="list-group-item form-inline"
+                        id="showInputOutputBarsRow"
+                      >
+                        <span class="setting-label">Input/Output Bars:</span>
+                        <input
+                          id="showInputOutputBarsInput"
+                          type="checkbox"
+                        />
+                      </li>
                       <li class="list-group-item form-inline">
                         <span class="setting-label">Study Name:</span>
                         <input
@@ -6421,6 +6492,26 @@
           }
         }
         return !!value;
+      }
+
+      function shouldShowInputOutputBars(settingOrValue) {
+        var value = settingOrValue;
+        if (
+          settingOrValue &&
+          typeof settingOrValue === "object" &&
+          !Array.isArray(settingOrValue)
+        ) {
+          value = settingOrValue.showInputOutputBars;
+        }
+        return normalizeBooleanSetting(value, false);
+      }
+
+      function syncInputOutputBarsSettingState(settingOrValue) {
+        var showInputOutputBars = shouldShowInputOutputBars(settingOrValue);
+        var inputOutputBarsInput = d3.select("#showInputOutputBarsInput");
+        if (!inputOutputBarsInput.empty()) {
+          inputOutputBarsInput.property("checked", showInputOutputBars);
+        }
       }
 
       function isScatterPlotsHidden(settingOrValue) {
@@ -10612,6 +10703,8 @@
         graph.on("resize.pinnedReference", drawPinnedReferenceLineInPc);
         graph.on("axesreorder.pinnedReference", drawPinnedReferenceLineInPc);
         graph.on("highlight.pinnedReference", drawPinnedReferenceLineInPc);
+        graph.on("resize.inputOutputBars", updatePcDimensionGroupBars);
+        graph.on("axesreorder.inputOutputBars", updatePcDimensionGroupBars);
         graph.on("resize.targetMarks", reapplyTargetMarksToGraph);
         graph.on("axesreorder.targetMarks", reapplyTargetMarksToGraph);
         graph.on("axesreorder.orderSync", function (orderedKeys) {
@@ -10648,38 +10741,310 @@
         drawPinnedReferenceLineInPc();
       }
 
-      // update pc chart labels and axis color based on input and outputs parameters
-      function updateLabels() {
-        // modify labels
-        var inputLabelColor = "black",
-          outputLabelColor = "steelblue",
-          inputLabels = d3.keys(inputData[0]),
-          outputLabels = d3.keys(outputData[0]),
-          colorset = []; //color set for lables
+      function getInputOutputDimensionGroups() {
+        var groups = {
+          inputLabels: [],
+          outputLabels: [],
+          inputLookup: {},
+          outputLookup: {},
+        };
 
-        d3.selectAll("text.label").style("fill", function (d) {
-          // change colors for inputs vs outputs
-          var dimName = (d || "").trim();
-          d3.select(this).text(getDimLabel(dimName));
-          if (inputLabels.indexOf(dimName) != -1) {
-            colorset.push(inputLabelColor);
-            return inputLabelColor; // it is an input
-          } else if (outputLabels.indexOf(dimName) != -1) {
-            colorset.push(outputLabelColor);
-            return outputLabelColor; //it's an output
-          } else {
-            // undefined
-            colorset.push("black");
-            return "black";
+        if (Array.isArray(inputData) && inputData.length > 0) {
+          groups.inputLabels = d3.keys(inputData[0]).map(function (key) {
+            return String(key).trim();
+          });
+          groups.inputLabels.forEach(function (key) {
+            groups.inputLookup[normalizeDimKey(key)] = key;
+          });
+        }
+
+        if (Array.isArray(outputData) && outputData.length > 0) {
+          groups.outputLabels = d3.keys(outputData[0]).map(function (key) {
+            return String(key).trim();
+          });
+          groups.outputLabels.forEach(function (key) {
+            groups.outputLookup[normalizeDimKey(key)] = key;
+          });
+        }
+
+        return groups;
+      }
+
+      function getPcDimensionGroupType(dimName, groups) {
+        var normalized = normalizeDimKey(dimName);
+        if (groups.inputLookup[normalized]) return "input";
+        if (groups.outputLookup[normalized]) return "output";
+        return null;
+      }
+
+      function ensurePcDimensionGroupBarsOverlay() {
+        var graphContainer = d3.select("#graph");
+        if (graphContainer.empty()) return null;
+
+        var overlay = graphContainer.select("#pcDimensionGroupBars");
+        if (overlay.empty()) {
+          overlay = graphContainer
+            .append("div")
+            .attr("id", "pcDimensionGroupBars")
+            .attr("aria-hidden", "true");
+        }
+
+        return overlay;
+      }
+
+      function getVisiblePcDimensionLayout(groups) {
+        var visibleDims = [];
+
+        d3.select("#graph")
+          .selectAll(".dimension")
+          .each(function (dimKey) {
+            var selection = d3.select(this);
+            var transform = selection.attr("transform") || "";
+            var match = transform.match(/translate\(([-\d.]+)/);
+            var x = match && match[1] !== undefined ? parseFloat(match[1]) : NaN;
+
+            if (!isFinite(x)) return;
+
+            visibleDims.push({
+              key: (dimKey || "").toString().trim(),
+              x: x,
+              type: getPcDimensionGroupType(dimKey, groups),
+              labelNode: selection.select("text.label").node(),
+            });
+          });
+
+        visibleDims.sort(function (a, b) {
+          return a.x - b.x;
+        });
+
+        return visibleDims;
+      }
+
+      function buildPcDimensionGroupSegments(visibleDims, innerWidth) {
+        if (!Array.isArray(visibleDims) || visibleDims.length === 0) return [];
+
+        var fallbackHalfSpan = 28;
+
+        visibleDims.forEach(function (item, index) {
+          var prev = index > 0 ? visibleDims[index - 1] : null;
+          var next = index < visibleDims.length - 1 ? visibleDims[index + 1] : null;
+          var prevGap = prev ? Math.max(item.x - prev.x, 12) / 2 : null;
+          var nextGap = next ? Math.max(next.x - item.x, 12) / 2 : null;
+
+          item.leftBoundary = item.x - (prevGap !== null ? prevGap : nextGap !== null ? nextGap : fallbackHalfSpan);
+          item.rightBoundary = item.x + (nextGap !== null ? nextGap : prevGap !== null ? prevGap : fallbackHalfSpan);
+
+          if (isFinite(innerWidth) && innerWidth > 0) {
+            item.leftBoundary = Math.max(0, item.leftBoundary);
+            item.rightBoundary = Math.min(innerWidth, item.rightBoundary);
           }
         });
 
-        //modify axes
+        var segments = [];
+        var segmentStart = null;
+
+        function pushSegment(startIndex, endIndex) {
+          if (startIndex === null || endIndex === null) return;
+          var startItem = visibleDims[startIndex];
+          var endItem = visibleDims[endIndex];
+          var left = startItem.leftBoundary;
+          var right = endItem.rightBoundary;
+
+          if (!isFinite(left) || !isFinite(right) || right <= left) return;
+
+          if (right - left < 48) {
+            var center = (left + right) / 2;
+            left = center - 24;
+            right = center + 24;
+          }
+
+          if (isFinite(innerWidth) && innerWidth > 0) {
+            left = Math.max(0, left);
+            right = Math.min(innerWidth, right);
+          }
+
+          if (right <= left) return;
+
+          segments.push({
+            type: startItem.type,
+            label: startItem.type === "input" ? "Inputs" : "Outputs",
+            left: left,
+            width: right - left,
+            startKey: startItem.key,
+            endKey: endItem.key,
+            labelNode: startItem.labelNode || endItem.labelNode || null,
+          });
+        }
+
+        visibleDims.forEach(function (item, index) {
+          if (!item.type) {
+            if (segmentStart !== null) {
+              pushSegment(segmentStart, index - 1);
+              segmentStart = null;
+            }
+            return;
+          }
+
+          if (segmentStart === null) {
+            segmentStart = index;
+            return;
+          }
+
+          if (visibleDims[segmentStart].type !== item.type) {
+            pushSegment(segmentStart, index - 1);
+            segmentStart = index;
+          }
+        });
+
+        if (segmentStart !== null) {
+          pushSegment(segmentStart, visibleDims.length - 1);
+        }
+
+        return segments;
+      }
+
+      function updatePcDimensionGroupBars() {
+        var overlay = ensurePcDimensionGroupBarsOverlay();
+        if (!overlay) return;
+
+        var graphContainer = d3.select("#graph");
+        var graphNode = graphContainer.node();
+        if (
+          !graphNode ||
+          graphNode.clientHeight <= 0 ||
+          !graph ||
+          typeof graph.dimensions !== "function" ||
+          !shouldShowInputOutputBars(_userSetting)
+        ) {
+          overlay.style("display", "none");
+          overlay.selectAll(".pc-dimension-group-bar").remove();
+          return;
+        }
+
+        var groups = getInputOutputDimensionGroups();
+        var visibleDims = getVisiblePcDimensionLayout(groups);
+        if (visibleDims.length === 0) {
+          overlay.style("display", "none");
+          overlay.selectAll(".pc-dimension-group-bar").remove();
+          return;
+        }
+
+        var margin =
+          graph && typeof graph.margin === "function"
+            ? graph.margin()
+            : { top: 0, left: 0, right: 0, bottom: 0 };
+        var totalWidth =
+          graph && typeof graph.width === "function"
+            ? graph.width()
+            : graphNode.clientWidth;
+        var innerWidth = Math.max(
+          0,
+          totalWidth - (margin.left || 0) - (margin.right || 0)
+        );
+        var overlayTop = Math.max(
+          6,
+          Math.min(18, Math.round((margin.top || 0) * 0.3))
+        );
+        var fallbackColors = {
+          input: "black",
+          output: "steelblue",
+        };
+        var segments = buildPcDimensionGroupSegments(visibleDims, innerWidth).map(
+          function (segment) {
+            var resolvedColor =
+              segment.labelNode && d3.select(segment.labelNode).style("fill");
+            return {
+              type: segment.type,
+              label: segment.label,
+              left: (margin.left || 0) + segment.left,
+              top: overlayTop,
+              width: segment.width,
+              color:
+                resolvedColor && resolvedColor !== "none"
+                  ? resolvedColor
+                  : fallbackColors[segment.type] || "black",
+              key: segment.type + ":" + segment.startKey + ":" + segment.endKey,
+            };
+          }
+        );
+
+        if (segments.length === 0) {
+          overlay.style("display", "none");
+          overlay.selectAll(".pc-dimension-group-bar").remove();
+          return;
+        }
+
+        overlay.style("display", "block");
+
+        var bars = overlay
+          .selectAll(".pc-dimension-group-bar")
+          .data(segments, function (d) {
+            return d.key;
+          });
+
+        bars.exit().remove();
+
+        var barsEnter = bars
+          .enter()
+          .append("div")
+          .attr("class", function (d) {
+            return "pc-dimension-group-bar pc-dimension-group-bar-" + d.type;
+          });
+
+        barsEnter.append("span").attr("class", "pc-dimension-group-bar-label");
+
+        bars = overlay.selectAll(".pc-dimension-group-bar");
+
+        bars
+          .style("left", function (d) {
+            return d.left + "px";
+          })
+          .style("top", function (d) {
+            return d.top + "px";
+          })
+          .style("width", function (d) {
+            return d.width + "px";
+          })
+          .style("color", function (d) {
+            return d.color;
+          });
+
+        bars.select(".pc-dimension-group-bar-label").text(function (d) {
+          return d.label;
+        });
+      }
+
+      // update pc chart labels and axis color based on input and outputs parameters
+      function updateLabels() {
+        var inputLabelColor = "black";
+        var outputLabelColor = "steelblue";
+        var groups = getInputOutputDimensionGroups();
+        var colorset = []; //color set for lables
+
+        d3.selectAll("text.label").style("fill", function (d) {
+          var dimName = (d || "").trim();
+          var type = getPcDimensionGroupType(dimName, groups);
+          d3.select(this).text(getDimLabel(dimName));
+
+          if (type === "input") {
+            colorset.push(inputLabelColor);
+            return inputLabelColor;
+          }
+          if (type === "output") {
+            colorset.push(outputLabelColor);
+            return outputLabelColor;
+          }
+
+          colorset.push("black");
+          return "black";
+        });
+
         d3.selectAll("path.domain").style("stroke", function (d, i) {
           return colorset[i];
         });
 
         setupPcLabelEvent();
+        updatePcDimensionGroupBars();
       }
 
       // click label to activate coloring
@@ -13047,6 +13412,10 @@
           _userSetting.hideScatterPlots,
           false
         );
+        _userSetting.showInputOutputBars = normalizeBooleanSetting(
+          _userSetting.showInputOutputBars,
+          false
+        );
         _userSetting.lineGradient = cloneLineGradientSetting(
           _userSetting.lineGradient
         );
@@ -13141,6 +13510,7 @@
             "",
           thumbnailSortAscending: getCurrentSortAscendingValue(),
           hideScatterPlots: isScatterPlotsHidden(_userSetting),
+          showInputOutputBars: shouldShowInputOutputBars(_userSetting),
           mainVerticalRatio: getCurrentLayoutRatioSnapshot().mainVerticalRatio,
           chartHorizontalRatio: chartHorizontalLayoutState.useAutoRatio
             ? null
@@ -13556,7 +13926,28 @@
           }
         }
 
+        function handleShowInputOutputBarsSettingChange() {
+          var nextShowInputOutputBars = !!this.checked;
+          newUserSetting.showInputOutputBars = nextShowInputOutputBars;
+          _userSetting = _userSetting || {};
+          _userSetting.showInputOutputBars = nextShowInputOutputBars;
+          syncInputOutputBarsSettingState(nextShowInputOutputBars);
+          updatePcDimensionGroupBars();
+        }
+
         //Add this study/project info
+        dimSettingListDiv
+          .select("#showInputOutputBarsInput")
+          .property("checked", !!newUserSetting.showInputOutputBars)
+          .on(
+            "input.showInputOutputBarsSetting",
+            handleShowInputOutputBarsSettingChange
+          )
+          .on(
+            "change.showInputOutputBarsSetting",
+            handleShowInputOutputBarsSettingChange
+          );
+        syncInputOutputBarsSettingState(newUserSetting.showInputOutputBars);
         dimSettingListDiv
           .select("#hideScatterPlotsInput")
           .property("checked", !!newUserSetting.hideScatterPlots)
@@ -14638,6 +15029,9 @@
           newUserSetting.hideScatterPlots = d3
             .select("#hideScatterPlotsInput")
             .property("checked");
+          newUserSetting.showInputOutputBars = d3
+            .select("#showInputOutputBarsInput")
+            .property("checked");
           var currentLayoutRatios = getCurrentLayoutRatioSnapshot();
           newUserSetting.mainVerticalRatio =
             currentLayoutRatios.mainVerticalRatio;
@@ -14794,6 +15188,9 @@
           newUserSetting.hideScatterPlots = d3
             .select("#hideScatterPlotsInput")
             .property("checked");
+          newUserSetting.showInputOutputBars = d3
+            .select("#showInputOutputBarsInput")
+            .property("checked");
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           // refresh radio labels immediately even before saving
@@ -14839,6 +15236,10 @@
         var userHideScatterPlots = normalizeBooleanSetting(
           userSetting.hideScatterPlots,
           _userSetting && _userSetting.hideScatterPlots
+        );
+        var userShowInputOutputBars = normalizeBooleanSetting(
+          userSetting.showInputOutputBars,
+          _userSetting && _userSetting.showInputOutputBars
         );
         var userLabelSize = userSetting.labelSize;
         var userLabelRotation = normalizeLabelRotation(
@@ -14886,6 +15287,7 @@
         _userSetting.thumbnailSortBy = userThumbnailSortBy;
         _userSetting.thumbnailSortAscending = userThumbnailSortAscending;
         _userSetting.hideScatterPlots = userHideScatterPlots;
+        _userSetting.showInputOutputBars = userShowInputOutputBars;
         if (userSliderOrder.length === 0) {
           userSliderOrder = deriveSliderOrderFromDimOrder(
             userDimOrder,
@@ -14991,6 +15393,8 @@
         }
 
         applyScatterPlotVisibilitySetting(userHideScatterPlots);
+        syncInputOutputBarsSettingState(userShowInputOutputBars);
+        updatePcDimensionGroupBars();
         setThumbnailSortState(
           userThumbnailSortBy ||
             _userSetting.thumbnailSortBy ||
@@ -15614,6 +16018,10 @@
           newUserSetting.hideScatterPlots,
           globalUserSetting.hideScatterPlots
         );
+        globalUserSetting.showInputOutputBars = normalizeBooleanSetting(
+          newUserSetting.showInputOutputBars,
+          globalUserSetting.showInputOutputBars
+        );
         globalUserSetting.mainVerticalRatio =
           currentLayoutRatios.mainVerticalRatio;
         globalUserSetting.chartHorizontalRatio =
@@ -15706,6 +16114,7 @@
             thumbnailSortBy: "",
             thumbnailSortAscending: true,
             hideScatterPlots: false,
+            showInputOutputBars: false,
             mainVerticalRatio: 0.58,
             chartHorizontalRatio: null,
             labelSize: defaultLabelSizeValue,
@@ -15790,6 +16199,7 @@
             hasOwnKey(d, "hideScatterPlots") ||
             hasOwnKey(d, "scatterHidden") ||
             hasOwnKey(d, "scatterplotsHidden");
+          var hasShowInputOutputBars = hasOwnKey(d, "showInputOutputBars");
           var hasLabelRotation = hasOwnKey(d, "labelRotation");
           var hasLineGradient =
             hasOwnKey(d, "lineGradient") ||
@@ -15948,6 +16358,9 @@
           mergedSetting.hideScatterPlots = hasHideScatterPlots
             ? normalizeBooleanSetting(loadedHideScatterPlots, false)
             : normalizeBooleanSetting(defaultSetting.hideScatterPlots, false);
+          mergedSetting.showInputOutputBars = hasShowInputOutputBars
+            ? normalizeBooleanSetting(d.showInputOutputBars, false)
+            : normalizeBooleanSetting(defaultSetting.showInputOutputBars, false);
           mergedSetting.lineGradient = hasLineGradient
             ? normalizeLineGradientSetting(rawLoadedLineGradient)
             : cloneLineGradientSetting(defaultSetting.lineGradient);
