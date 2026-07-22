@@ -1869,6 +1869,25 @@
       return normalized;
     }
 
+    function syncScatterSelectedVariablesToSetting(selectedVariables) {
+      var normalized = syncScatterSelectedVariablesPendingState(
+        selectedVariables
+      );
+
+      _userSetting = _userSetting || {};
+      _userSetting.scatterSelectedVariables = normalized.slice();
+
+      if (
+        typeof window !== "undefined" &&
+        window.__activeSettingsDraft &&
+        typeof window.__activeSettingsDraft === "object"
+      ) {
+        window.__activeSettingsDraft.scatterSelectedVariables = normalized.slice();
+      }
+
+      return normalized;
+    }
+
     function getCurrentScatterSelectedVariables(fallbackSetting) {
       var selectedVariables = [];
 
@@ -1896,6 +1915,11 @@
         selectedVariables,
         buildNormalizedDimLookup(getCurrentDatasetDimKeys())
       );
+    }
+
+    if (typeof window !== "undefined") {
+      window.syncScatterSelectedVariablesToSetting =
+        syncScatterSelectedVariablesToSetting;
     }
 
     function sanitizeSettingForCurrentData(setting) {
@@ -16878,6 +16902,40 @@
         return newScale;
       }
 
+      function getPersistedSettingCacheKey(settingPath) {
+        var path =
+          settingPath !== undefined && settingPath !== null
+            ? String(settingPath).trim()
+            : "";
+        return path.length > 0
+          ? "designExplorer:settingsCache:" + path
+          : "";
+      }
+
+      function writePersistedSettingCache(settingPath, settingObj) {
+        if (
+          typeof window === "undefined" ||
+          !window.localStorage ||
+          typeof window.localStorage.setItem !== "function"
+        ) {
+          return false;
+        }
+
+        var key = getPersistedSettingCacheKey(settingPath);
+        if (!key) return false;
+
+        try {
+          window.localStorage.setItem(
+            key,
+            JSON.stringify(settingObj || {})
+          );
+          return true;
+        } catch (err) {
+          console.warn("Could not cache exported settings", err);
+          return false;
+        }
+      }
+
       function saveSetting(globalUserSetting, newUserSetting) {
         var currentLayoutRatios = getCurrentLayoutRatioSnapshot();
         var currentLabelRotation = getCurrentLabelRotation(graph);
@@ -16985,6 +17043,10 @@
           defaultSliderTagHighlightColor
         );
         delete exportJson.sliderTagHighlightColor;
+        writePersistedSettingCache(
+          typeof window !== "undefined" ? window.__activeSettingFilePath : "",
+          exportJson
+        );
         var jsonString = JSON.stringify(exportJson, null, 2);
         var jsonBlob = new Blob([jsonString], {
           type: "application/json;charset=utf-8",
@@ -17008,6 +17070,43 @@
         var jsonFileLink = "";
         var isExplicitPath = settingFilePath !== undefined;
         var completed = false;
+
+        function getPersistedSettingCacheKey(settingPath) {
+          var path =
+            settingPath !== undefined && settingPath !== null
+              ? String(settingPath).trim()
+              : "";
+          return path.length > 0
+            ? "designExplorer:settingsCache:" + path
+            : "";
+        }
+
+        function readPersistedSettingCache(settingPath) {
+          if (
+            typeof window === "undefined" ||
+            !window.localStorage ||
+            typeof window.localStorage.getItem !== "function"
+          ) {
+            return null;
+          }
+
+          var key = getPersistedSettingCacheKey(settingPath);
+          if (!key) return null;
+
+          try {
+            var raw = window.localStorage.getItem(key);
+            if (!raw) return null;
+            var parsed = JSON.parse(raw);
+            return parsed &&
+              typeof parsed === "object" &&
+              !Array.isArray(parsed)
+              ? parsed
+              : null;
+          } catch (err) {
+            console.warn("Could not read cached settings", err);
+            return null;
+          }
+        }
 
         function finish() {
           if (completed) return;
@@ -17090,7 +17189,19 @@
           return;
         }
 
+        if (typeof window !== "undefined") {
+          window.__activeSettingFilePath = jsonFileLink;
+        }
+
         d3.json(jsonFileLink, function (error, d) {
+          var cachedSetting = readPersistedSettingCache(jsonFileLink);
+          if ((error || !d) && cachedSetting) {
+            error = null;
+            d = cachedSetting;
+          } else if (cachedSetting) {
+            d = Object.assign({}, d || {}, cachedSetting);
+          }
+
           if (error || !d) {
             console.warn(
               "Unable to load settings.json from",
