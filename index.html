@@ -1534,6 +1534,8 @@
         labelSize:
           source.labelSize !== undefined && source.labelSize !== null
             ? source.labelSize
+            : source.labelSizeBase !== undefined && source.labelSizeBase !== null
+            ? source.labelSizeBase
             : defaults.labelSize,
         labelSizeBase:
           source.labelSizeBase !== undefined && source.labelSizeBase !== null
@@ -2024,6 +2026,10 @@
         source.labelSize !== null &&
         String(source.labelSize).trim().length > 0
           ? source.labelSize
+          : source.labelSizeBase !== undefined &&
+            source.labelSizeBase !== null &&
+            String(source.labelSizeBase).trim().length > 0
+          ? source.labelSizeBase
           : sanitized.labelSize;
       sanitized.labelSizeBase =
         source.labelSizeBase !== undefined &&
@@ -14176,10 +14182,20 @@
             _userSetting.labelSizeBase || _userSetting.labelSize
           );
           if (saved !== null) return saved;
-          // fallback to current computed font-size on a label (assumes percent set)
+          // fallback to current computed font-size on a label
           var labelEl = d3.select(".label");
           if (!labelEl.empty()) {
             var computed = labelEl.style("font-size") || "";
+            if (/px$/i.test(computed)) {
+              var computedPx = parseFloat(computed);
+              var basePx =
+                typeof getDefaultSliderLabelPixelBase === "function"
+                  ? getDefaultSliderLabelPixelBase()
+                  : 12;
+              if (!isNaN(computedPx) && basePx > 0) {
+                return Math.round((computedPx / basePx) * 10000) / 100;
+              }
+            }
             var num = normalizeLabelSizeToNumber(computed);
             if (num !== null) return num;
           }
@@ -16162,7 +16178,12 @@
           (_userSetting && _userSetting.targetMarkFontSize) ||
             defaultTargetMarkFontSize
         );
-        var userLabelSize = userSetting.labelSize;
+        var userLabelSize =
+          userSetting.labelSize !== undefined &&
+          userSetting.labelSize !== null &&
+          String(userSetting.labelSize).trim().length > 0
+            ? userSetting.labelSize
+            : userSetting.labelSizeBase;
         var userLabelRotation = normalizeLabelRotation(
           userSetting.labelRotation,
           getCurrentLabelRotation(chart)
@@ -16902,17 +16923,20 @@
         return newScale;
       }
 
-      function getPersistedSettingCacheKey(settingPath) {
+      function getPersistedScatterSelectionCacheKey(settingPath) {
         var path =
           settingPath !== undefined && settingPath !== null
             ? String(settingPath).trim()
             : "";
         return path.length > 0
-          ? "designExplorer:settingsCache:" + path
+          ? "designExplorer:scatterSelectionCache:" + path
           : "";
       }
 
-      function writePersistedSettingCache(settingPath, settingObj) {
+      function writePersistedScatterSelectionCache(
+        settingPath,
+        selectedVariables
+      ) {
         if (
           typeof window === "undefined" ||
           !window.localStorage ||
@@ -16921,17 +16945,22 @@
           return false;
         }
 
-        var key = getPersistedSettingCacheKey(settingPath);
+        var key = getPersistedScatterSelectionCacheKey(settingPath);
         if (!key) return false;
 
         try {
           window.localStorage.setItem(
             key,
-            JSON.stringify(settingObj || {})
+            JSON.stringify({
+              scatterSelectedVariables: normalizeScatterSelectedVariables(
+                selectedVariables,
+                buildNormalizedDimLookup(getCurrentDatasetDimKeys())
+              ),
+            })
           );
           return true;
         } catch (err) {
-          console.warn("Could not cache exported settings", err);
+          console.warn("Could not cache exported scatter selection", err);
           return false;
         }
       }
@@ -17043,9 +17072,9 @@
           defaultSliderTagHighlightColor
         );
         delete exportJson.sliderTagHighlightColor;
-        writePersistedSettingCache(
+        writePersistedScatterSelectionCache(
           typeof window !== "undefined" ? window.__activeSettingFilePath : "",
-          exportJson
+          exportJson.scatterSelectedVariables
         );
         var jsonString = JSON.stringify(exportJson, null, 2);
         var jsonBlob = new Blob([jsonString], {
@@ -17071,17 +17100,7 @@
         var isExplicitPath = settingFilePath !== undefined;
         var completed = false;
 
-        function getPersistedSettingCacheKey(settingPath) {
-          var path =
-            settingPath !== undefined && settingPath !== null
-              ? String(settingPath).trim()
-              : "";
-          return path.length > 0
-            ? "designExplorer:settingsCache:" + path
-            : "";
-        }
-
-        function readPersistedSettingCache(settingPath) {
+        function readPersistedScatterSelectionCache(settingPath) {
           if (
             typeof window === "undefined" ||
             !window.localStorage ||
@@ -17090,7 +17109,7 @@
             return null;
           }
 
-          var key = getPersistedSettingCacheKey(settingPath);
+          var key = getPersistedScatterSelectionCacheKey(settingPath);
           if (!key) return null;
 
           try {
@@ -17194,13 +17213,8 @@
         }
 
         d3.json(jsonFileLink, function (error, d) {
-          var cachedSetting = readPersistedSettingCache(jsonFileLink);
-          if ((error || !d) && cachedSetting) {
-            error = null;
-            d = cachedSetting;
-          } else if (cachedSetting) {
-            d = Object.assign({}, d || {}, cachedSetting);
-          }
+          var cachedScatterSetting =
+            readPersistedScatterSelectionCache(jsonFileLink);
 
           if (error || !d) {
             console.warn(
@@ -17280,7 +17294,22 @@
             hasOwnKey(d, "lineGradientEnabled") ||
             hasOwnKey(d, "lineGradientStart") ||
             hasOwnKey(d, "lineGradientEnd");
-          var hasLabelSize = hasOwnKey(d, "labelSize");
+          var hasLabelSize =
+            hasOwnKey(d, "labelSize") || hasOwnKey(d, "labelSizeBase");
+          var loadedLabelSize = hasOwnKey(d, "labelSize")
+            ? d.labelSize
+            : d.labelSizeBase;
+          if (
+            !hasScatterSelectedVariables &&
+            cachedScatterSetting &&
+            Array.isArray(cachedScatterSetting.scatterSelectedVariables)
+          ) {
+            d = Object.assign({}, d || {}, {
+              scatterSelectedVariables:
+                cachedScatterSetting.scatterSelectedVariables.slice(),
+            });
+            hasScatterSelectedVariables = true;
+          }
 
           var loadedStudyInfo = asPlainObject(d.studyInfo);
           if (Object.keys(loadedStudyInfo).length === 0) {
@@ -17513,12 +17542,12 @@
             ? normalizeLineGradientSetting(rawLoadedLineGradient)
             : cloneLineGradientSetting(defaultSetting.lineGradient);
           mergedSetting.labelSize =
-            hasLabelSize && d.labelSize !== null
-              ? d.labelSize
+            hasLabelSize && loadedLabelSize !== null
+              ? loadedLabelSize
               : defaultSetting.labelSize;
           mergedSetting.labelSizeBase =
-            hasLabelSize && d.labelSize !== null
-              ? d.labelSize
+            hasLabelSize && loadedLabelSize !== null
+              ? loadedLabelSize
               : defaultSetting.labelSizeBase;
           mergedSetting.labelRotation = hasLabelRotation
             ? normalizeLabelRotation(d.labelRotation, defaultSetting.labelRotation)
