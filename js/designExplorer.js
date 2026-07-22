@@ -256,8 +256,11 @@ function overwriteInitialGlobalValues() {
           dimTicks: {},
           dimMark: {},
           dimLabels: {},
+          dimLabelsNormalized: {},
           dimHidden: {},
+          dimHiddenNormalized: {},
           dimReversed: {},
+          dimReversedNormalized: {},
           dimOrder: [],
           sliderOrder: [],
           dimSliderTitleSizes: {},
@@ -266,6 +269,7 @@ function overwriteInitialGlobalValues() {
           thumbnailSortBy: "",
           thumbnailSortAscending: true,
           hideScatterPlots: false,
+          showInputOutputBars: false,
           mainVerticalRatio: 0.58,
           chartHorizontalRatio: null,
           labelSize:
@@ -276,6 +280,22 @@ function overwriteInitialGlobalValues() {
             typeof defaultLabelSizeValue !== "undefined"
               ? defaultLabelSizeValue
               : "90%",
+          labelRotation:
+            typeof defaultLabelRotationValue !== "undefined"
+              ? defaultLabelRotationValue
+              : 0,
+          sliderTagHighlightColor:
+            typeof defaultSliderTagHighlightColor !== "undefined"
+              ? defaultSliderTagHighlightColor
+              : "#000000",
+          sliderTagFontSize:
+            typeof defaultSliderTagFontSize !== "undefined"
+              ? defaultSliderTagFontSize
+              : 12,
+          targetMarkFontSize:
+            typeof defaultTargetMarkFontSize !== "undefined"
+              ? defaultTargetMarkFontSize
+              : 12,
           lineGradient: {
             enabled: false,
             start:
