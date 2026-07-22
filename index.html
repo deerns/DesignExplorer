@@ -1406,6 +1406,38 @@
       return Math.max(8, Math.min(32, Math.round(parsed)));
     }
 
+    function normalizeExplicitSliderTickSizeOverride(value) {
+      var parsed = parseSliderTickSizeValueEarly(value);
+      if (parsed === null) {
+        return null;
+      }
+      return Math.max(8, Math.min(32, Math.round(parsed)));
+    }
+
+    function stripMatchingDimSliderTickSizeOverrides(settingMap, baseValue) {
+      var source =
+        settingMap && typeof settingMap === "object" && !Array.isArray(settingMap)
+          ? settingMap
+          : {};
+      var normalizedBase = normalizeExplicitSliderTickSizeOverride(baseValue);
+      var cleaned = {};
+
+      Object.keys(source).forEach(function (key) {
+        var normalizedValue = normalizeExplicitSliderTickSizeOverride(
+          source[key]
+        );
+        if (normalizedValue === null) {
+          return;
+        }
+        if (normalizedBase !== null && normalizedValue === normalizedBase) {
+          return;
+        }
+        cleaned[key] = source[key];
+      });
+
+      return cleaned;
+    }
+
     function mergeUserSettingWithDefaults(setting) {
       var source =
         setting && typeof setting === "object" && !Array.isArray(setting)
@@ -1878,6 +1910,10 @@
             : sanitized.sliderTickSize,
           defaultSliderTickSize
         ) + "px";
+      sanitized.dimSliderTickSizes = stripMatchingDimSliderTickSizeOverrides(
+        sanitized.dimSliderTickSizes,
+        sanitized.sliderTickSize
+      );
       var fallbackLabelRotation = getCurrentLabelRotation(graph);
       sanitized.labelRotation = normalizeLabelRotation(
         Object.prototype.hasOwnProperty.call(source, "labelRotation")
@@ -13941,9 +13977,10 @@
             {},
             _userSetting.dimSliderTitleSizes || {}
           ),
-          dimSliderTickSizes: Object.assign(
-            {},
-            _userSetting.dimSliderTickSizes || {}
+          dimSliderTickSizes: stripMatchingDimSliderTickSizeOverrides(
+            _userSetting.dimSliderTickSizes || {},
+            (_userSetting && _userSetting.sliderTickSize) ||
+              defaultSliderTickSize
           ),
           imageLabels: effectiveImageLabels,
           thumbnailSortBy:
@@ -14074,10 +14111,21 @@
         }
 
         function setGlobalSliderTickSizeFromAny(value, applyPreview) {
+          var previousGlobalSize = currentSliderTickSizePx(newUserSetting);
           var numeric = normalizeGlobalSliderTickSize(
             value,
             newUserSetting.sliderTickSize
           );
+          newUserSetting.dimSliderTickSizes =
+            stripMatchingDimSliderTickSizeOverrides(
+              newUserSetting.dimSliderTickSizes || {},
+              previousGlobalSize
+            );
+          _userSetting.dimSliderTickSizes =
+            stripMatchingDimSliderTickSizeOverrides(
+              (_userSetting && _userSetting.dimSliderTickSizes) || {},
+              previousGlobalSize
+            );
           syncGlobalSliderTickSizeUI(numeric);
           syncAllDimSliderTickSizeControls();
           if (applyPreview) {
@@ -14254,11 +14302,18 @@
           if (numeric === null) return;
 
           numeric = Math.max(8, Math.min(32, numeric));
+          var globalTickSize = currentSliderTickSizePx(newUserSetting);
           newUserSetting.dimSliderTickSizes =
             newUserSetting.dimSliderTickSizes || {};
-          newUserSetting.dimSliderTickSizes[dimName] = numeric + "px";
           _userSetting.dimSliderTickSizes = _userSetting.dimSliderTickSizes || {};
-          _userSetting.dimSliderTickSizes[dimName] = numeric + "px";
+
+          if (numeric === globalTickSize) {
+            clearDimSettingEntry(dimName, newUserSetting.dimSliderTickSizes);
+            clearDimSettingEntry(dimName, _userSetting.dimSliderTickSizes);
+          } else {
+            newUserSetting.dimSliderTickSizes[dimName] = numeric + "px";
+            _userSetting.dimSliderTickSizes[dimName] = numeric + "px";
+          }
 
           syncDimSliderTickSizeControl(dimName);
           if (applyPreview) {
@@ -15995,9 +16050,9 @@
           {},
           userDimSliderTitleSizes
         );
-        _userSetting.dimSliderTickSizes = Object.assign(
-          {},
-          userDimSliderTickSizes
+        _userSetting.dimSliderTickSizes = stripMatchingDimSliderTickSizeOverrides(
+          userDimSliderTickSizes,
+          userSliderTickSize
         );
         _userSetting.sliderTickSize = formatGlobalSliderTickSize(
           userSliderTickSize
@@ -16707,9 +16762,9 @@
           {},
           newUserSetting.dimSliderTitleSizes || {}
         );
-        globalUserSetting.dimSliderTickSizes = Object.assign(
-          {},
-          newUserSetting.dimSliderTickSizes || {}
+        globalUserSetting.dimSliderTickSizes = stripMatchingDimSliderTickSizeOverrides(
+          newUserSetting.dimSliderTickSizes || {},
+          newUserSetting.sliderTickSize
         );
         globalUserSetting.sliderTickSize = formatGlobalSliderTickSize(
           newUserSetting.sliderTickSize
