@@ -423,21 +423,26 @@
       #lineGradientToggleRow .line-gradient-toggle {
         margin: 0;
       }
-      #lineGradientControlsRow {
+      :root {
+        --slider-tag-highlight-color: #FFA300;
+      }
+      #lineGradientControlsRow,
+      #sliderTagHighlightColorRow {
         gap: 12px;
         align-items: flex-start;
       }
-      #lineGradientControlsRow .setting-label {
+      #lineGradientControlsRow .setting-label,
+      #sliderTagHighlightColorRow .setting-label {
         padding-top: 6px;
       }
-      #lineGradientControlsRow .line-gradient-stack {
+      .line-gradient-settings-row .line-gradient-stack {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
         row-gap: 8px;
         flex: 1 1 320px;
         min-width: 0;
       }
-      #lineGradientControlsRow .line-gradient-control {
+      .line-gradient-settings-row .line-gradient-control {
         display: grid;
         grid-template-columns: 40px minmax(0, 170px) 30px;
         align-items: center;
@@ -445,18 +450,18 @@
         width: 100%;
         position: relative;
       }
-      #lineGradientControlsRow .line-gradient-control label {
+      .line-gradient-settings-row .line-gradient-control label {
         margin: 0;
         font-weight: 600;
         text-align: left;
       }
-      #lineGradientControlsRow .line-gradient-input {
+      .line-gradient-settings-row .line-gradient-input {
         width: 100%;
         min-width: 0;
         font-family: Consolas, "Courier New", monospace;
         text-transform: uppercase;
       }
-      #lineGradientControlsRow .line-gradient-swatch {
+      .line-gradient-settings-row .line-gradient-swatch {
         width: 30px;
         height: 30px;
         border-radius: 4px;
@@ -466,9 +471,19 @@
         cursor: pointer;
         background: none;
       }
-      #lineGradientControlsRow .line-gradient-swatch:focus {
+      .line-gradient-settings-row .line-gradient-swatch:focus {
         outline: 2px solid rgba(3, 56, 153, 0.35);
         outline-offset: 2px;
+      }
+      #sliderTagHighlightColorRow .native-color-picker-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
       }
       #lineGradientControlsRow .line-gradient-picker-popover {
         display: none;
@@ -537,6 +552,12 @@
         height: 30px;
         border-radius: 6px;
         border: 1px solid #cccccc;
+      }
+      #inputSliders .irs-from,
+      #inputSliders .irs-to,
+      #inputSliders .irs-single {
+        background: var(--slider-tag-highlight-color);
+        color: #ffffff;
       }
 
       /* match settings panel primary color to project blue */
@@ -1091,6 +1112,7 @@
     };
 
     var defaultLineGradientColors = ["#102F86", "#2FADDD"];
+    var defaultSliderTagHighlightColor = "#FFA300";
     var defaultLabelSizePercent = 90;
     var defaultLabelSizeValue = defaultLabelSizePercent + "%";
     var defaultLabelRotationValue = 0;
@@ -1228,6 +1250,7 @@
         labelSize: defaultLabelSizeValue,
         labelSizeBase: defaultLabelSizeValue,
         labelRotation: defaultLabelRotationValue,
+        sliderTagHighlightColor: defaultSliderTagHighlightColor,
         lineGradient: {
           enabled: false,
           start: defaultLineGradientColors[0],
@@ -1338,6 +1361,10 @@
         labelRotation: normalizeLabelRotation(
           source.labelRotation,
           defaults.labelRotation
+        ),
+        sliderTagHighlightColor: normalizeSliderTagHighlightColor(
+          source.sliderTagHighlightColor,
+          defaults.sliderTagHighlightColor
         ),
         lineGradient: Object.assign(
           {},
@@ -1650,6 +1677,12 @@
           ? source.showInputOutputBars
           : sanitized.showInputOutputBars,
         false
+      );
+      sanitized.sliderTagHighlightColor = normalizeSliderTagHighlightColor(
+        Object.prototype.hasOwnProperty.call(source, "sliderTagHighlightColor")
+          ? source.sliderTagHighlightColor
+          : sanitized.sliderTagHighlightColor,
+        defaultSliderTagHighlightColor
       );
       sanitized.lineGradient = normalizeLineGradientSetting(
         source.lineGradient || sanitized.lineGradient
@@ -4681,7 +4714,7 @@
                         <span>Enable custom line colors</span>
                       </li>
                       <li
-                        class="list-group-item form-inline"
+                        class="list-group-item form-inline line-gradient-settings-row"
                         id="lineGradientControlsRow"
                         style="display: none"
                       >
@@ -4798,6 +4831,40 @@
                             </div>
                           </div>
                           <div id="lineGradientPreview"></div>
+                        </div>
+                      </li>
+                      <li
+                        class="list-group-item form-inline line-gradient-settings-row"
+                        id="sliderTagHighlightColorRow"
+                      >
+                        <span class="setting-label">Slider Tag Highlight:</span>
+                        <div class="line-gradient-stack">
+                          <div class="line-gradient-control">
+                            <label for="sliderTagHighlightColor">Color</label>
+                            <input
+                              id="sliderTagHighlightColor"
+                              class="form-control input-sm line-gradient-input"
+                              type="text"
+                              maxlength="7"
+                              spellcheck="false"
+                              autocomplete="off"
+                              placeholder="#FFA300"
+                            />
+                            <button
+                              id="sliderTagHighlightColorSwatch"
+                              class="line-gradient-swatch"
+                              type="button"
+                              aria-label="Choose slider tag highlight color"
+                            ></button>
+                            <input
+                              id="sliderTagHighlightColorPicker"
+                              class="native-color-picker-input"
+                              type="color"
+                              value="#FFA300"
+                              tabindex="-1"
+                              aria-hidden="true"
+                            />
+                          </div>
                         </div>
                       </li>
                       <li class="list-group-item form-inline double-input-row password-row">
@@ -9887,6 +9954,59 @@
         return normalizeHexColor(raw, lastValidColor);
       }
 
+      function normalizeSliderTagHighlightColor(value, fallback) {
+        return normalizeHexColor(
+          value,
+          normalizeHexColor(fallback, defaultSliderTagHighlightColor)
+        );
+      }
+
+      function syncSliderTagHighlightColorUI(value) {
+        var normalized = normalizeSliderTagHighlightColor(
+          value,
+          defaultSliderTagHighlightColor
+        );
+        var activeElement =
+          typeof document !== "undefined" ? document.activeElement : null;
+        var textInput = d3.select("#sliderTagHighlightColor");
+        var swatch = d3.select("#sliderTagHighlightColorSwatch");
+        var nativeInput = d3.select("#sliderTagHighlightColorPicker");
+
+        if (!textInput.empty() && textInput.node() !== activeElement) {
+          textInput.property("value", normalized);
+        }
+        if (!nativeInput.empty() && nativeInput.node() !== activeElement) {
+          nativeInput.property("value", normalized);
+        }
+        if (!swatch.empty()) {
+          swatch
+            .style("background-color", normalized)
+            .attr("title", normalized);
+        }
+      }
+
+      function applySliderTagHighlightColor(value, syncUi) {
+        var normalized = normalizeSliderTagHighlightColor(
+          value,
+          defaultSliderTagHighlightColor
+        );
+        if (
+          typeof document !== "undefined" &&
+          document.documentElement &&
+          document.documentElement.style &&
+          typeof document.documentElement.style.setProperty === "function"
+        ) {
+          document.documentElement.style.setProperty(
+            "--slider-tag-highlight-color",
+            normalized
+          );
+        }
+        if (syncUi !== false) {
+          syncSliderTagHighlightColorUI(normalized);
+        }
+        return normalized;
+      }
+
       function clampLineGradientNumber(value, min, max) {
         return Math.max(min, Math.min(max, value));
       }
@@ -10948,7 +11068,10 @@
           6,
           Math.min(18, Math.round((margin.top || 0) * 0.3))
         );
-        var groupBarColor = "hsl(204, 100%, 39%)";
+        var groupBarColors = {
+          input: "black",
+          output: "hsl(204, 100%, 39%)",
+        };
         var segments = buildPcDimensionGroupSegments(visibleDims, innerWidth).map(
           function (segment) {
             return {
@@ -10957,7 +11080,7 @@
               left: (margin.left || 0) + segment.left,
               top: overlayTop,
               width: segment.width,
-              color: groupBarColor,
+              color: groupBarColors[segment.type] || "black",
               key: segment.type + ":" + segment.startKey + ":" + segment.endKey,
             };
           }
@@ -14053,6 +14176,41 @@
           };
         }
 
+        function syncSliderTagHighlightColorFromInputs(applyLivePreview) {
+          var currentColor = normalizeSliderTagHighlightColor(
+            newUserSetting.sliderTagHighlightColor,
+            (_userSetting && _userSetting.sliderTagHighlightColor) ||
+              defaultSliderTagHighlightColor
+          );
+          var inputValue = dimSettingListDiv
+            .select("#sliderTagHighlightColor")
+            .property("value");
+          var nextColor = normalizeSliderTagHighlightColor(
+            inputValue,
+            currentColor
+          );
+
+          newUserSetting.sliderTagHighlightColor = nextColor;
+          syncSliderTagHighlightColorUI(nextColor);
+
+          if (applyLivePreview) {
+            applySliderTagHighlightColor(nextColor, false);
+          }
+
+          return nextColor;
+        }
+
+        function commitSliderTagHighlightColorInputs() {
+          var nextColor = syncSliderTagHighlightColorFromInputs(false);
+          dimSettingListDiv
+            .select("#sliderTagHighlightColor")
+            .property("value", nextColor);
+          dimSettingListDiv
+            .select("#sliderTagHighlightColorPicker")
+            .property("value", nextColor);
+          applySliderTagHighlightColor(nextColor);
+        }
+
         function syncLineGradientSettingFromInputs(applyLivePreview) {
           var currentSetting = normalizeLineGradientSetting(
             newUserSetting.lineGradient
@@ -14120,6 +14278,49 @@
           })
           .on("change", function () {
             commitLineGradientInputs();
+          });
+        syncSliderTagHighlightColorUI(newUserSetting.sliderTagHighlightColor);
+        dimSettingListDiv
+          .select("#sliderTagHighlightColor")
+          .on("input", function () {
+            syncSliderTagHighlightColorFromInputs(true);
+          })
+          .on("change", function () {
+            commitSliderTagHighlightColorInputs();
+          });
+        dimSettingListDiv
+          .select("#sliderTagHighlightColorSwatch")
+          .on("click", function () {
+            var picker = dimSettingListDiv
+              .select("#sliderTagHighlightColorPicker")
+              .node();
+            if (picker && typeof picker.click === "function") {
+              picker.click();
+            }
+          });
+        dimSettingListDiv
+          .select("#sliderTagHighlightColorPicker")
+          .property(
+            "value",
+            normalizeSliderTagHighlightColor(
+              newUserSetting.sliderTagHighlightColor,
+              defaultSliderTagHighlightColor
+            )
+          )
+          .on("input", function () {
+            var nextColor = normalizeSliderTagHighlightColor(
+              this.value,
+              newUserSetting.sliderTagHighlightColor
+            );
+            dimSettingListDiv
+              .select("#sliderTagHighlightColor")
+              .property("value", nextColor);
+            newUserSetting.sliderTagHighlightColor = nextColor;
+            syncSliderTagHighlightColorUI(nextColor);
+            applySliderTagHighlightColor(nextColor, false);
+          })
+          .on("change", function () {
+            commitSliderTagHighlightColorInputs();
           });
 
         // show only the number of image label inputs that match available images/labels
@@ -15027,6 +15228,7 @@
           newUserSetting.showInputOutputBars = d3
             .select("#showInputOutputBarsInput")
             .property("checked");
+          syncSliderTagHighlightColorFromInputs(false);
           var currentLayoutRatios = getCurrentLayoutRatioSnapshot();
           newUserSetting.mainVerticalRatio =
             currentLayoutRatios.mainVerticalRatio;
@@ -15186,6 +15388,7 @@
           newUserSetting.showInputOutputBars = d3
             .select("#showInputOutputBarsInput")
             .property("checked");
+          syncSliderTagHighlightColorFromInputs(false);
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           // refresh radio labels immediately even before saving
@@ -15236,6 +15439,11 @@
           userSetting.showInputOutputBars,
           _userSetting && _userSetting.showInputOutputBars
         );
+        var userSliderTagHighlightColor = normalizeSliderTagHighlightColor(
+          userSetting.sliderTagHighlightColor,
+          (_userSetting && _userSetting.sliderTagHighlightColor) ||
+            defaultSliderTagHighlightColor
+        );
         var userLabelSize = userSetting.labelSize;
         var userLabelRotation = normalizeLabelRotation(
           userSetting.labelRotation,
@@ -15283,6 +15491,7 @@
         _userSetting.thumbnailSortAscending = userThumbnailSortAscending;
         _userSetting.hideScatterPlots = userHideScatterPlots;
         _userSetting.showInputOutputBars = userShowInputOutputBars;
+        _userSetting.sliderTagHighlightColor = userSliderTagHighlightColor;
         if (userSliderOrder.length === 0) {
           userSliderOrder = deriveSliderOrderFromDimOrder(
             userDimOrder,
@@ -15295,6 +15504,7 @@
             skipSettingPanels: true,
           });
         }
+        applySliderTagHighlightColor(userSliderTagHighlightColor);
         applyLineGradientSetting(userLineGradient, true);
 
         if (isThereNewStudyInfo) {
@@ -16006,6 +16216,10 @@
             : getCurrentSortAscendingValue(),
           globalUserSetting.thumbnailSortAscending
         );
+        globalUserSetting.sliderTagHighlightColor = normalizeSliderTagHighlightColor(
+          newUserSetting.sliderTagHighlightColor,
+          globalUserSetting.sliderTagHighlightColor
+        );
         globalUserSetting.lineGradient = cloneLineGradientSetting(
           newUserSetting.lineGradient || globalUserSetting.lineGradient
         );
@@ -16114,6 +16328,7 @@
             chartHorizontalRatio: null,
             labelSize: defaultLabelSizeValue,
             labelSizeBase: defaultLabelSizeValue,
+            sliderTagHighlightColor: defaultSliderTagHighlightColor,
             lineGradient: {
               enabled: false,
               start: defaultLineGradientColors[0],
@@ -16196,6 +16411,10 @@
             hasOwnKey(d, "scatterplotsHidden");
           var hasShowInputOutputBars = hasOwnKey(d, "showInputOutputBars");
           var hasLabelRotation = hasOwnKey(d, "labelRotation");
+          var hasSliderTagHighlightColor =
+            hasOwnKey(d, "sliderTagHighlightColor") ||
+            hasOwnKey(d, "sliderHighlightColor") ||
+            hasOwnKey(d, "tagHighlightColor");
           var hasLineGradient =
             hasOwnKey(d, "lineGradient") ||
             hasOwnKey(d, "lineGradientEnabled") ||
@@ -16283,6 +16502,14 @@
             : hasOwnKey(d, "scatterHidden")
             ? d.scatterHidden
             : d.scatterplotsHidden;
+          var loadedSliderTagHighlightColor = hasOwnKey(
+            d,
+            "sliderTagHighlightColor"
+          )
+            ? d.sliderTagHighlightColor
+            : hasOwnKey(d, "sliderHighlightColor")
+            ? d.sliderHighlightColor
+            : d.tagHighlightColor;
 
           var defaultSetting = getDefaultSettingState();
           defaultSetting.labelRotation = getCurrentLabelRotation(graph);
@@ -16356,6 +16583,15 @@
           mergedSetting.showInputOutputBars = hasShowInputOutputBars
             ? normalizeBooleanSetting(d.showInputOutputBars, false)
             : normalizeBooleanSetting(defaultSetting.showInputOutputBars, false);
+          mergedSetting.sliderTagHighlightColor = hasSliderTagHighlightColor
+            ? normalizeSliderTagHighlightColor(
+                loadedSliderTagHighlightColor,
+                defaultSetting.sliderTagHighlightColor
+              )
+            : normalizeSliderTagHighlightColor(
+                defaultSetting.sliderTagHighlightColor,
+                defaultSliderTagHighlightColor
+              );
           mergedSetting.lineGradient = hasLineGradient
             ? normalizeLineGradientSetting(rawLoadedLineGradient)
             : cloneLineGradientSetting(defaultSetting.lineGradient);
