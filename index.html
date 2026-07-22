@@ -390,6 +390,7 @@
         margin-left: 10px;
       }
       #labelSizeRow input[type="range"],
+      #globalSliderTickSizeRow input[type="range"],
       #targetMarkFontSizeRow input[type="range"],
       #dataSetting .slider-font-size-row input[type="range"] {
         width: 100%;
@@ -397,12 +398,14 @@
         margin: 0;
       }
       #labelSizeRow,
+      #globalSliderTickSizeRow,
       #targetMarkFontSizeRow,
       #dataSetting .slider-font-size-row {
         gap: 15px;
         flex-wrap: nowrap;
       }
       #labelSizeRow .label-size-field,
+      #globalSliderTickSizeRow .label-size-field,
       #targetMarkFontSizeRow .label-size-field,
       #dataSetting .slider-font-size-row .slider-font-size-field {
         flex: 1 1 auto;
@@ -410,12 +413,14 @@
         margin-left: 8px;
       }
       #labelSizeRow #labelSizeInput,
+      #globalSliderTickSizeRow #globalSliderTickSizeInput,
       #targetMarkFontSizeRow #targetMarkFontSizeInput {
         flex: 0 0 78px;
         min-width: 78px;
         text-align: right;
       }
       #labelSizeValue,
+      #globalSliderTickSizeValue,
       #targetMarkFontSizeValue,
       #dataSetting .slider-font-size-row .slider-font-size-value {
         text-align: right;
@@ -1170,6 +1175,7 @@
     var defaultSliderTagFontSize = 12;
     var targetMarkOrangePresetColor = "#FFA300";
     var defaultTargetMarkFontSize = 12;
+    var defaultSliderTickSize = 9;
     var defaultLabelSizePercent = 90;
     var defaultLabelSizeValue = defaultLabelSizePercent + "%";
     var defaultLabelRotationValue = 0;
@@ -1306,6 +1312,7 @@
         chartHorizontalRatio: null,
         labelSize: defaultLabelSizeValue,
         labelSizeBase: defaultLabelSizeValue,
+        sliderTickSize: defaultSliderTickSize + "px",
         labelRotation: defaultLabelRotationValue,
         sliderTagHighlightColor: defaultSliderTagHighlightColor,
         sliderTagFontSize: defaultSliderTagFontSize,
@@ -1377,6 +1384,26 @@
         parsed = defaultSliderTagFontSize;
       }
       return Math.max(8, Math.min(36, Math.round(parsed)));
+    }
+
+    function parseSliderTickSizeValueEarly(value) {
+      if (value === undefined || value === null) return null;
+      var raw = String(value).trim();
+      if (!raw) return null;
+      raw = raw.replace(/px$/i, "");
+      var parsed = parseFloat(raw);
+      return isNaN(parsed) ? null : parsed;
+    }
+
+    function normalizeGlobalSliderTickSize(value, fallback) {
+      var parsed = parseSliderTickSizeValueEarly(value);
+      if (parsed === null) {
+        parsed = parseSliderTickSizeValueEarly(fallback);
+      }
+      if (parsed === null) {
+        parsed = defaultSliderTickSize;
+      }
+      return Math.max(8, Math.min(32, Math.round(parsed)));
     }
 
     function mergeUserSettingWithDefaults(setting) {
@@ -1478,6 +1505,11 @@
             : source.labelSize !== undefined && source.labelSize !== null
             ? source.labelSize
             : defaults.labelSizeBase,
+        sliderTickSize:
+          normalizeGlobalSliderTickSize(
+            source.sliderTickSize,
+            defaults.sliderTickSize
+          ) + "px",
         labelRotation: normalizeLabelRotation(
           source.labelRotation,
           defaults.labelRotation
@@ -1839,6 +1871,13 @@
         String(source.labelSizeBase).trim().length > 0
           ? source.labelSizeBase
           : sanitized.labelSizeBase;
+      sanitized.sliderTickSize =
+        normalizeGlobalSliderTickSize(
+          Object.prototype.hasOwnProperty.call(source, "sliderTickSize")
+            ? source.sliderTickSize
+            : sanitized.sliderTickSize,
+          defaultSliderTickSize
+        ) + "px";
       var fallbackLabelRotation = getCurrentLabelRotation(graph);
       sanitized.labelRotation = normalizeLabelRotation(
         Object.prototype.hasOwnProperty.call(source, "labelRotation")
@@ -4820,6 +4859,24 @@
                           type="text"
                         />
                         <span id="labelSizeValue"></span>
+                      </li>
+                      <li class="list-group-item form-inline" id="globalSliderTickSizeRow">
+                        <span class="setting-label">Global Number Size:</span>
+                        <div class="label-size-field">
+                          <input
+                            id="globalSliderTickSizeSlider"
+                            type="range"
+                            min="8"
+                            max="32"
+                            step="1"
+                          />
+                        </div>
+                        <input
+                          id="globalSliderTickSizeInput"
+                          class="form-control input-sm"
+                          type="text"
+                        />
+                        <span id="globalSliderTickSizeValue"></span>
                       </li>
                       <li
                         class="list-group-item form-inline"
@@ -10129,6 +10186,13 @@
         ) + "px";
       }
 
+      function formatGlobalSliderTickSize(value) {
+        return normalizeGlobalSliderTickSize(
+          value,
+          defaultSliderTickSize
+        ) + "px";
+      }
+
       function getSliderTagMetrics(value) {
         var size = normalizeSliderTagFontSize(
           value,
@@ -13898,6 +13962,9 @@
             _userSetting.labelSizeBase ||
             _userSetting.labelSize ||
             defaultLabelSizeValue,
+          sliderTickSize:
+            _userSetting.sliderTickSize ||
+            defaultSliderTickSize + "px",
           labelRotation: getCurrentLabelRotation(currentGraph),
           lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
         };
@@ -13980,6 +14047,44 @@
           return currentLabelSizePercent();
         }
 
+        function syncGlobalSliderTickSizeUI(value) {
+          var normalized = normalizeGlobalSliderTickSize(
+            value,
+            newUserSetting.sliderTickSize
+          );
+          var activeElement =
+            typeof document !== "undefined" ? document.activeElement : null;
+          var formattedValue = formatGlobalSliderTickSize(normalized);
+          var slider = d3.select("#globalSliderTickSizeSlider");
+          var textInput = d3.select("#globalSliderTickSizeInput");
+          var valueLabel = d3.select("#globalSliderTickSizeValue");
+
+          if (!slider.empty() && slider.node() !== activeElement) {
+            slider.property("value", normalized);
+          }
+          if (!textInput.empty() && textInput.node() !== activeElement) {
+            textInput.property("value", formattedValue);
+          }
+          if (!valueLabel.empty()) {
+            valueLabel.text(formattedValue);
+          }
+
+          newUserSetting.sliderTickSize = formattedValue;
+          _userSetting.sliderTickSize = formattedValue;
+        }
+
+        function setGlobalSliderTickSizeFromAny(value, applyPreview) {
+          var numeric = normalizeGlobalSliderTickSize(
+            value,
+            newUserSetting.sliderTickSize
+          );
+          syncGlobalSliderTickSizeUI(numeric);
+          syncAllDimSliderTickSizeControls();
+          if (applyPreview) {
+            previewSliderFontOverrides();
+          }
+        }
+
         function normalizeSliderTickSizeToNumber(val) {
           if (val === undefined || val === null) return null;
           var str = String(val).trim();
@@ -14011,8 +14116,13 @@
           });
         }
 
-        function currentSliderTickSizePx() {
-          return 9;
+        function currentSliderTickSizePx(settingObj) {
+          var source = settingObj || newUserSetting || _userSetting || {};
+          return normalizeGlobalSliderTickSize(
+            source.sliderTickSize,
+            (_userSetting && _userSetting.sliderTickSize) ||
+              defaultSliderTickSize
+          );
         }
 
         function getEffectiveDimSliderTitleSize(dimName, settingObj) {
@@ -14040,12 +14150,15 @@
           if (saved !== null) {
             return Math.max(8, Math.min(32, saved));
           }
-          return currentSliderTickSizePx();
+          return currentSliderTickSizePx(settingObj);
         }
 
         function buildSliderFontPreviewSetting() {
           return Object.assign({}, _userSetting || {}, {
             labelSize: newUserSetting.labelSize || currentDraftLabelSizePercent() + "%",
+            sliderTickSize:
+              newUserSetting.sliderTickSize ||
+              formatGlobalSliderTickSize(currentSliderTickSizePx()),
             dimSliderTitleSizes: Object.assign(
               {},
               newUserSetting.dimSliderTitleSizes || {}
@@ -14110,6 +14223,12 @@
         function syncAllDimSliderTitleSizeControls() {
           settingDimKeys.forEach(function (dimName) {
             syncDimSliderTitleSizeControl(dimName);
+          });
+        }
+
+        function syncAllDimSliderTickSizeControls() {
+          settingDimKeys.forEach(function (dimName) {
+            syncDimSliderTickSizeControl(dimName);
           });
         }
 
@@ -14436,6 +14555,52 @@
             setLabelSizeFromAny(val, true);
           };
         }
+
+        syncGlobalSliderTickSizeUI(
+          normalizeGlobalSliderTickSize(
+            newUserSetting.sliderTickSize,
+            (_userSetting && _userSetting.sliderTickSize) ||
+              defaultSliderTickSize
+          )
+        );
+        dimSettingListDiv
+          .select("#globalSliderTickSizeSlider")
+          .on("input change", function () {
+            var sliderVal = parseFloat(this.value);
+            if (isNaN(sliderVal)) return;
+            setGlobalSliderTickSizeFromAny(sliderVal, true);
+          });
+        dimSettingListDiv
+          .select("#globalSliderTickSizeInput")
+          .property(
+            "value",
+            formatGlobalSliderTickSize(
+              normalizeGlobalSliderTickSize(
+                newUserSetting.sliderTickSize,
+                (_userSetting && _userSetting.sliderTickSize) ||
+                  defaultSliderTickSize
+              )
+            )
+          )
+          .on("input", function () {
+            var value = (this.value || "").trim();
+            if (!value.length) return;
+            setGlobalSliderTickSizeFromAny(value, true);
+          })
+          .on("change", function () {
+            var value = (this.value || "").trim();
+            if (!value.length) {
+              syncGlobalSliderTickSizeUI(
+                normalizeGlobalSliderTickSize(
+                  newUserSetting.sliderTickSize,
+                  (_userSetting && _userSetting.sliderTickSize) ||
+                    defaultSliderTickSize
+                )
+              );
+              return;
+            }
+            setGlobalSliderTickSizeFromAny(value, true);
+          });
 
         function syncSliderTagHighlightColorFromInputs(applyLivePreview) {
           var currentColor = normalizeSliderTagHighlightColor(
@@ -15543,6 +15708,9 @@
           } else {
             delete newUserSetting.labelSize;
           }
+          newUserSetting.sliderTickSize = formatGlobalSliderTickSize(
+            d3.select("#globalSliderTickSizeInput").property("value")
+          );
           newUserSetting.hideScatterPlots = d3
             .select("#hideScatterPlotsInput")
             .property("checked");
@@ -15708,6 +15876,9 @@
           } else {
             delete newUserSetting.labelSize;
           }
+          newUserSetting.sliderTickSize = formatGlobalSliderTickSize(
+            d3.select("#globalSliderTickSizeInput").property("value")
+          );
           newUserSetting.hideScatterPlots = d3
             .select("#hideScatterPlotsInput")
             .property("checked");
@@ -15751,6 +15922,11 @@
         );
         var userDimSliderTickSizes = asPlainObject(
           userSetting.dimSliderTickSizes
+        );
+        var userSliderTickSize = normalizeGlobalSliderTickSize(
+          userSetting.sliderTickSize,
+          (_userSetting && _userSetting.sliderTickSize) ||
+            defaultSliderTickSize
         );
         var userImageLabels = asPlainObject(userSetting.imageLabels);
         var userThumbnailSortBy =
@@ -15822,6 +15998,9 @@
         _userSetting.dimSliderTickSizes = Object.assign(
           {},
           userDimSliderTickSizes
+        );
+        _userSetting.sliderTickSize = formatGlobalSliderTickSize(
+          userSliderTickSize
         );
         _userSetting.thumbnailSortBy = userThumbnailSortBy;
         _userSetting.thumbnailSortAscending = userThumbnailSortAscending;
@@ -16532,6 +16711,9 @@
           {},
           newUserSetting.dimSliderTickSizes || {}
         );
+        globalUserSetting.sliderTickSize = formatGlobalSliderTickSize(
+          newUserSetting.sliderTickSize
+        );
         globalUserSetting.dimHidden = {};
         d3.keys(newUserSetting.dimHidden || {}).forEach(function (k) {
           if (normalizeDimHiddenValue(newUserSetting.dimHidden[k])) {
@@ -16691,6 +16873,7 @@
             chartHorizontalRatio: null,
             labelSize: defaultLabelSizeValue,
             labelSizeBase: defaultLabelSizeValue,
+            sliderTickSize: defaultSliderTickSize + "px",
             sliderTagHighlightColor: defaultSliderTagHighlightColor,
             sliderTagFontSize: defaultSliderTagFontSize,
             targetMarkFontSize: defaultTargetMarkFontSize,
@@ -16761,6 +16944,10 @@
           var hasSliderOrder = hasOwnKey(d, "sliderOrder");
           var hasDimSliderTitleSizes = hasOwnKey(d, "dimSliderTitleSizes");
           var hasDimSliderTickSizes = hasOwnKey(d, "dimSliderTickSizes");
+          var hasSliderTickSize =
+            hasOwnKey(d, "sliderTickSize") ||
+            hasOwnKey(d, "globalSliderTickSize") ||
+            hasOwnKey(d, "sliderNumberSize");
           var hasImageLabels = hasOwnKey(d, "imageLabels");
           var hasThumbnailSortBy =
             hasOwnKey(d, "thumbnailSortBy") ||
@@ -16829,6 +17016,11 @@
           }
           var loadedDimSliderTitleSizes = asPlainObject(d.dimSliderTitleSizes);
           var loadedDimSliderTickSizes = asPlainObject(d.dimSliderTickSizes);
+          var loadedSliderTickSize = hasOwnKey(d, "sliderTickSize")
+            ? d.sliderTickSize
+            : hasOwnKey(d, "globalSliderTickSize")
+            ? d.globalSliderTickSize
+            : d.sliderNumberSize;
           if (Object.keys(loadedDimHidden).length === 0) {
             loadedDimHidden = asPlainObject(d.hiddenDims || d.hiddenDimensions);
           }
@@ -16947,6 +17139,19 @@
                 loadedDimSliderTickSizes || {}
               )
             : Object.assign({}, defaultSetting.dimSliderTickSizes || {});
+          mergedSetting.sliderTickSize = hasSliderTickSize
+            ? formatGlobalSliderTickSize(
+                normalizeGlobalSliderTickSize(
+                  loadedSliderTickSize,
+                  defaultSetting.sliderTickSize
+                )
+              )
+            : formatGlobalSliderTickSize(
+                normalizeGlobalSliderTickSize(
+                  defaultSetting.sliderTickSize,
+                  defaultSliderTickSize
+                )
+              );
           mergedSetting.imageLabels = hasImageLabels
             ? Object.assign({}, defaultSetting.imageLabels || {}, loadedImageLabels || {})
             : Object.assign({}, defaultSetting.imageLabels || {});

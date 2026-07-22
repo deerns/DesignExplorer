@@ -280,6 +280,10 @@ function overwriteInitialGlobalValues() {
             typeof defaultLabelSizeValue !== "undefined"
               ? defaultLabelSizeValue
               : "90%",
+          sliderTickSize:
+            typeof defaultSliderTickSize !== "undefined"
+              ? defaultSliderTickSize + "px"
+              : "9px",
           labelRotation:
             typeof defaultLabelRotationValue !== "undefined"
               ? defaultLabelRotationValue
@@ -728,7 +732,7 @@ function applySliderFontOverrides(setting) {
   var titleMap = effectiveSetting.dimSliderTitleSizes || {};
   var tickMap = effectiveSetting.dimSliderTickSizes || {};
   var baseTitleSize = normalizeSliderPercentSize(effectiveSetting.labelSize);
-  var baseTickSize = 9;
+  var baseTickSize = normalizeSliderPixelSize(effectiveSetting.sliderTickSize);
   var baseSliderLabelPx = 12;
   var styleEl = ensureSliderFontOverrideStyleTag();
   var cssRules = [];
@@ -747,6 +751,12 @@ function applySliderFontOverrides(setting) {
       typeof defaultLabelSizePercent !== "undefined"
         ? defaultLabelSizePercent
         : 90;
+  }
+  if (baseTickSize === null) {
+    baseTickSize =
+      typeof defaultSliderTickSize !== "undefined"
+        ? defaultSliderTickSize
+        : 9;
   }
 
   d3.selectAll("#inputSliders .inputSlider").each(function (d) {
