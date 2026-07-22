@@ -1306,6 +1306,7 @@
         imageLabels: {},
         thumbnailSortBy: "",
         thumbnailSortAscending: true,
+        scatterSelectedVariables: [],
         hideScatterPlots: false,
         showInputOutputBars: false,
         mainVerticalRatio: 0.58,
@@ -1505,6 +1506,9 @@
                 defaults.thumbnailSortAscending
               )
             : defaults.thumbnailSortAscending,
+        scatterSelectedVariables: normalizeScatterSelectedVariables(
+          getScatterSelectedVariablesSettingValue(source)
+        ),
         hideScatterPlots:
           source.hideScatterPlots !== undefined
             ? normalizeBooleanSetting(
@@ -1798,6 +1802,102 @@
       return result;
     }
 
+    function getScatterSelectedVariablesSettingValue(setting) {
+      if (!setting || typeof setting !== "object") {
+        return [];
+      }
+
+      if (Array.isArray(setting.scatterSelectedVariables)) {
+        return setting.scatterSelectedVariables;
+      }
+      if (Array.isArray(setting.scatterVariables)) {
+        return setting.scatterVariables;
+      }
+      if (Array.isArray(setting.scatterVisibleVariables)) {
+        return setting.scatterVisibleVariables;
+      }
+
+      return [];
+    }
+
+    function normalizeScatterSelectedVariables(value, validLookup) {
+      var result = [];
+      var seen = {};
+      var source = Array.isArray(value) ? value : [];
+
+      source.forEach(function (entry) {
+        if (entry === undefined || entry === null) return;
+        var raw = String(entry).trim();
+        if (!raw) return;
+
+        var canonicalKey = validLookup
+          ? validLookup[normalizeDimKey(raw)]
+          : raw;
+        if (!canonicalKey) return;
+
+        var normalized = normalizeDimKey(canonicalKey);
+        if (!normalized || seen[normalized]) return;
+        seen[normalized] = true;
+        result.push(canonicalKey);
+      });
+
+      return result;
+    }
+
+    function syncScatterSelectedVariablesPendingState(selectedVariables) {
+      var normalized = normalizeScatterSelectedVariables(
+        selectedVariables,
+        buildNormalizedDimLookup(getCurrentDatasetDimKeys())
+      );
+
+      if (typeof window === "undefined") {
+        return normalized;
+      }
+
+      if (normalized.length > 0) {
+        window.__pendingScatterChartState = Object.assign(
+          {},
+          window.__pendingScatterChartState || {},
+          {
+            selectedVariables: normalized.slice(),
+          }
+        );
+      } else {
+        window.__pendingScatterChartState = null;
+      }
+
+      return normalized;
+    }
+
+    function getCurrentScatterSelectedVariables(fallbackSetting) {
+      var selectedVariables = [];
+
+      if (
+        typeof scatterChart !== "undefined" &&
+        scatterChart &&
+        Array.isArray(scatterChart.__selected_variables) &&
+        scatterChart.__selected_variables.length > 0
+      ) {
+        selectedVariables = scatterChart.__selected_variables.slice();
+      } else if (
+        typeof window !== "undefined" &&
+        window.__pendingScatterChartState &&
+        Array.isArray(window.__pendingScatterChartState.selectedVariables) &&
+        window.__pendingScatterChartState.selectedVariables.length > 0
+      ) {
+        selectedVariables = window.__pendingScatterChartState.selectedVariables.slice();
+      } else {
+        selectedVariables = getScatterSelectedVariablesSettingValue(
+          fallbackSetting || _userSetting || {}
+        );
+      }
+
+      return normalizeScatterSelectedVariables(
+        selectedVariables,
+        buildNormalizedDimLookup(getCurrentDatasetDimKeys())
+      );
+    }
+
     function sanitizeSettingForCurrentData(setting) {
       var source = setting || {};
       var validDimLookup = buildNormalizedDimLookup(getCurrentDatasetDimKeys());
@@ -1846,6 +1946,10 @@
       sanitized.sliderOrder = filterDimOrderToLookup(
         source.sliderOrder,
         validSliderLookup
+      );
+      sanitized.scatterSelectedVariables = normalizeScatterSelectedVariables(
+        getScatterSelectedVariablesSettingValue(source),
+        validDimLookup
       );
       if (Object.prototype.hasOwnProperty.call(source, "thumbnailSortBy")) {
         var canonicalSortKey =
@@ -12394,6 +12498,10 @@
         syncPcGraphToggleUi();
         resetDatasetScopedUserSettings();
         clearScatterSelectionState();
+        if (typeof window !== "undefined") {
+          window.__pendingScatterChartState = null;
+          window.__scatterStateBeforeHide = null;
+        }
         pinnedComparisonData = null;
         activeSelectedData = null;
         isThumbnailDrawerPinned = false;
@@ -13989,6 +14097,7 @@
             pcIsColoredBy ||
             "",
           thumbnailSortAscending: getCurrentSortAscendingValue(),
+          scatterSelectedVariables: getCurrentScatterSelectedVariables(_userSetting),
           hideScatterPlots: isScatterPlotsHidden(_userSetting),
           showInputOutputBars: shouldShowInputOutputBars(_userSetting),
           mainVerticalRatio: getCurrentLayoutRatioSnapshot().mainVerticalRatio,
@@ -15776,6 +15885,8 @@
           newUserSetting.sliderTickSize = formatGlobalSliderTickSize(
             d3.select("#globalSliderTickSizeInput").property("value")
           );
+          newUserSetting.scatterSelectedVariables =
+            getCurrentScatterSelectedVariables(newUserSetting);
           newUserSetting.hideScatterPlots = d3
             .select("#hideScatterPlotsInput")
             .property("checked");
@@ -15944,6 +16055,8 @@
           newUserSetting.sliderTickSize = formatGlobalSliderTickSize(
             d3.select("#globalSliderTickSizeInput").property("value")
           );
+          newUserSetting.scatterSelectedVariables =
+            getCurrentScatterSelectedVariables(newUserSetting);
           newUserSetting.hideScatterPlots = d3
             .select("#hideScatterPlotsInput")
             .property("checked");
@@ -16002,6 +16115,10 @@
         var userThumbnailSortAscending = normalizeBooleanSetting(
           userSetting.thumbnailSortAscending,
           _userSetting && _userSetting.thumbnailSortAscending
+        );
+        var userScatterSelectedVariables = normalizeScatterSelectedVariables(
+          userSetting.scatterSelectedVariables,
+          buildNormalizedDimLookup(getCurrentDatasetDimKeys())
         );
         var userHideScatterPlots = normalizeBooleanSetting(
           userSetting.hideScatterPlots,
@@ -16069,6 +16186,8 @@
         );
         _userSetting.thumbnailSortBy = userThumbnailSortBy;
         _userSetting.thumbnailSortAscending = userThumbnailSortAscending;
+        _userSetting.scatterSelectedVariables = userScatterSelectedVariables.slice();
+        syncScatterSelectedVariablesPendingState(userScatterSelectedVariables);
         _userSetting.hideScatterPlots = userHideScatterPlots;
         _userSetting.showInputOutputBars = userShowInputOutputBars;
         _userSetting.sliderTagHighlightColor = userSliderTagHighlightColor;
@@ -16810,6 +16929,8 @@
             : getCurrentSortAscendingValue(),
           globalUserSetting.thumbnailSortAscending
         );
+        globalUserSetting.scatterSelectedVariables =
+          getCurrentScatterSelectedVariables(newUserSetting);
         globalUserSetting.sliderTagHighlightColor = normalizeSliderTagHighlightColor(
           newUserSetting.sliderTagHighlightColor,
           globalUserSetting.sliderTagHighlightColor
@@ -16932,6 +17053,7 @@
             imageLabels: {},
             thumbnailSortBy: "",
             thumbnailSortAscending: true,
+            scatterSelectedVariables: [],
             hideScatterPlots: false,
             showInputOutputBars: false,
             mainVerticalRatio: 0.58,
@@ -17013,6 +17135,10 @@
             hasOwnKey(d, "sliderTickSize") ||
             hasOwnKey(d, "globalSliderTickSize") ||
             hasOwnKey(d, "sliderNumberSize");
+          var hasScatterSelectedVariables =
+            hasOwnKey(d, "scatterSelectedVariables") ||
+            hasOwnKey(d, "scatterVariables") ||
+            hasOwnKey(d, "scatterVisibleVariables");
           var hasImageLabels = hasOwnKey(d, "imageLabels");
           var hasThumbnailSortBy =
             hasOwnKey(d, "thumbnailSortBy") ||
@@ -17086,6 +17212,14 @@
             : hasOwnKey(d, "globalSliderTickSize")
             ? d.globalSliderTickSize
             : d.sliderNumberSize;
+          var loadedScatterSelectedVariables = hasOwnKey(
+            d,
+            "scatterSelectedVariables"
+          )
+            ? d.scatterSelectedVariables
+            : hasOwnKey(d, "scatterVariables")
+            ? d.scatterVariables
+            : d.scatterVisibleVariables;
           if (Object.keys(loadedDimHidden).length === 0) {
             loadedDimHidden = asPlainObject(d.hiddenDims || d.hiddenDimensions);
           }
@@ -17226,6 +17360,11 @@
           mergedSetting.thumbnailSortAscending = hasThumbnailSortAscending
             ? normalizeBooleanSetting(loadedThumbnailSortAscending, true)
             : normalizeBooleanSetting(defaultSetting.thumbnailSortAscending, true);
+          mergedSetting.scatterSelectedVariables = hasScatterSelectedVariables
+            ? normalizeScatterSelectedVariables(loadedScatterSelectedVariables)
+            : normalizeScatterSelectedVariables(
+                defaultSetting.scatterSelectedVariables
+              );
           mergedSetting.hideScatterPlots = hasHideScatterPlots
             ? normalizeBooleanSetting(loadedHideScatterPlots, false)
             : normalizeBooleanSetting(defaultSetting.hideScatterPlots, false);
@@ -17274,6 +17413,9 @@
             ? normalizeLabelRotation(d.labelRotation, defaultSetting.labelRotation)
             : defaultSetting.labelRotation;
           mergedSetting = sanitizeSettingForCurrentData(mergedSetting);
+          syncScatterSelectedVariablesPendingState(
+            mergedSetting.scatterSelectedVariables
+          );
 
           // update the global _userSetting
           _userSetting = mergedSetting;
