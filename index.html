@@ -1047,6 +1047,111 @@
     var defaultLineGradientColors = ["#102F86", "#2FADDD"];
     var defaultLabelSizePercent = 90;
     var defaultLabelSizeValue = defaultLabelSizePercent + "%";
+    var defaultLabelRotationValue = 0;
+
+    function parseLabelRotationValue(value) {
+      if (value === undefined || value === null) return null;
+      var str = String(value).trim();
+      if (!str) return null;
+      str = str.replace(/deg$/i, "");
+      var numeric = parseFloat(str);
+      return isNaN(numeric) ? null : numeric;
+    }
+
+    function normalizeLabelRotation(value, fallbackValue) {
+      var parsed = parseLabelRotationValue(value);
+      if (parsed !== null) {
+        return parsed;
+      }
+      var fallbackParsed = parseLabelRotationValue(fallbackValue);
+      return fallbackParsed !== null
+        ? fallbackParsed
+        : defaultLabelRotationValue;
+    }
+
+    function parseLabelRotationFromTransform(transform) {
+      var match = String(transform || "").match(
+        /rotate\(\s*(-?\d+(?:\.\d+)?)\s*\)/i
+      );
+      return match ? parseFloat(match[1]) : null;
+    }
+
+    function getCurrentLabelRotation(chart) {
+      var activeChart =
+        chart && typeof chart.dimensionTitleRotation === "function"
+          ? chart
+          : graph && typeof graph.dimensionTitleRotation === "function"
+          ? graph
+          : null;
+
+      if (activeChart) {
+        var chartRotation = parseLabelRotationValue(
+          activeChart.dimensionTitleRotation()
+        );
+        if (chartRotation !== null) {
+          return chartRotation;
+        }
+      }
+
+      var renderedRotation = parseLabelRotationFromTransform(
+        d3.select(".dimension text.label").attr("transform")
+      );
+      if (renderedRotation !== null) {
+        return renderedRotation;
+      }
+
+      if (
+        typeof _userSetting !== "undefined" &&
+        _userSetting &&
+        _userSetting.labelRotation !== undefined
+      ) {
+        return normalizeLabelRotation(
+          _userSetting.labelRotation,
+          defaultLabelRotationValue
+        );
+      }
+
+      return defaultLabelRotationValue;
+    }
+
+    function applyLabelRotation(rotation, chart, persistToUserSetting) {
+      var normalized = normalizeLabelRotation(
+        rotation,
+        getCurrentLabelRotation(chart)
+      );
+      var activeChart =
+        chart && typeof chart.dimensionTitleRotation === "function"
+          ? chart
+          : graph && typeof graph.dimensionTitleRotation === "function"
+          ? graph
+          : null;
+
+      if (activeChart) {
+        activeChart.dimensionTitleRotation(normalized);
+      }
+
+      d3.selectAll(".dimension text.label").attr(
+        "transform",
+        "translate(0,-5) rotate(" + normalized + ")"
+      );
+
+      if (persistToUserSetting) {
+        _userSetting =
+          typeof _userSetting !== "undefined" && _userSetting
+            ? _userSetting
+            : {};
+        _userSetting.labelRotation = normalized;
+        if (
+          typeof window !== "undefined" &&
+          window.__activeSettingsDraft &&
+          typeof window.__activeSettingsDraft === "object"
+        ) {
+          window.__activeSettingsDraft.labelRotation = normalized;
+        }
+      }
+
+      return normalized;
+    }
 
     function createDefaultUserSettingState() {
       return {
@@ -1075,6 +1180,7 @@
         chartHorizontalRatio: null,
         labelSize: defaultLabelSizeValue,
         labelSizeBase: defaultLabelSizeValue,
+        labelRotation: defaultLabelRotationValue,
         lineGradient: {
           enabled: false,
           start: defaultLineGradientColors[0],
@@ -1169,6 +1275,10 @@
             : source.labelSize !== undefined && source.labelSize !== null
             ? source.labelSize
             : defaults.labelSizeBase,
+        labelRotation: normalizeLabelRotation(
+          source.labelRotation,
+          defaults.labelRotation
+        ),
         lineGradient: Object.assign(
           {},
           defaults.lineGradient,
@@ -1507,6 +1617,13 @@
         String(source.labelSizeBase).trim().length > 0
           ? source.labelSizeBase
           : sanitized.labelSizeBase;
+      var fallbackLabelRotation = getCurrentLabelRotation(graph);
+      sanitized.labelRotation = normalizeLabelRotation(
+        Object.prototype.hasOwnProperty.call(source, "labelRotation")
+          ? source.labelRotation
+          : fallbackLabelRotation,
+        fallbackLabelRotation
+      );
       if (Object.prototype.hasOwnProperty.call(source, "mainVerticalRatio")) {
         sanitized.mainVerticalRatio = normalizeMainVerticalRatio(
           source.mainVerticalRatio,
@@ -13032,6 +13149,7 @@
             _userSetting.labelSizeBase ||
             _userSetting.labelSize ||
             defaultLabelSizeValue,
+          labelRotation: getCurrentLabelRotation(currentGraph),
           lineGradient: cloneLineGradientSetting(_userSetting.lineGradient),
         };
         if (typeof window !== "undefined") {
@@ -14723,6 +14841,10 @@
           _userSetting && _userSetting.hideScatterPlots
         );
         var userLabelSize = userSetting.labelSize;
+        var userLabelRotation = normalizeLabelRotation(
+          userSetting.labelRotation,
+          getCurrentLabelRotation(chart)
+        );
         var userLineGradient = cloneLineGradientSetting(userSetting.lineGradient);
         var isThereNewStudyInfo = Object.keys(userStudyInfo).length > 0;
         var isThereNewDimScales = Object.keys(userDimScales).length > 0;
@@ -14839,6 +14961,7 @@
           delete _userSetting.labelSizeBase;
           d3.selectAll(".label").style("font-size", defaultLabelSizeValue);
         }
+        applyLabelRotation(userLabelRotation, chart, true);
         if (typeof applySliderFontOverrides === "function") {
           applySliderFontOverrides(_userSetting || {});
         }
@@ -14909,6 +15032,7 @@
           if (graph) {
             updateLabels();
             refreshGraphLabelsWithRetry(0);
+            applyLabelRotation(_userSetting.labelRotation, graph, true);
           }
           if (typeof applySliderFontOverrides === "function") {
             applySliderFontOverrides(_userSetting || {});
@@ -15437,6 +15561,7 @@
 
       function saveSetting(globalUserSetting, newUserSetting) {
         var currentLayoutRatios = getCurrentLayoutRatioSnapshot();
+        var currentLabelRotation = getCurrentLabelRotation(graph);
         Object.assign(globalUserSetting.dimMark, newUserSetting.dimMark);
         Object.assign(globalUserSetting.dimScales, newUserSetting.dimScales);
         Object.assign(globalUserSetting.dimTicks, newUserSetting.dimTicks);
@@ -15495,6 +15620,7 @@
           chartHorizontalLayoutState.useAutoRatio
             ? null
             : currentLayoutRatios.chartHorizontalRatio;
+        globalUserSetting.labelRotation = currentLabelRotation;
         if (newUserSetting.hasOwnProperty("labelSize")) {
           if (
             newUserSetting.labelSize === null ||
@@ -15589,6 +15715,7 @@
               start: defaultLineGradientColors[0],
               end: defaultLineGradientColors[1],
             },
+            labelRotation: getCurrentLabelRotation(graph),
           };
         }
 
@@ -15663,6 +15790,7 @@
             hasOwnKey(d, "hideScatterPlots") ||
             hasOwnKey(d, "scatterHidden") ||
             hasOwnKey(d, "scatterplotsHidden");
+          var hasLabelRotation = hasOwnKey(d, "labelRotation");
           var hasLineGradient =
             hasOwnKey(d, "lineGradient") ||
             hasOwnKey(d, "lineGradientEnabled") ||
@@ -15752,6 +15880,7 @@
             : d.scatterplotsHidden;
 
           var defaultSetting = getDefaultSettingState();
+          defaultSetting.labelRotation = getCurrentLabelRotation(graph);
           var currentDimOrder = normalizeDimOrder(defaultSetting.dimOrder);
           var currentSliderOrder = normalizeDimOrder(defaultSetting.sliderOrder);
           var mergedSetting = Object.assign({}, defaultSetting, d);
@@ -15830,6 +15959,9 @@
             hasLabelSize && d.labelSize !== null
               ? d.labelSize
               : defaultSetting.labelSizeBase;
+          mergedSetting.labelRotation = hasLabelRotation
+            ? normalizeLabelRotation(d.labelRotation, defaultSetting.labelRotation)
+            : defaultSetting.labelRotation;
           mergedSetting = sanitizeSettingForCurrentData(mergedSetting);
 
           // update the global _userSetting

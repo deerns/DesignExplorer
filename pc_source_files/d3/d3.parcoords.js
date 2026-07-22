@@ -178,6 +178,11 @@ d3.parcoords = function (config) {
                 });
                 //pc.updateAxes(0);
             }
+        })
+        .on("dimensionTitleRotation", function (d) {
+            if (!pc.svg) return;
+            pc.svg.selectAll("text.label")
+                .attr("transform", "translate(0,-5) rotate(" + d.value + ")");
         });
 
     // expose the state of the chart
@@ -867,9 +872,7 @@ d3.parcoords = function (config) {
         delta = delta < 0 ? -5 : delta;
         delta = delta > 0 ? 5 : delta;
 
-        __.dimensionTitleRotation += delta;
-        pc.svg.selectAll("text.label")
-            .attr("transform", "translate(0,-5) rotate(" + __.dimensionTitleRotation + ")");
+        pc.dimensionTitleRotation(__.dimensionTitleRotation + delta);
         d3.event.preventDefault();
     }
 
