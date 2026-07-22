@@ -431,6 +431,9 @@
       :root {
         --slider-tag-highlight-color: #000000;
         --target-mark-font-size: 12px;
+        --target-mark-tag-line-height: 14px;
+        --target-mark-tag-padding-y: 1px;
+        --target-mark-tag-padding-x: 5px;
       }
       #lineGradientControlsRow,
       #sliderTagHighlightColorRow {
@@ -587,6 +590,14 @@
         fill: var(--slider-tag-highlight-color);
         font-size: var(--target-mark-font-size);
         font-weight: 700;
+      }
+      #inputSliders .irs-from,
+      #inputSliders .irs-to,
+      #inputSliders .irs-single {
+        font-size: var(--target-mark-font-size) !important;
+        line-height: var(--target-mark-tag-line-height) !important;
+        padding: var(--target-mark-tag-padding-y)
+          var(--target-mark-tag-padding-x) !important;
       }
 
       /* match settings panel primary color to project blue */
@@ -10145,6 +10156,12 @@
       function applyTargetMarkFontSize(value, syncUi) {
         var metrics = getTargetMarkMetrics(value);
         var normalized = metrics.size;
+        var tagLineHeight = Math.max(
+          12,
+          Math.round(metrics.fontSize * 1.2)
+        );
+        var tagPaddingY = Math.max(1, Math.round(metrics.fontSize * 0.1));
+        var tagPaddingX = Math.max(5, Math.round(metrics.fontSize * 0.45));
         if (
           typeof document !== "undefined" &&
           document.documentElement &&
@@ -10154,6 +10171,18 @@
           document.documentElement.style.setProperty(
             "--target-mark-font-size",
             normalized + "px"
+          );
+          document.documentElement.style.setProperty(
+            "--target-mark-tag-line-height",
+            tagLineHeight + "px"
+          );
+          document.documentElement.style.setProperty(
+            "--target-mark-tag-padding-y",
+            tagPaddingY + "px"
+          );
+          document.documentElement.style.setProperty(
+            "--target-mark-tag-padding-x",
+            tagPaddingX + "px"
           );
         }
         if (syncUi !== false) {
