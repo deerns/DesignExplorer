@@ -46,6 +46,18 @@ ScatterMatrix.prototype.render = function () {
     }
     return name;
   };
+  var isDefaultScatterVariable = function (name) {
+    if (typeof normalizeDimKey === "function") {
+      var normalized = normalizeDimKey(name);
+      return (
+        normalized !== normalizeDimKey("Rating") &&
+        normalized !== normalizeDimKey("Description")
+      );
+    }
+
+    var raw = (name || "").toString().trim().toLowerCase();
+    return raw !== "rating" && raw !== "description";
+  };
 
   var container = d3
     .select(this.__dom_id)
@@ -62,6 +74,29 @@ ScatterMatrix.prototype.render = function () {
 
   this.onData(function () {
     var data = self.__data; //// NOTE: passing raw data to local data
+    if (
+      (!Array.isArray(data) || data.length === 0) &&
+      typeof graph !== "undefined" &&
+      graph &&
+      typeof graph.data === "function"
+    ) {
+      data = (graph.data() || []).slice();
+    }
+    if (
+      (!Array.isArray(data) || data.length === 0) &&
+      typeof cleanedData !== "undefined" &&
+      Array.isArray(cleanedData)
+    ) {
+      data = cleanedData.slice();
+    }
+    self.__data = Array.isArray(data) ? data : [];
+    data = self.__data;
+
+    if (data.length === 0) {
+      control.selectAll("*").remove();
+      svg.html("<em>No scatter data available</em>");
+      return;
+    }
 
     // Divide variables into string and numeric variables
 
@@ -69,6 +104,9 @@ ScatterMatrix.prototype.render = function () {
     self.__numeric_variables = [];
 
     for (k in data[0]) {
+      if (k === "scid") {
+        continue;
+      }
       var is_numeric = true;
       data.forEach(function (d) {
         var v = d[k];
@@ -80,11 +118,56 @@ ScatterMatrix.prototype.render = function () {
       }
     }
 
-    var scid = 0;
-    data.forEach(function (d) {
-      d.scid = scid;
-      scid += 1;
-    });
+    if (self.__numeric_variables.length === 0) {
+      control.selectAll("*").remove();
+      svg.html("<em>No numeric dimensions available for scatterplots</em>");
+      return;
+    }
+
+    var graphOrder =
+      typeof window !== "undefined" &&
+      typeof window.getCurrentGraphDimensionOrder === "function"
+        ? window.getCurrentGraphDimensionOrder()
+        : typeof getCurrentGraphDimensionOrder === "function"
+        ? getCurrentGraphDimensionOrder()
+        : [];
+    if (Array.isArray(graphOrder) && graphOrder.length > 0) {
+      var numericLookup = {};
+      self.__numeric_variables.forEach(function (name) {
+        numericLookup[name] = true;
+      });
+
+      var orderedNumeric = [];
+      graphOrder.forEach(function (name) {
+        if (numericLookup[name]) {
+          orderedNumeric.push(name);
+          delete numericLookup[name];
+        }
+      });
+
+      self.__numeric_variables.forEach(function (name) {
+        if (numericLookup[name]) {
+          orderedNumeric.push(name);
+          delete numericLookup[name];
+        }
+      });
+
+      if (orderedNumeric.length > 0) {
+        self.__numeric_variables = orderedNumeric;
+      }
+    }
+
+    if (typeof ensureScatterDataIds === "function") {
+      ensureScatterDataIds(data);
+    } else {
+      var scid = 0;
+      data.forEach(function (d) {
+        if (d.scid === undefined || d.scid === null || d.scid === "") {
+          d.scid = scid;
+        }
+        scid += 1;
+      });
+    }
 
     //console.log(string_variables);//------------------------------------------------------------------
 
@@ -107,7 +190,21 @@ ScatterMatrix.prototype.render = function () {
       .attr("class", "scatter-matrix-drill-control");
 
     // shared control states
-    var to_include = self.__numeric_variables.slice(-3, -1);
+    var to_include = Array.isArray(self.__initial_selected_variables)
+      ? self.__initial_selected_variables.filter(function (name) {
+          return self.__numeric_variables.indexOf(name) >= 0;
+        })
+      : [];
+    if (to_include.length === 0) {
+      to_include = self.__numeric_variables.filter(isDefaultScatterVariable).slice(-2);
+    }
+    if (to_include.length === 0) {
+      to_include = self.__numeric_variables.slice(-2);
+    }
+    if (to_include.length === 0) {
+      to_include = self.__numeric_variables.slice(0, Math.min(2, self.__numeric_variables.length));
+    }
+    self.__selected_variables = to_include.slice();
 
     var color_variable = undefined;
     var selected_colors = undefined;
@@ -155,6 +252,7 @@ ScatterMatrix.prototype.render = function () {
               new_selected_colors.push(d);
             }
             selected_colors = new_selected_colors;
+            self.__selected_variables = to_include.slice();
             self.__draw(
               self.__cell_size,
               svg,
@@ -174,22 +272,43 @@ ScatterMatrix.prototype.render = function () {
       .append("div")
       .attr("class", "btn-group col-xs-12")
       .style("margin-bottom", "20px");
-    var orgSize = self.__cell_size;
+    var orgSize = null;
+
+    function getActiveCellSize() {
+      if (isFinite(self.__rendered_cell_size) && self.__rendered_cell_size > 0) {
+        return self.__rendered_cell_size;
+      }
+      if (isFinite(self.__cell_size) && self.__cell_size > 0) {
+        return self.__cell_size;
+      }
+      return 80;
+    }
+
+    function redrawScatterMatrix(nextCellSize) {
+      if (isFinite(nextCellSize) && nextCellSize > 0) {
+        self.__cell_size = nextCellSize;
+      }
+      self.__draw(
+        self.__cell_size,
+        svg,
+        color_variable,
+        selected_colors,
+        to_include,
+        drill_variables
+      );
+    }
+
     size_a
       .append("a")
       .attr("class", "btn btn-default btn-xs")
       .attr("href", "javascript:void(0);")
       .html("-")
       .on("click", function () {
-        self.__cell_size -= 50;
-        self.__draw(
-          self.__cell_size,
-          svg,
-          color_variable,
-          selected_colors,
-          to_include,
-          drill_variables
-        );
+        if (d3.event) {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+        }
+        redrawScatterMatrix(Math.max(12, getActiveCellSize() - 50));
       });
 
     size_a
@@ -198,14 +317,12 @@ ScatterMatrix.prototype.render = function () {
       .attr("href", "javascript:void(0);")
       .html("Change plot size")
       .on("click", function () {
-        self.__cell_size = orgSize;
-        self.__draw(
-          self.__cell_size,
-          svg,
-          color_variable,
-          selected_colors,
-          to_include,
-          drill_variables
+        if (d3.event) {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+        }
+        redrawScatterMatrix(
+          isFinite(orgSize) && orgSize > 0 ? orgSize : getActiveCellSize()
         );
       });
 
@@ -215,40 +332,12 @@ ScatterMatrix.prototype.render = function () {
       .attr("href", "javascript:void(0);")
       .html("+")
       .on("click", function () {
-        self.__cell_size += 50;
-        self.__draw(
-          self.__cell_size,
-          svg,
-          color_variable,
-          selected_colors,
-          to_include,
-          drill_variables
-        );
+        if (d3.event) {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+        }
+        redrawScatterMatrix(getActiveCellSize() + 50);
       });
-
-    //set to full screen mode;-------------------------------------------------------------------------------------------------
-    var isRightChartFullScreenToggled = false;
-    var windowHeight = window.innerHeight;
-    var originalCellSize = self.__cell_size;
-    $("#scatter-fullscreen-toggle").click(function (e) {
-      isRightChartFullScreenToggled = !isRightChartFullScreenToggled;
-      if (isRightChartFullScreenToggled) {
-        self.__cell_size = (windowHeight - 250) / 2;
-        d3.selectAll(".cell circle").attr("r", "3");
-      } else {
-        self.__cell_size = originalCellSize;
-        d3.selectAll(".cell circle").attr("r", "1");
-      }
-
-      self.__draw(
-        self.__cell_size,
-        svg,
-        color_variable,
-        selected_colors,
-        to_include,
-        drill_variables
-      );
-    });
 
     var variable_li = variable_control
       .append("p")
@@ -278,6 +367,7 @@ ScatterMatrix.prototype.render = function () {
           new_to_include.push(d);
         }
         to_include = new_to_include;
+        self.__selected_variables = to_include.slice();
         self.__draw(
           self.__cell_size,
           svg,
@@ -292,15 +382,33 @@ ScatterMatrix.prototype.render = function () {
       return "" + i + ": " + formatDimLabel(d);
     });
 
-    self.__draw(
-      self.__cell_size,
-      svg,
-      color_variable,
-      selected_colors,
-      to_include,
-      drill_variables
-    );
+    redrawScatterMatrix(self.__cell_size);
+    orgSize = getActiveCellSize();
   });
+};
+
+ScatterMatrix.prototype.clearSelection = function () {
+  if (this.__cell && this.__brush) {
+    this.__cell.call(this.__brush.clear());
+    this.__brush.data = null;
+  }
+
+  d3.select(this.__dom_id)
+    .selectAll(".scatter-matrix-svg .cell circle")
+    .classed("faded", false);
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.handleScatterMatrixSelection === "function"
+  ) {
+    window.handleScatterMatrixSelection([], {
+      x: null,
+      y: null,
+      extent: null,
+    });
+  }
+
+  return this;
 };
 
 // NOTE: unique id for each Circle
@@ -326,6 +434,9 @@ ScatterMatrix.prototype.__draw = function (
   };
   this.onData(function () {
     var data = self.__data;
+    self.__selected_variables = Array.isArray(to_include)
+      ? to_include.slice()
+      : [];
 
     // filter data by selected colors
     if (color_variable && selected_colors) {
@@ -340,12 +451,22 @@ ScatterMatrix.prototype.__draw = function (
     container_el.selectAll("*").remove();
 
     // If no data, don't do anything
-    if (data.length === 0) {
+    if (!Array.isArray(data) || data.length === 0) {
+      container_el.html("<em>No scatter data available</em>");
       return;
     }
 
     // Parse headers from first row of data
     var variables_to_draw = to_include.slice(0);
+    if (variables_to_draw.length === 0) {
+      variables_to_draw = Array.isArray(self.__numeric_variables)
+        ? self.__numeric_variables.slice(0, Math.min(2, self.__numeric_variables.length))
+        : [];
+    }
+    if (variables_to_draw.length === 0) {
+      container_el.html("<em>No numeric dimensions available for scatterplots</em>");
+      return;
+    }
 
     // Get values of the string variable
     var colors = [];
@@ -367,34 +488,6 @@ ScatterMatrix.prototype.__draw = function (
       }
       return colors.length > 0 ? "color-" + colors.indexOf(c) : "color-2";
     }
-
-    // Size parameters
-    var size = cell_size,
-      padding = 10,
-      axis_width = 20,
-      axis_height = 15,
-      legend_width = 0,
-      label_height = 15;
-
-    // Get x and y scales for each numeric variable
-    var x = {},
-      y = {};
-    variables_to_draw.forEach(function (trait) {
-      // Coerce values to numbers.
-      data.forEach(function (d) {
-        d[trait] = +d[trait];
-      });
-
-      var value = function (d) {
-          return d[trait];
-        },
-        domain = [d3.min(data, value), d3.max(data, value)],
-        range_x = [padding / 2, size - padding / 2],
-        range_y = [padding / 2, size - padding / 2];
-
-      x[trait] = d3.scale.linear().domain(domain).range(range_x);
-      y[trait] = d3.scale.linear().domain(domain).range(range_y.reverse());
-    });
 
     // When drilling, user select one or more variables. The first drilled
     // variable becomes the x-axis variable for all columns, and each column
@@ -450,6 +543,157 @@ ScatterMatrix.prototype.__draw = function (
     if (drill_variables.length > 1) {
       filter_descriptions = drill_variables.length - 1;
     }
+
+    // Size parameters
+    var padding = 6,
+      axis_width = 34,
+      axis_height = 12,
+      legend_width = 0,
+      label_height = 12;
+
+    function fitCellSizeToViewport(requestedSize) {
+      var maxSize = requestedSize;
+      var wrapperNode =
+        container_el && typeof container_el.node === "function"
+          ? container_el.node()
+          : null;
+      var chartNode = d3.select(self.__dom_id).node();
+      var availableWidth =
+        isFinite(self.__viewportWidth) && self.__viewportWidth > 0
+          ? self.__viewportWidth
+          : null;
+      var availableHeight =
+        isFinite(self.__viewportHeight) && self.__viewportHeight > 0
+          ? self.__viewportHeight
+          : null;
+
+      if (wrapperNode && typeof wrapperNode.getBoundingClientRect === "function") {
+        var wrapperBounds = wrapperNode.getBoundingClientRect();
+        if (!isFinite(availableWidth) || availableWidth <= 0) {
+          availableWidth = wrapperBounds.width;
+        }
+        if (!isFinite(availableHeight) || availableHeight <= 0) {
+          availableHeight = wrapperBounds.height;
+        }
+      }
+
+      if (
+        (!isFinite(availableWidth) || availableWidth <= 0) &&
+        chartNode &&
+        typeof chartNode.getBoundingClientRect === "function"
+      ) {
+        availableWidth = chartNode.getBoundingClientRect().width;
+      }
+
+      if (
+        (!isFinite(availableHeight) || availableHeight <= 0) &&
+        chartNode &&
+        typeof chartNode.getBoundingClientRect === "function"
+      ) {
+        availableHeight = chartNode.getBoundingClientRect().height;
+      }
+
+      if (
+        isFinite(availableWidth) &&
+        availableWidth > 0 &&
+        x_variables.length > 0
+      ) {
+        var widthBudget =
+          availableWidth - label_height - axis_width - padding - legend_width - 8;
+        maxSize = Math.min(maxSize, widthBudget / x_variables.length);
+      }
+
+      if (
+        isFinite(availableHeight) &&
+        availableHeight > 0 &&
+        y_variables.length > 0
+      ) {
+        var heightBudget =
+          availableHeight -
+          axis_height -
+          label_height -
+          label_height * filter_descriptions -
+          8;
+        maxSize = Math.min(maxSize, heightBudget / y_variables.length);
+      }
+
+      if (!isFinite(maxSize) || maxSize <= 0) {
+        return Math.max(12, requestedSize || 12);
+      }
+
+      return Math.max(12, Math.floor(maxSize));
+    }
+
+    var size = fitCellSizeToViewport(cell_size);
+    self.__rendered_cell_size = size;
+    var pointRadius = Math.max(1, Math.min(3, Math.round(size / 120)));
+
+    // Get x and y scales for each numeric variable
+    var x = {},
+      y = {};
+
+    function getConfiguredDomain(trait) {
+      var domain = null;
+
+      if (typeof graph !== "undefined" && graph && typeof graph.dimensions === "function") {
+        var targetKey =
+          typeof resolveDimKey === "function" ? resolveDimKey(trait, graph) : trait;
+        var dims = graph.dimensions() || {};
+        var dim = dims[targetKey];
+        if (dim && dim.yscale && typeof dim.yscale.domain === "function") {
+          var graphDomain = dim.yscale.domain();
+          if (Array.isArray(graphDomain) && graphDomain.length >= 2) {
+            var graphMin = Number(graphDomain[0]);
+            var graphMax = Number(graphDomain[1]);
+            if (isFinite(graphMin) && isFinite(graphMax)) {
+              domain = [graphMin, graphMax];
+            }
+          }
+        }
+      }
+
+      if (
+        !domain &&
+        typeof _userSetting !== "undefined" &&
+        _userSetting &&
+        _userSetting.dimScales
+      ) {
+        var scale = _userSetting.dimScales[trait];
+        if (!scale && typeof normalizeDimKey === "function") {
+          var norm = normalizeDimKey(trait);
+          var match = Object.keys(_userSetting.dimScales || {}).find(function (k) {
+            return normalizeDimKey(k) === norm;
+          });
+          scale = match ? _userSetting.dimScales[match] : null;
+        }
+        if (Array.isArray(scale) && scale.length >= 2) {
+          var scaleMin = Number(scale[0]);
+          var scaleMax = Number(scale[1]);
+          if (isFinite(scaleMin) && isFinite(scaleMax)) {
+            domain = [scaleMin, scaleMax];
+          }
+        }
+      }
+
+      return domain;
+    }
+
+    variables_to_draw.forEach(function (trait) {
+      // Coerce values to numbers.
+      data.forEach(function (d) {
+        d[trait] = +d[trait];
+      });
+
+      var value = function (d) {
+          return d[trait];
+        },
+        domain = getConfiguredDomain(trait) || [d3.min(data, value), d3.max(data, value)],
+        range_x = [padding / 2, size - padding / 2],
+        range_y = [padding / 2, size - padding / 2];
+
+      x[trait] = d3.scale.linear().domain(domain).range(range_x);
+      y[trait] = d3.scale.linear().domain(domain).range(range_y.reverse());
+    });
 
     // Formatting for axis
     var intf = d3.format("d");
@@ -573,6 +817,9 @@ ScatterMatrix.prototype.__draw = function (
       })
       .each(plot);
 
+    self.__brush = brush;
+    self.__cell = cell;
+
     // Add titles for y variables
     cell
       .filter(function (d) {
@@ -633,6 +880,8 @@ ScatterMatrix.prototype.__draw = function (
         });
       }
 
+      p.__data_to_draw = data_to_draw;
+
       var cell = d3.select(this);
 
       // Frame
@@ -662,11 +911,18 @@ ScatterMatrix.prototype.__draw = function (
         .attr("cy", function (d) {
           return y[p.y](d[p.y]);
         })
-        .attr("r", function (d) {
-          return isRightChartFullScreenToggled ? 2 : 1;
-        })
+        .attr("r", pointRadius)
         .style("fill", function (d) {
-          return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
+          if (
+            typeof color !== "function" ||
+            typeof valueToNumber !== "function" ||
+            !pcIsColoredBy
+          ) {
+            return "#0f4c81";
+          }
+
+          var fill = color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
+          return fill || "#0f4c81";
         });
 
       // Add titles for x variables and drill variable values
@@ -707,28 +963,79 @@ ScatterMatrix.prototype.__draw = function (
       if (brush.data !== p) {
         cell.call(brush.clear());
         brush.x(x[p.x]).y(y[p.y]).data = p;
+        if (
+          typeof window !== "undefined" &&
+          typeof window.handleScatterMatrixSelection === "function"
+        ) {
+          window.handleScatterMatrixSelection([], {
+            x: p.x,
+            y: p.y,
+            extent: null,
+          });
+        }
       }
     }
 
     // Highlight selected circles
     function brush(p) {
       var e = brush.extent();
-      svg.selectAll(".cell circle").classed("faded", function (d) {
-        return e[0][0] <= d[p.x] &&
+      var sourceData = [];
+      if (
+        typeof window !== "undefined" &&
+        typeof window.getCurrentScatterBrushSourceData === "function"
+      ) {
+        sourceData = window.getCurrentScatterBrushSourceData() || [];
+      }
+      if (!sourceData.length) {
+        sourceData = Array.isArray(p.__data_to_draw) ? p.__data_to_draw : data;
+      }
+
+      var selectedData = sourceData.filter(function (d) {
+        return (
+          e[0][0] <= d[p.x] &&
           d[p.x] <= e[1][0] &&
           e[0][1] <= d[p.y] &&
           d[p.y] <= e[1][1]
-          ? false
-          : true;
+        );
       });
+      var selectedLookup = {};
+      selectedData.forEach(function (d) {
+        selectedLookup[d.scid] = true;
+      });
+
+      svg.selectAll(".cell circle").classed("faded", function (d) {
+        return !selectedLookup[d.scid];
+      });
+
+      if (
+        typeof window !== "undefined" &&
+        typeof window.handleScatterMatrixSelection === "function"
+      ) {
+        window.handleScatterMatrixSelection(selectedData, {
+          x: p.x,
+          y: p.y,
+          extent: e,
+        });
+      }
     }
 
     // If brush is empty, select all circles
     function brushend() {
-      if (brush.empty())
+      if (brush.empty()) {
         svg
           .selectAll(".scatter-matrix-svg .cell circle")
-          .classed("faded", true);
+          .classed("faded", false);
+        if (
+          typeof window !== "undefined" &&
+          typeof window.handleScatterMatrixSelection === "function"
+        ) {
+          window.handleScatterMatrixSelection([], {
+            x: brush.data ? brush.data.x : null,
+            y: brush.data ? brush.data.y : null,
+            extent: null,
+          });
+        }
+      }
     }
 
     function cross(a, b) {

@@ -4,6 +4,487 @@ body {
     font-size: 12px;
 }
 
+#sidebar-wrapper {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#sidebar-wrapper .sidebar-nav {
+    position: relative;
+    top: auto;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 250px;
+    height: 100%;
+    overflow: hidden;
+}
+
+#legend-heading,
+#sliders-report,
+#sidebarResizeBar {
+    flex: 0 0 auto;
+}
+
+#legend,
+#inputSliders {
+    min-height: 0;
+    overflow-x: hidden;
+}
+
+#inputSliders {
+    overflow-y: auto;
+}
+
+#wrapper,
+#sidebar-wrapper,
+#page-content-wrapper {
+    transition: none !important;
+}
+
+#page-content-wrapper {
+    overflow-x: hidden;
+}
+
+#page-content-wrapper > .container-fluid {
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+#mainContentLayout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    clear: both;
+    min-width: 0;
+}
+
+#mainContentLayout > #topChartsSection,
+#mainContentLayout > #mainVerticalResizeBar,
+#mainContentLayout > #bottomContentLayout {
+    float: none;
+    width: 100%;
+    max-width: none;
+    flex: 0 0 auto;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#mainContentLayout > #topChartsSection,
+#mainContentLayout > #bottomContentLayout {
+    min-height: 0;
+}
+
+#chartLayoutRow {
+    margin-left: -4px;
+    margin-right: -4px;
+    min-width: 0;
+}
+
+#chartLayoutRow > #PcChartWrapper,
+#chartLayoutRow > #ScChartWrapper {
+    padding-left: 4px;
+    padding-right: 4px;
+    box-sizing: border-box;
+}
+
+#chartHorizontalResizeBar {
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    flex: 0 0 16px;
+    width: 16px;
+    min-width: 16px;
+    padding: 4px 0 0;
+    cursor: col-resize;
+    touch-action: none;
+    user-select: none;
+}
+
+#chartHorizontalResizeGrip {
+    position: relative;
+    display: block;
+    width: 8px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #b7c3d6;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    cursor: col-resize;
+    touch-action: none;
+    appearance: none;
+}
+
+#chartHorizontalResizeGrip::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 10px;
+    border-radius: 999px;
+    background: #7f8da3;
+    transform: translate(-50%, -50%);
+    box-shadow: -3px 0 0 #7f8da3, 3px 0 0 #7f8da3;
+}
+
+#chartHorizontalResizeGrip:focus {
+    outline: 2px solid rgba(3, 56, 153, 0.35);
+    outline-offset: 2px;
+}
+
+body.is-chart-horizontal-resizing,
+body.is-chart-horizontal-resizing * {
+    cursor: col-resize !important;
+}
+
+#PcChartWrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#PcChartWrapper > .row {
+    flex: 0 0 auto;
+}
+
+#PcChartWrapper > .row-fluid {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+#PcChartWrapper > .row-fluid > #graph {
+    min-height: 0;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) > .row-fluid:first-child {
+    flex: 0 0 auto;
+}
+
+@media (min-width: 1200px) {
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) {
+        display: flex;
+        align-items: stretch;
+    }
+
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #PcChartWrapper,
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper {
+        float: none;
+    }
+
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #PcChartWrapper {
+        flex: 1 1 0;
+        width: 0;
+        min-width: 0;
+        max-width: none;
+    }
+
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper {
+        flex: 0 0 clamp(300px, 24vw, 360px);
+        width: clamp(300px, 24vw, 360px);
+        max-width: clamp(300px, 24vw, 360px);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        min-height: 0;
+    }
+
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper.scatter-control-hidden {
+        flex: 0 0 clamp(280px, 21vw, 320px);
+        width: clamp(280px, 21vw, 320px);
+        max-width: clamp(280px, 21vw, 320px);
+    }
+}
+
+@media (max-width: 1199px) {
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #PcChartWrapper,
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper {
+        float: none;
+        width: auto;
+        max-width: none;
+    }
+
+    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper {
+        margin-top: 12px;
+    }
+
+    #PcChartWrapper > .row > .btn-group.col-xs-12 {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+
+    #PcChartWrapper > .row > .btn-group.col-xs-12 > .btn,
+    #PcChartWrapper > .row > .btn-group.col-xs-12 > a.btn {
+        float: none;
+    }
+
+    #PcChartWrapper > .row > .btn-group.col-xs-12 > .btn-group {
+        float: none !important;
+        width: 100% !important;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+        margin-top: 4px;
+    }
+
+    #ScChartWrapper .chartSide {
+        display: block;
+        margin: 0;
+    }
+
+    #ScChartWrapper #radarChart {
+        display: block;
+        width: 100%;
+        max-width: min(100%, 440px);
+        margin: 0 auto;
+    }
+}
+
+#mainVerticalResizeBar {
+    clear: both;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 16px;
+    margin: 4px 0 2px;
+    padding: 4px 0 2px 12px;
+    z-index: 1002;
+    pointer-events: auto;
+    isolation: isolate;
+    touch-action: none;
+    cursor: row-resize;
+}
+
+#mainVerticalResizeGrip {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 38px;
+    height: 8px;
+    padding: 0;
+    border: 1px solid #b7c3d6;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    cursor: row-resize;
+    touch-action: none;
+    pointer-events: auto;
+    appearance: none;
+}
+
+#topChartsSection,
+#bottomContentLayout {
+    position: relative;
+    z-index: 1;
+}
+
+#mainVerticalResizeGrip:focus {
+    outline: 2px solid rgba(3, 56, 153, 0.35);
+    outline-offset: 2px;
+}
+
+#mainVerticalResizeGrip::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 2px;
+    border-radius: 999px;
+    background: #7f8da3;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 -4px 0 #7f8da3, 0 4px 0 #7f8da3;
+}
+
+#mainVerticalResizeGrip:hover,
+#mainVerticalResizeGrip:focus {
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+#mainVerticalResizeBar.is-disabled #mainVerticalResizeGrip {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+#mainVerticalResizeBar.is-disabled {
+    cursor: not-allowed;
+}
+
+.main-vertical-resize-helper {
+    width: 38px;
+    height: 8px;
+    border: 1px solid #b7c3d6;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    opacity: 0.65;
+    z-index: 1100;
+}
+
+body.is-main-vertical-resizing,
+body.is-main-vertical-resizing * {
+    cursor: row-resize !important;
+    user-select: none;
+}
+
+#PcChartWrapper,
+#ScChartWrapper,
+#graph,
+#graph.parcoords {
+    min-width: 0;
+    max-width: 100%;
+}
+
+#graph,
+#graph.parcoords {
+    position: relative;
+    overflow: hidden;
+    z-index: 0;
+}
+
+#chartLayoutRow.scatter-hidden #ScChartWrapper {
+    display: none !important;
+}
+
+#radarChart {
+    overflow: visible;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) > .row-fluid,
+#ScChartWrapper:not(.rightChartFullScreenToggled) > #scatterSelectionActionRow {
+    flex: 0 0 auto;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) .chartSide {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-left: 0;
+    margin-right: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
+    float: none;
+    display: block;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-height: 220px;
+    margin: 0 auto;
+    padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
+    position: relative;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: visible;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-svg {
+    min-width: 0;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container svg {
+    float: none;
+    display: block;
+    margin: 0 auto;
+    overflow: visible;
+}
+
+@media (min-width: 1200px) {
+    #ScChartWrapper:not(.rightChartFullScreenToggled) .chartSide {
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 0;
+    }
+
+    #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart {
+        display: flex;
+        flex: 0 0 auto;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+
+    #ScChartWrapper:not(.rightChartFullScreenToggled) #radarChart .scatter-matrix-container {
+        transform: none;
+    }
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden .chartSide {
+    align-items: center;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden #radarChart {
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    overflow-x: visible;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden #radarChart .scatter-matrix-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden #radarChart .scatter-matrix-svg {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden #radarChart .scatter-matrix-container svg {
+    margin: 0 auto;
+}
+
+#legend text.legend-label,
+#inputSliders .inputSliderLabelText {
+    fill: #222222;
+    color: #222222;
+}
+
+#legend text.legend-check {
+    fill: #033899;
+}
+
 .modal-content, #viewer2d, #viewer3d{
     background-color: white;
 }
@@ -156,6 +637,55 @@ div#thumbnails-btm.col-lg-12{
     overflow-x: hidden;
 }
 
+#sidebarResizeBar {
+    display: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 16px;
+    padding: 4px 12px 2px;
+    cursor: row-resize;
+    touch-action: none;
+}
+
+#sidebarResizeGrip {
+    position: relative;
+    display: block;
+    width: 36px;
+    height: 8px;
+    padding: 0;
+    border: 1px solid #b7c3d6;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    cursor: row-resize;
+    touch-action: none;
+    appearance: none;
+}
+
+#sidebarResizeGrip::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 2px;
+    border-radius: 999px;
+    background: #7f8da3;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 -4px 0 #7f8da3, 0 4px 0 #7f8da3;
+}
+
+#sidebarResizeGrip:focus {
+    outline: 2px solid rgba(3, 56, 153, 0.35);
+    outline-offset: 2px;
+}
+
+body.is-sidebar-resizing,
+body.is-sidebar-resizing * {
+    cursor: row-resize !important;
+}
+
 rect.disabled {
     fill: transparent !important;
 }
@@ -209,8 +739,59 @@ rect.disabled {
 }
 
 .inputSliderLabel {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 4px;
+    cursor: grab;
+}
+
+#inputSliders {
+    display: flex;
+    flex-direction: column;
+}
+
+#inputSliders > form.sliders {
+    display: none;
+}
+
+#inputSliders > .inputSlider {
+    width: 100%;
+}
+
+.inputSlider {
+    position: relative;
+}
+
+.inputSlider .slider-reorder-handle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    color: #6b7280;
+    cursor: grab;
+}
+
+.inputSlider.is-dragging .slider-reorder-handle {
+    cursor: grabbing;
+}
+
+.inputSlider.is-dragging .inputSliderLabel {
+    cursor: grabbing;
+}
+
+.inputSliderLabelText {
+    display: inline-block;
+    flex: 1 1 auto;
+}
+
+#inputSliders .page-slider-placeholder {
+    margin-bottom: 12px;
+    border: 1px dashed #7fa6d8;
+    border-radius: 4px;
+    background: rgba(3, 56, 153, 0.06);
 }
 
 #copy-link.btn.btn-xs {
@@ -342,37 +923,257 @@ a#copyRightButton {
     background-color: white;
 }
 
-#ScChartWrapper.rightChartFullScreenToggled{
-    width: 75%;
-    left: 15px;
-    z-index: 9;
-    position: absolute;
+#mainContentLayout.rightChartFullScreenToggled {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: minmax(560px, 74vh) minmax(170px, 22vh);
+    gap: 12px;
+    align-items: stretch;
+    clear: both;
 }
 
-.col-lg-3 .chartSide.rightChartFullScreenToggled, 
-.col-lg-3 .row-fluid.rightChartFullScreenToggled{
-    width: 100%;
-    float: left;
+#mainContentLayout.rightChartFullScreenToggled > #topChartsSection {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+    height: 100%;
+    float: none;
+    padding-left: 0;
+    padding-right: 0;
+    min-width: 0;
+    min-height: 0;
 }
-#zoomedArea.rightChartFullScreenToggled{
+
+#mainContentLayout.rightChartFullScreenToggled > #mainVerticalResizeBar {
     display: none;
-    z-index: 1;
-}
-#PcChartWrapper.rightChartFullScreenToggled{
-    position: absolute;
-}
-#thumbnails-btm_container.rightChartFullScreenToggled{
-    width: 25%;
-    height: calc(100% - 70px);
 }
 
-.col-lg-3 #copyRightButton.rightChartFullScreenToggled{
+#mainContentLayout.rightChartFullScreenToggled > #bottomContentLayout {
+    display: contents;
+}
+
+#chartLayoutRow.rightChartFullScreenToggled {
+    display: block;
+    height: 100%;
+    margin: 0;
+}
+
+#chartLayoutRow.rightChartFullScreenToggled > #PcChartWrapper,
+#PcChartWrapper.rightChartFullScreenToggled{
+    display: none;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled{
+    width: 100%;
+    height: 100%;
+    left: auto;
+    z-index: 9;
+    position: relative;
+    float: none;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#ScChartWrapper .chartSide.rightChartFullScreenToggled,
+#ScChartWrapper .row-fluid.rightChartFullScreenToggled{
+    width: 100%;
+    float: none;
+}
+
+#ScChartWrapper .chartSide.rightChartFullScreenToggled {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 0;
+    margin: 0;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled #radarChart {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled .scatter-matrix-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    min-height: 0;
+    height: 100%;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled .scatter-matrix-container svg {
+    float: none;
+    display: block;
+    margin: 0 auto;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled .scatter-matrix-svg {
+    margin-top: 8px;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled #scatterSelectionActionRow {
+    position: absolute;
+    right: 14px;
+    top: 54px;
+    z-index: 5;
+    width: auto;
+    padding: 0;
+}
+
+#ScChartWrapper.rightChartFullScreenToggled #scatterSelectionActionRow .scatter-selection-actions {
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid #d9dee8;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+
+#zoomedArea.rightChartFullScreenToggled{
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled{
+    grid-column: 2;
+    grid-row: 1;
+    position: relative;
+    right: auto;
+    width: 100%;
+    max-width: none;
+    height: 100% !important;
+    min-height: 0;
+    float: none;
+    overflow: hidden;
+    margin-top: 0;
+    padding: 10px 12px 12px;
+    background: #ffffff;
+    border: 1px solid #d9dee8;
+    border-radius: 8px;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm{
+    width: 100%;
+    height: calc(100% - 38px);
+    overflow: auto;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled .sorting,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm {
+    float: none;
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm div {
+    width: 33.333333%;
+    max-width: 33.333333%;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm .col-xs-1:before,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm .col-xs-3:before {
+    content: "";
+    display: block;
+    margin-top: 100%;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm .col-xs-1,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm .col-xs-3 {
+    position: relative;
+    padding: 4px;
+    transform: none;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.rightChartFullScreenToggled #thumbnails-btm img {
+    width: calc(100% - 8px);
+    height: calc(100% - 8px);
+    top: 4px;
+    right: 4px;
+    bottom: 4px;
+    left: 4px;
+    border-width: 0.3em;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight.drawer-open,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight.drawer-pinned {
+    position: relative;
+    right: auto;
+    width: 100%;
+    transform: none;
+    overflow: hidden !important;
+}
+
+#mainContentLayout.rightChartFullScreenToggled #thumbnailsPullTab,
+#mainContentLayout.rightChartFullScreenToggled #thumbnails-btm_container.onRight #thumbnailsPullTab {
+    display: none !important;
+}
+
+#ScChartWrapper #copyRightButton.rightChartFullScreenToggled{
     width: 85% !important;
+}
+
+#tbContainer.rightChartFullScreenToggled {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+    width: 100%;
+    height: 100%;
+    float: none;
+    overflow: auto;
+    padding: 10px 12px 12px;
+    margin-top: 0;
+    background: #ffffff;
+    border: 1px solid #d9dee8;
+    border-radius: 8px;
+}
+
+#tbContainer.rightChartFullScreenToggled .header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #ffffff;
+    margin-left: 0;
+    margin-right: 0;
 }
 
 g.cell text {
     font-size: 0.85em;
 }
+
+.scatter-matrix-svg g.cell {
+    float: none;
+    overflow: visible;
+    width: auto;
+    height: auto;
+    white-space: normal;
+}
+
+.scatter-matrix-svg g.cell circle,
+.scatter-matrix-svg g.cell rect,
+.scatter-matrix-svg g.cell text {
+    visibility: visible;
+}
+
+.scatter-matrix-svg svg {
+    display: block;
+    overflow: visible;
+}
+
 #folderLink{
     border-radius: 20px 0 0 20px;
     width: 300px;
@@ -421,7 +1222,11 @@ g.cell text {
 
 
 
-#tbContainer { padding-left: 60px;}
+#tbContainer {
+    padding-left: 24px;
+    --tb-col-width: 140px;
+    --tb-first-col-width: 220px;
+}
 /* .row, .header {clear: left;font-size: 12px;line-height: 18px;height: 18px;} */
 #tbContainer .row:nth-child(odd) { background: rgba(0,0,0,0.03); }
 #tbContainer .header {
@@ -455,4 +1260,12 @@ g.cell text {
   transition: all 0.2s;
 }
 
-.col-0 { width: 180px; }
+#tbContainer .cell {
+  width: var(--tb-col-width);
+  min-width: var(--tb-col-width);
+}
+
+#tbContainer .col-0 {
+  width: var(--tb-first-col-width);
+  min-width: var(--tb-first-col-width);
+}

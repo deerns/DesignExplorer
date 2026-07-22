@@ -178,6 +178,11 @@ d3.parcoords = function (config) {
                 });
                 //pc.updateAxes(0);
             }
+        })
+        .on("dimensionTitleRotation", function (d) {
+            if (!pc.svg) return;
+            pc.svg.selectAll("text.label")
+                .attr("transform", "translate(0,-5) rotate(" + d.value + ")");
         });
 
     // expose the state of the chart
@@ -867,9 +872,7 @@ d3.parcoords = function (config) {
         delta = delta < 0 ? -5 : delta;
         delta = delta > 0 ? 5 : delta;
 
-        __.dimensionTitleRotation += delta;
-        pc.svg.selectAll("text.label")
-            .attr("transform", "translate(0,-5) rotate(" + __.dimensionTitleRotation + ")");
+        pc.dimensionTitleRotation(__.dimensionTitleRotation + delta);
         d3.event.preventDefault();
     }
 
@@ -952,7 +955,11 @@ d3.parcoords = function (config) {
         //console.log(g_data);
         // Enter
         g_data.enter().append("svg:g")
-            .attr("id", function (d) {return "dim_"+d;})
+            .attr("id", function (d) {
+                return "dim_" + (typeof string_as_unicode_escape === "function"
+                    ? string_as_unicode_escape(d)
+                    : d);
+            })
             .attr("class", "dimension")
             .attr("transform", function (p) {
                 return "translate(" + position(p) + ")";
@@ -1596,12 +1603,38 @@ d3.parcoords = function (config) {
         };
     };
 
+    function getCompactDimensionPosition(d) {
+        var orderedKeys = pc.getOrderedDimensionKeys();
+        var dimensionCount = orderedKeys.length;
+        var index = orderedKeys.indexOf(d);
+
+        if (dimensionCount <= 0 || index === -1) {
+            return null;
+        }
+
+        if (dimensionCount === 1) {
+            return w() / 2;
+        }
+
+        if (dimensionCount === 2) {
+            return index === 0 ? w() * 0.22 : w() * 0.78;
+        }
+
+        return null;
+    }
+
     function position(d) {
         if (xscale.range().length === 0) {
             xscale.rangePoints([0, w()], 1);
         }
+
         var v = dragging[d];
-        return v == null ? xscale(d) : v;
+        if (v != null) {
+            return v;
+        }
+
+        var compactPosition = getCompactDimensionPosition(d);
+        return compactPosition == null ? xscale(d) : compactPosition;
     }
     pc.version = "0.7.0";
     // this descriptive text should live with other introspective methods

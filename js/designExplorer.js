@@ -1,3 +1,26 @@
+function ensureInitialGlobalDataState() {
+  if (typeof originalData === "undefined") originalData = "";
+  if (typeof cleanedData === "undefined") cleanedData = [];
+  if (typeof numericalData === "undefined") numericalData = [];
+  if (typeof inputData === "undefined") inputData = [];
+  if (typeof outputData === "undefined") outputData = [];
+  if (typeof slidersInfo === "undefined") slidersInfo = [];
+  if (typeof currentSliderValues === "undefined") currentSliderValues = {};
+  if (typeof allDataCollector === "undefined") allDataCollector = {};
+  if (typeof slidersMapping === "undefined") slidersMapping = {};
+  if (typeof ids === "undefined") ids = [];
+  if (typeof cleanedKeys4pc === "undefined") cleanedKeys4pc = {};
+  if (typeof googleFolderLink === "undefined") googleFolderLink = "";
+  if (typeof inputDataKeys === "undefined") inputDataKeys = [];
+  if (typeof outputDataKeys === "undefined") outputDataKeys = [];
+  if (typeof image1LinkKeys === "undefined") image1LinkKeys = [];
+  if (typeof image2LinkKeys === "undefined") image2LinkKeys = [];
+  if (typeof imageLinkKeys === "undefined") imageLinkKeys = [];
+  if (typeof imageKeyAliases === "undefined") imageKeyAliases = {};
+}
+
+ensureInitialGlobalDataState();
+
 function unloadPageContent() {
   /*
     	// This function removes current contents from the page
@@ -38,13 +61,158 @@ function unloadPageContent() {
   d3.select("div#viewer3d").selectAll("*").remove(); //remove any object inside 3D viewer
 }
 
+var mainVerticalLayoutState = {
+  topRatio: 0.58,
+  topControlsHeight: 24,
+  minGraphHeight: 120,
+  minBottomHeight: 150,
+};
+
+function getAvailableMainViewportHeight() {
+  var viewportHeight =
+    typeof window !== "undefined" && isFinite(window.innerHeight)
+      ? window.innerHeight
+      : 0;
+
+  if (!(viewportHeight > 0) || typeof document === "undefined") {
+    return Math.max(viewportHeight, 0);
+  }
+
+  var anchorNode =
+    document.getElementById("mainContentLayout") ||
+    document.getElementById("page-content-wrapper");
+  var pageContentNode = document.getElementById("page-content-wrapper");
+  var topOffset = 0;
+  var bottomPadding = 0;
+
+  if (
+    anchorNode &&
+    typeof anchorNode.getBoundingClientRect === "function"
+  ) {
+    topOffset = anchorNode.getBoundingClientRect().top;
+  }
+
+  if (
+    pageContentNode &&
+    typeof window.getComputedStyle === "function"
+  ) {
+    bottomPadding =
+      parseFloat(window.getComputedStyle(pageContentNode).paddingBottom) || 0;
+  }
+
+  return Math.max(viewportHeight - topOffset - bottomPadding, 0);
+}
+
+function resolveMainVerticalTopControlsHeight() {
+  var measuredTopControlsHeight = null;
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.getMeasuredMainVerticalTopControlsHeight === "function"
+  ) {
+    measuredTopControlsHeight = window.getMeasuredMainVerticalTopControlsHeight();
+  }
+
+  if (
+    isFinite(measuredTopControlsHeight) &&
+    measuredTopControlsHeight > 0
+  ) {
+    mainVerticalLayoutState.topControlsHeight = measuredTopControlsHeight;
+  }
+
+  return mainVerticalLayoutState.topControlsHeight;
+}
+
+function getMainVerticalLayoutBounds(totalHeight) {
+  var topControlsHeight = resolveMainVerticalTopControlsHeight();
+  var resolvedTotalHeight =
+    isFinite(totalHeight) && totalHeight > 0
+      ? totalHeight
+      : getAvailableMainViewportHeight();
+  var minTopHeight =
+    topControlsHeight + mainVerticalLayoutState.minGraphHeight;
+  var minBottomHeight = mainVerticalLayoutState.minBottomHeight;
+
+  if (minTopHeight + minBottomHeight > resolvedTotalHeight) {
+    minBottomHeight = Math.max(
+      100,
+      Math.min(minBottomHeight, resolvedTotalHeight * 0.35)
+    );
+    minTopHeight = Math.max(
+      topControlsHeight + 80,
+      resolvedTotalHeight - minBottomHeight
+    );
+  }
+
+  return {
+    minTop: minTopHeight,
+    maxTop: Math.max(minTopHeight, resolvedTotalHeight - minBottomHeight),
+  };
+}
+
+function getMainVerticalLayoutTopHeight() {
+  var topControlsHeight = resolveMainVerticalTopControlsHeight();
+  return (
+    (isFinite(graphHeight) ? graphHeight : 0) +
+    topControlsHeight
+  );
+}
+
+function setMainVerticalLayoutTopHeight(nextTopHeight) {
+  if (!isFinite(nextTopHeight)) {
+    return getMainVerticalLayoutTopHeight();
+  }
+
+  var totalHeight = getAvailableMainViewportHeight();
+  var bounds = getMainVerticalLayoutBounds(totalHeight);
+  var resolvedTopHeight = Math.max(
+    bounds.minTop,
+    Math.min(bounds.maxTop, nextTopHeight)
+  );
+
+  mainVerticalLayoutState.topRatio =
+    totalHeight > 0 ? resolvedTopHeight / totalHeight : mainVerticalLayoutState.topRatio;
+  if (
+    typeof window !== "undefined" &&
+    typeof window.syncLayoutRatiosToUserSetting === "function"
+  ) {
+    window.syncLayoutRatiosToUserSetting();
+  }
+
+  return resolvedTopHeight;
+}
+
 function calWidthAndHeight() {
-  (windowWidth = window.innerWidth),
-    (windowHeight = window.innerHeight),
-    (cleanHeight = windowHeight - 115), // 2
-    (cleanWidth = windowWidth - 100),
-    (graphHeight = cleanHeight / 3 - 24), //remove 22+2 top tool button
-    (zoomedHeight = (cleanHeight * 2) / 3); //remove 22+2 top tool button
+  var topControlsHeight = resolveMainVerticalTopControlsHeight();
+  windowWidth = window.innerWidth;
+  windowHeight = window.innerHeight;
+  cleanHeight = getAvailableMainViewportHeight();
+  cleanWidth = windowWidth;
+
+  var bounds = getMainVerticalLayoutBounds(cleanHeight);
+  var desiredTopHeight = cleanHeight * mainVerticalLayoutState.topRatio;
+  if (!isFinite(desiredTopHeight) || desiredTopHeight <= 0) {
+    desiredTopHeight = cleanHeight / 3;
+  }
+
+  var topHeight = Math.max(
+    bounds.minTop,
+    Math.min(bounds.maxTop, desiredTopHeight)
+  );
+
+  mainVerticalLayoutState.topRatio =
+    cleanHeight > 0 ? topHeight / cleanHeight : 1 / 3;
+  if (
+    typeof window !== "undefined" &&
+    typeof window.syncLayoutRatiosToUserSetting === "function"
+  ) {
+    window.syncLayoutRatiosToUserSetting();
+  }
+  graphHeight = Math.max(
+    topHeight - topControlsHeight,
+    80
+  ); // remove 22+2 top tool button
+  zoomedHeight = Math.max(cleanHeight - topHeight, 0);
 }
 
 function overwriteInitialGlobalValues() {
@@ -76,31 +244,86 @@ function overwriteInitialGlobalValues() {
     window.__allDimensions = {};
   }
 
-  _userSetting = {
-    studyInfo: {
-      name: "",
-      date: "",
-    },
-    dimScales: {},
-    dimTicks: {},
-    dimMark: {},
-    dimLabels: {},
-    dimHidden: {},
-    dimReversed: {},
-    imageLabels: {},
-    labelSize: "",
-    lineGradient: {
-      enabled: false,
-      start:
-        typeof defaultLineGradientColors !== "undefined"
-          ? defaultLineGradientColors[0]
-          : "#102F86",
-      end:
-        typeof defaultLineGradientColors !== "undefined"
-          ? defaultLineGradientColors[1]
-          : "#2FADDD",
-    },
-  };
+  var defaultUserSetting =
+    typeof createDefaultUserSettingState === "function"
+      ? createDefaultUserSettingState()
+      : {
+          studyInfo: {
+            name: "",
+            date: "",
+          },
+          dimScales: {},
+          dimTicks: {},
+          dimMark: {},
+          dimLabels: {},
+          dimLabelsNormalized: {},
+          dimHidden: {},
+          dimHiddenNormalized: {},
+          dimReversed: {},
+          dimReversedNormalized: {},
+          dimOrder: [],
+          sliderOrder: [],
+          dimSliderTitleSizes: {},
+          dimSliderTickSizes: {},
+          imageLabels: {},
+          thumbnailSortBy: "",
+          thumbnailSortAscending: true,
+          hideScatterPlots: false,
+          showInputOutputBars: false,
+          mainVerticalRatio: 0.58,
+          chartHorizontalRatio: null,
+          labelSize:
+            typeof defaultLabelSizeValue !== "undefined"
+              ? defaultLabelSizeValue
+              : "90%",
+          labelSizeBase:
+            typeof defaultLabelSizeValue !== "undefined"
+              ? defaultLabelSizeValue
+              : "90%",
+          sliderTickSize:
+            typeof defaultSliderTickSize !== "undefined"
+              ? defaultSliderTickSize + "px"
+              : "9px",
+          labelRotation:
+            typeof defaultLabelRotationValue !== "undefined"
+              ? defaultLabelRotationValue
+              : 0,
+          sliderTagHighlightColor:
+            typeof defaultSliderTagHighlightColor !== "undefined"
+              ? defaultSliderTagHighlightColor
+              : "#000000",
+          sliderTagFontSize:
+            typeof defaultSliderTagFontSize !== "undefined"
+              ? defaultSliderTagFontSize
+              : 12,
+          targetMarkFontSize:
+            typeof defaultTargetMarkFontSize !== "undefined"
+              ? defaultTargetMarkFontSize
+              : 12,
+          lineGradient: {
+            enabled: false,
+            start:
+              typeof defaultLineGradientColors !== "undefined"
+                ? defaultLineGradientColors[0]
+                : "#102F86",
+            end:
+              typeof defaultLineGradientColors !== "undefined"
+                ? defaultLineGradientColors[1]
+                : "#2FADDD",
+          },
+        };
+
+  _userSetting =
+    typeof mergeUserSettingWithDefaults === "function"
+      ? mergeUserSettingWithDefaults(defaultUserSetting)
+      : defaultUserSetting;
+
+  if (typeof window !== "undefined") {
+    window.sortBy = "";
+    window.__thumbnailSortAscending = true;
+  }
+  sortBy = "";
+  ascending = true;
 
   if (
     typeof color !== "undefined" &&
@@ -112,6 +335,10 @@ function overwriteInitialGlobalValues() {
         ? defaultLineGradientColors.slice()
         : ["#102F86", "#2FADDD"]
     );
+  }
+
+  if (typeof clearScatterSelectionState === "function") {
+    clearScatterSelectionState();
   }
 
   rcheight = height = d3.select("#graph").style("height").replace("px", "");
@@ -321,15 +548,357 @@ function loadFromUrl(rawUrl) {
   });
 }
 
-function applyLabelFontSize(size) {
-  // Accept either preset keys or a raw CSS font-size string/number
-  var map = {
-    largeLabel: "95%",
-    mediumLabel: "85%",
-    smallLabel: "75%",
-  };
+function normalizeSliderPercentSize(size) {
+  if (size === undefined || size === null) return null;
+  if (typeof size === "number" && isFinite(size)) return size;
 
-  var resolved = map.hasOwnProperty(size) ? map[size] : size;
+  var str = String(size).trim();
+  if (!str) return null;
+  if (/%$/.test(str)) {
+    str = str.replace(/%$/, "");
+  }
+
+  var num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+function normalizeSliderPixelSize(size) {
+  if (size === undefined || size === null) return null;
+  if (typeof size === "number" && isFinite(size)) return size;
+
+  var str = String(size).trim();
+  if (!str) return null;
+  if (/px$/i.test(str)) {
+    str = str.replace(/px$/i, "");
+  }
+
+  var num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+function normalizeSliderDimKey(key) {
+  if (typeof normalizeDimKey === "function") {
+    return normalizeDimKey(key);
+  }
+
+  var raw = key;
+  if (raw && typeof raw === "object") {
+    raw =
+      raw.name ||
+      raw.key ||
+      raw.dim ||
+      raw.dimension ||
+      (typeof raw.toString === "function" ? raw.toString() : "");
+  }
+
+  return (raw || "")
+    .toString()
+    .trim()
+    .replace(/[_\.]/g, " ")
+    .replace(/^in:/i, "")
+    .replace(/^out:/i, "")
+    .toLowerCase();
+}
+
+function findSliderDimOverride(dimName, settingMap) {
+  var map = settingMap || {};
+
+  if (map[dimName] !== undefined) {
+    return map[dimName];
+  }
+
+  var target = normalizeSliderDimKey(dimName);
+  var match = Object.keys(map).find(function (key) {
+    return normalizeSliderDimKey(key) === target;
+  });
+
+  return match ? map[match] : undefined;
+}
+
+function getSliderDimNameFromNode(node, datum) {
+  var attrDim =
+    node && typeof node.getAttribute === "function"
+      ? node.getAttribute("data-dim")
+      : "";
+  if (attrDim) {
+    return attrDim;
+  }
+
+  if (datum && typeof datum === "object") {
+    return datum.name || datum.key || datum.dim || datum.dimension || datum;
+  }
+
+  return datum;
+}
+
+function getSliderWrapperSelection(dimName) {
+  if (typeof d3 === "undefined") return null;
+
+  var byDataDim = d3.selectAll("#inputSliders .inputSlider").filter(function (d) {
+    var currentDim = getSliderDimNameFromNode(this, d);
+    return normalizeSliderDimKey(currentDim) === normalizeSliderDimKey(dimName);
+  });
+  if (!byDataDim.empty()) {
+    return byDataDim;
+  }
+
+  if (typeof string_as_unicode_escape === "function") {
+    var escaped = string_as_unicode_escape(String(dimName));
+    var byId = d3.select("#sliderWrap_" + escaped);
+    if (!byId.empty()) {
+      return byId;
+    }
+  }
+
+  var fallback = d3.selectAll("#inputSliders .inputSlider").filter(function (d) {
+    var currentDim = d && d.name ? d.name : d;
+    return normalizeSliderDimKey(currentDim) === normalizeSliderDimKey(dimName);
+  });
+
+  return fallback.empty() ? null : fallback;
+}
+
+function getGraphDimensionSelection(dimName) {
+  if (typeof d3 === "undefined") return null;
+
+  var byData = d3.selectAll("#graph .dimension").filter(function (d) {
+    var currentDim = getSliderDimNameFromNode(this, d);
+    return normalizeSliderDimKey(currentDim) === normalizeSliderDimKey(dimName);
+  });
+  if (!byData.empty()) {
+    return byData;
+  }
+
+  if (typeof string_as_unicode_escape === "function") {
+    var escaped = string_as_unicode_escape(String(dimName));
+    var byId = d3.select("#dim_" + escaped);
+    if (!byId.empty()) {
+      return byId;
+    }
+  }
+
+  return null;
+}
+
+function ensureSliderFontOverrideStyleTag() {
+  if (typeof document === "undefined") return null;
+
+  var styleEl = document.getElementById("slider-font-overrides");
+  if (!styleEl) {
+    styleEl = document.createElement("style");
+    styleEl.id = "slider-font-overrides";
+    (document.head || document.getElementsByTagName("head")[0]).appendChild(
+      styleEl
+    );
+  }
+
+  return styleEl;
+}
+
+function getBaseLabelFontSizePercent() {
+  var baseSize = normalizeSliderPercentSize(
+    _userSetting && _userSetting.labelSizeBase
+  );
+  if (baseSize === null) {
+    baseSize = normalizeSliderPercentSize(_userSetting && _userSetting.labelSize);
+  }
+  if (baseSize === null && typeof defaultLabelSizeValue !== "undefined") {
+    baseSize = normalizeSliderPercentSize(defaultLabelSizeValue);
+  }
+  return baseSize === null ? 90 : baseSize;
+}
+
+function resolveRelativeLabelFontSize(size) {
+  var scaleMap = {
+    largeLabel: 1.2,
+    mediumLabel: 1,
+    smallLabel: 0.8,
+  };
+  if (!scaleMap.hasOwnProperty(size)) {
+    return null;
+  }
+
+  var resolvedPercent = Math.max(
+    50,
+    Math.min(200, getBaseLabelFontSizePercent() * scaleMap[size])
+  );
+  return Math.round(resolvedPercent * 100) / 100 + "%";
+}
+
+function applySliderFontOverrides(setting) {
+  if (typeof d3 === "undefined") return;
+
+  var effectiveSetting = setting || _userSetting || {};
+  var titleMap = effectiveSetting.dimSliderTitleSizes || {};
+  var tickMap = effectiveSetting.dimSliderTickSizes || {};
+  var baseTitleSize = normalizeSliderPercentSize(effectiveSetting.labelSize);
+  var baseTickSize = normalizeSliderPixelSize(effectiveSetting.sliderTickSize);
+  var baseSliderLabelPx = 12;
+  var styleEl = ensureSliderFontOverrideStyleTag();
+  var cssRules = [];
+  var dimNames = [];
+  var seenDims = {};
+
+  function addDimName(dimName) {
+    var normalized = normalizeSliderDimKey(dimName);
+    if (!normalized || seenDims[normalized]) return;
+    seenDims[normalized] = true;
+    dimNames.push(dimName);
+  }
+
+  if (baseTitleSize === null) {
+    baseTitleSize =
+      typeof defaultLabelSizePercent !== "undefined"
+        ? defaultLabelSizePercent
+        : 90;
+  }
+  if (baseTickSize === null) {
+    baseTickSize =
+      typeof defaultSliderTickSize !== "undefined"
+        ? defaultSliderTickSize
+        : 9;
+  }
+
+  d3.selectAll("#inputSliders .inputSlider").each(function (d) {
+    addDimName(getSliderDimNameFromNode(this, d));
+  });
+
+  d3.selectAll("#graph .dimension").each(function (d) {
+    addDimName(getSliderDimNameFromNode(this, d));
+  });
+
+  Object.keys(titleMap).forEach(addDimName);
+  Object.keys(tickMap).forEach(addDimName);
+
+  dimNames.forEach(function (dimName) {
+    var wrapper = getSliderWrapperSelection(dimName);
+    var wrapperId = wrapper && wrapper.attr ? wrapper.attr("id") : null;
+    var graphDim = getGraphDimensionSelection(dimName);
+    var graphDimId = graphDim && graphDim.attr ? graphDim.attr("id") : null;
+    var graphDimSelector = graphDimId ? "#" + graphDimId : null;
+    if (!graphDimSelector && typeof string_as_unicode_escape === "function") {
+      graphDimSelector = "#dim_" + string_as_unicode_escape(String(dimName));
+    }
+
+    var titleOverride = normalizeSliderPercentSize(
+      findSliderDimOverride(dimName, titleMap)
+    );
+    var tickOverride = normalizeSliderPixelSize(
+      findSliderDimOverride(dimName, tickMap)
+    );
+
+    var resolvedTitlePercent =
+      titleOverride !== null ? titleOverride : baseTitleSize;
+    var resolvedTitlePx = Math.max(
+      8,
+      (baseSliderLabelPx * resolvedTitlePercent) / 100
+    );
+    var resolvedTickPx = tickOverride !== null ? tickOverride : baseTickSize;
+    var resolvedTick = resolvedTickPx + "px";
+    var resolvedTitleLineHeight = Math.max(
+      12,
+      Math.round(resolvedTitlePx * 1.2)
+    ) + "px";
+    var resolvedGridHeight = Math.max(
+      20,
+      Math.round(resolvedTickPx * 2.2)
+    ) + "px";
+    var resolvedSliderHeight = Math.max(
+      60,
+      40 + Math.round(resolvedTickPx * 1.4)
+    ) + "px";
+
+    if (graphDimSelector) {
+      cssRules.push(
+        graphDimSelector +
+          " .label{" +
+          "font-size:" +
+          resolvedTitlePercent +
+          "% !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        graphDimSelector +
+          " .axis .tick:not(.mark) text{" +
+          "font-size:" +
+          resolvedTick +
+          " !important;" +
+          "}"
+      );
+    }
+
+    if (wrapperId) {
+      var wrapperSelector = "#" + wrapperId;
+
+      cssRules.push(
+        wrapperSelector +
+          " .inputSliderLabel{" +
+          "line-height:" +
+          resolvedTitleLineHeight +
+          " !important;" +
+          "min-height:" +
+          resolvedTitleLineHeight +
+          " !important;" +
+          "display:block !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        wrapperSelector +
+          " .inputSliderLabelText{" +
+          "font-size:" +
+          resolvedTitlePx +
+          "px !important;" +
+          "line-height:" +
+          resolvedTitleLineHeight +
+          " !important;" +
+          "display:inline-block !important;" +
+          "transform:none !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        wrapperSelector +
+          " .irs-with-grid{" +
+          "height:" +
+          resolvedSliderHeight +
+          " !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        wrapperSelector +
+          " .irs-grid{" +
+          "height:" +
+          resolvedGridHeight +
+          " !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        wrapperSelector +
+          " .irs-grid-text{" +
+          "font-size:" +
+          resolvedTick +
+          " !important;" +
+          "line-height:" +
+          resolvedTick +
+          " !important;" +
+          "}"
+      );
+    }
+  });
+
+  if (styleEl) {
+    styleEl.textContent = cssRules.join("\n");
+  }
+}
+
+function applyLabelFontSize(size) {
+  var presetResolved = resolveRelativeLabelFontSize(size);
+  var shouldUpdateBaseSize = presetResolved === null;
+  var resolved = presetResolved !== null ? presetResolved : size;
 
   if (typeof resolved === "number") {
     resolved = resolved + "%";
@@ -346,16 +915,21 @@ function applyLabelFontSize(size) {
   }
 
   try {
-    // keep both axis labels and slider labels in sync with custom size
-    d3
-      .selectAll(".label, #inputSliders .inputSliderLabel")
-      .style("font-size", resolved);
+    d3.selectAll(".label").style("font-size", resolved);
+    applySliderFontOverrides(
+      Object.assign({}, _userSetting || {}, {
+        labelSize: resolved,
+      })
+    );
   } catch (err) {
     console.warn("Could not apply label font size", err);
   }
 
   // persist into global settings if available
   if (typeof _userSetting !== "undefined") {
+    if (shouldUpdateBaseSize) {
+      _userSetting.labelSizeBase = resolved;
+    }
     _userSetting.labelSize = resolved;
   }
 }

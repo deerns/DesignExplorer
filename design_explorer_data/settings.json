@@ -1,1 +1,62 @@
-{"studyInfo":{"name":"","date":""},"dimScales":{},"dimTicks":{},"dimMark":{},"labelSize":"85%"}
+{
+  "studyInfo": {
+    "name": "Building Performance Study - Demo",
+    "date": ""
+  },
+  "dimScales": {},
+  "dimTicks": {},
+  "dimMark": {
+    "SDA [Area%]": {
+      "value": "55",
+      "prefix": "LEED"
+    },
+    "DA [%]": {
+      "value": "50",
+      "prefix": "DAlim"
+    }
+  },
+  "dimLabels": {},
+  "dimLabelsNormalized": {},
+  "dimHidden": {},
+  "dimHiddenNormalized": {},
+  "dimReversed": {},
+  "dimReversedNormalized": {},
+  "dimOrder": [
+    "Depth [ft]",
+    "Height [ft]",
+    "Orientation",
+    "WWR [%]",
+    "SHD",
+    "Cooling[kWh]",
+    "Heating[kWh]",
+    "Lighting[kWh]",
+    "EffDepth[m]",
+    "DA [%]",
+    "UDI [%]",
+    "CDA [%]",
+    "SDA [Area%]"
+  ],
+  "sliderOrder": [
+    "Depth [ft]",
+    "Height [ft]",
+    "Orientation",
+    "WWR [%]",
+    "SHD"
+  ],
+  "dimSliderTitleSizes": {},
+  "dimSliderTickSizes": {},
+  "imageLabels": {},
+  "thumbnailSortBy": "WWR [%]",
+  "thumbnailSortAscending": true,
+  "hideScatterPlots": false,
+  "showInputOutputBars": true,
+  "mainVerticalRatio": 0.58,
+  "chartHorizontalRatio": 0.1407345971563981,
+  "labelSize": "90%",
+  "labelRotation": 0,
+  "lineGradient": {
+    "enabled": false,
+    "start": "#102F86",
+    "end": "#2FADDD"
+  }
+}
