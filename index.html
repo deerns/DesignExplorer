@@ -1305,6 +1305,67 @@
       };
     }
 
+    function normalizeHexColorEarly(value, fallback) {
+      var raw = value === undefined || value === null ? "" : String(value).trim();
+      if (!raw) return fallback;
+
+      if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+        return (
+          "#" +
+          raw.charAt(1) +
+          raw.charAt(1) +
+          raw.charAt(2) +
+          raw.charAt(2) +
+          raw.charAt(3) +
+          raw.charAt(3)
+        ).toUpperCase();
+      }
+
+      if (/^#[0-9a-fA-F]{6}$/.test(raw)) {
+        return raw.toUpperCase();
+      }
+
+      return fallback;
+    }
+
+    function normalizeSliderTagHighlightColor(value, fallback) {
+      return normalizeHexColorEarly(
+        value,
+        normalizeHexColorEarly(fallback, defaultSliderTagHighlightColor)
+      );
+    }
+
+    function parseTargetMarkFontSizeValueEarly(value) {
+      if (value === undefined || value === null) return null;
+      var raw = String(value).trim();
+      if (!raw) return null;
+      raw = raw.replace(/px$/i, "");
+      var parsed = parseFloat(raw);
+      return isNaN(parsed) ? null : parsed;
+    }
+
+    function normalizeTargetMarkFontSize(value, fallback) {
+      var parsed = parseTargetMarkFontSizeValueEarly(value);
+      if (parsed === null) {
+        parsed = parseTargetMarkFontSizeValueEarly(fallback);
+      }
+      if (parsed === null) {
+        parsed = defaultTargetMarkFontSize;
+      }
+      return Math.max(8, Math.min(36, Math.round(parsed)));
+    }
+
+    function normalizeSliderTagFontSize(value, fallback) {
+      var parsed = parseTargetMarkFontSizeValueEarly(value);
+      if (parsed === null) {
+        parsed = parseTargetMarkFontSizeValueEarly(fallback);
+      }
+      if (parsed === null) {
+        parsed = defaultSliderTagFontSize;
+      }
+      return Math.max(8, Math.min(36, Math.round(parsed)));
+    }
+
     function mergeUserSettingWithDefaults(setting) {
       var source =
         setting && typeof setting === "object" && !Array.isArray(setting)
@@ -7884,9 +7945,13 @@
       }
 
       function shouldShowScatterPlots() {
+        var currentUserSetting =
+          typeof _userSetting !== "undefined" && _userSetting
+            ? _userSetting
+            : {};
         return (
           !isPcGraphCollapsed &&
-          !isScatterPlotsHidden(_userSetting) &&
+          !isScatterPlotsHidden(currentUserSetting) &&
           !isLeftChartFullScreenToggled
         );
       }
