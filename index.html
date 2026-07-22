@@ -390,28 +390,33 @@
         margin-left: 10px;
       }
       #labelSizeRow input[type="range"],
+      #targetMarkFontSizeRow input[type="range"],
       #dataSetting .slider-font-size-row input[type="range"] {
         width: 100%;
         display: block;
         margin: 0;
       }
       #labelSizeRow,
+      #targetMarkFontSizeRow,
       #dataSetting .slider-font-size-row {
         gap: 15px;
         flex-wrap: nowrap;
       }
       #labelSizeRow .label-size-field,
+      #targetMarkFontSizeRow .label-size-field,
       #dataSetting .slider-font-size-row .slider-font-size-field {
         flex: 1 1 auto;
         min-width: 120px;
         margin-left: 8px;
       }
-      #labelSizeRow #labelSizeInput {
+      #labelSizeRow #labelSizeInput,
+      #targetMarkFontSizeRow #targetMarkFontSizeInput {
         flex: 0 0 78px;
         min-width: 78px;
         text-align: right;
       }
       #labelSizeValue,
+      #targetMarkFontSizeValue,
       #dataSetting .slider-font-size-row .slider-font-size-value {
         text-align: right;
         min-width: 52px;
@@ -424,7 +429,8 @@
         margin: 0;
       }
       :root {
-        --slider-tag-highlight-color: #FFA300;
+        --slider-tag-highlight-color: #000000;
+        --target-mark-font-size: 12px;
       }
       #lineGradientControlsRow,
       #sliderTagHighlightColorRow {
@@ -484,6 +490,27 @@
         overflow: hidden;
         clip: rect(0, 0, 0, 0);
         border: 0;
+      }
+      #sliderTagHighlightColorRow .line-gradient-control {
+        grid-template-columns: 40px minmax(0, 170px) auto;
+      }
+      #sliderTagHighlightColorRow .line-gradient-swatch-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #sliderTagHighlightColorRow .line-gradient-preset {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        padding: 0;
+        cursor: pointer;
+        flex: 0 0 24px;
+      }
+      #sliderTagHighlightColorRow .line-gradient-preset:focus {
+        outline: 2px solid rgba(3, 56, 153, 0.35);
+        outline-offset: 2px;
       }
       #lineGradientControlsRow .line-gradient-picker-popover {
         display: none;
@@ -558,6 +585,7 @@
       }
       #graph svg g.mark text {
         fill: var(--slider-tag-highlight-color);
+        font-size: var(--target-mark-font-size);
         font-weight: 700;
       }
 
@@ -1113,7 +1141,9 @@
     };
 
     var defaultLineGradientColors = ["#102F86", "#2FADDD"];
-    var defaultSliderTagHighlightColor = "#FFA300";
+    var defaultSliderTagHighlightColor = "#000000";
+    var targetMarkOrangePresetColor = "#FFA300";
+    var defaultTargetMarkFontSize = 12;
     var defaultLabelSizePercent = 90;
     var defaultLabelSizeValue = defaultLabelSizePercent + "%";
     var defaultLabelRotationValue = 0;
@@ -1252,6 +1282,7 @@
         labelSizeBase: defaultLabelSizeValue,
         labelRotation: defaultLabelRotationValue,
         sliderTagHighlightColor: defaultSliderTagHighlightColor,
+        targetMarkFontSize: defaultTargetMarkFontSize,
         lineGradient: {
           enabled: false,
           start: defaultLineGradientColors[0],
@@ -1366,6 +1397,10 @@
         sliderTagHighlightColor: normalizeSliderTagHighlightColor(
           source.sliderTagHighlightColor,
           defaults.sliderTagHighlightColor
+        ),
+        targetMarkFontSize: normalizeTargetMarkFontSize(
+          source.targetMarkFontSize,
+          defaults.targetMarkFontSize
         ),
         lineGradient: Object.assign(
           {},
@@ -1684,6 +1719,12 @@
           ? source.sliderTagHighlightColor
           : sanitized.sliderTagHighlightColor,
         defaultSliderTagHighlightColor
+      );
+      sanitized.targetMarkFontSize = normalizeTargetMarkFontSize(
+        Object.prototype.hasOwnProperty.call(source, "targetMarkFontSize")
+          ? source.targetMarkFontSize
+          : sanitized.targetMarkFontSize,
+        defaultTargetMarkFontSize
       );
       sanitized.lineGradient = normalizeLineGradientSetting(
         source.lineGradient || sanitized.lineGradient
@@ -4849,24 +4890,52 @@
                               maxlength="7"
                               spellcheck="false"
                               autocomplete="off"
-                              placeholder="#FFA300"
+                              placeholder="#000000"
                             />
-                            <button
-                              id="sliderTagHighlightColorSwatch"
-                              class="line-gradient-swatch"
-                              type="button"
-                              aria-label="Choose target mark color"
-                            ></button>
+                            <div class="line-gradient-swatch-group">
+                              <button
+                                id="sliderTagHighlightColorSwatch"
+                                class="line-gradient-swatch"
+                                type="button"
+                                aria-label="Choose target mark color"
+                              ></button>
+                              <button
+                                id="targetMarkOrangePreset"
+                                class="line-gradient-preset"
+                                type="button"
+                                title="Use orange preset"
+                                aria-label="Use orange preset color"
+                                style="background-color: #FFA300"
+                              ></button>
+                            </div>
                             <input
                               id="sliderTagHighlightColorPicker"
                               class="native-color-picker-input"
                               type="color"
-                              value="#FFA300"
+                              value="#000000"
                               tabindex="-1"
                               aria-hidden="true"
                             />
                           </div>
                         </div>
+                      </li>
+                      <li class="list-group-item form-inline" id="targetMarkFontSizeRow">
+                        <span class="setting-label">Target Mark Size:</span>
+                        <div class="label-size-field">
+                          <input
+                            id="targetMarkFontSizeSlider"
+                            type="range"
+                            min="8"
+                            max="36"
+                            step="1"
+                          />
+                        </div>
+                        <input
+                          id="targetMarkFontSizeInput"
+                          class="form-control input-sm"
+                          type="text"
+                        />
+                        <span id="targetMarkFontSizeValue"></span>
                       </li>
                       <li class="list-group-item form-inline double-input-row password-row">
                         <span class="setting-label">Password:</span>
@@ -9962,6 +10031,33 @@
         );
       }
 
+      function parseTargetMarkFontSizeValue(value) {
+        if (value === undefined || value === null) return null;
+        var raw = String(value).trim();
+        if (!raw) return null;
+        raw = raw.replace(/px$/i, "");
+        var parsed = parseFloat(raw);
+        return isNaN(parsed) ? null : parsed;
+      }
+
+      function normalizeTargetMarkFontSize(value, fallback) {
+        var parsed = parseTargetMarkFontSizeValue(value);
+        if (parsed === null) {
+          parsed = parseTargetMarkFontSizeValue(fallback);
+        }
+        if (parsed === null) {
+          parsed = defaultTargetMarkFontSize;
+        }
+        return Math.max(8, Math.min(36, Math.round(parsed)));
+      }
+
+      function formatTargetMarkFontSize(value) {
+        return normalizeTargetMarkFontSize(
+          value,
+          defaultTargetMarkFontSize
+        ) + "px";
+      }
+
       function syncSliderTagHighlightColorUI(value) {
         var normalized = normalizeSliderTagHighlightColor(
           value,
@@ -10004,6 +10100,50 @@
         }
         if (syncUi !== false) {
           syncSliderTagHighlightColorUI(normalized);
+        }
+        return normalized;
+      }
+
+      function syncTargetMarkFontSizeUI(value) {
+        var normalized = normalizeTargetMarkFontSize(
+          value,
+          defaultTargetMarkFontSize
+        );
+        var activeElement =
+          typeof document !== "undefined" ? document.activeElement : null;
+        var slider = d3.select("#targetMarkFontSizeSlider");
+        var textInput = d3.select("#targetMarkFontSizeInput");
+        var valueLabel = d3.select("#targetMarkFontSizeValue");
+
+        if (!slider.empty() && slider.node() !== activeElement) {
+          slider.property("value", normalized);
+        }
+        if (!textInput.empty() && textInput.node() !== activeElement) {
+          textInput.property("value", formatTargetMarkFontSize(normalized));
+        }
+        if (!valueLabel.empty()) {
+          valueLabel.text(formatTargetMarkFontSize(normalized));
+        }
+      }
+
+      function applyTargetMarkFontSize(value, syncUi) {
+        var normalized = normalizeTargetMarkFontSize(
+          value,
+          defaultTargetMarkFontSize
+        );
+        if (
+          typeof document !== "undefined" &&
+          document.documentElement &&
+          document.documentElement.style &&
+          typeof document.documentElement.style.setProperty === "function"
+        ) {
+          document.documentElement.style.setProperty(
+            "--target-mark-font-size",
+            normalized + "px"
+          );
+        }
+        if (syncUi !== false) {
+          syncTargetMarkFontSizeUI(normalized);
         }
         return normalized;
       }
@@ -14212,6 +14352,19 @@
           applySliderTagHighlightColor(nextColor);
         }
 
+        function setTargetMarkFontSizeFromAny(value, applyLivePreview) {
+          var nextSize = normalizeTargetMarkFontSize(
+            value,
+            newUserSetting.targetMarkFontSize
+          );
+          newUserSetting.targetMarkFontSize = nextSize;
+          syncTargetMarkFontSizeUI(nextSize);
+          if (applyLivePreview) {
+            applyTargetMarkFontSize(nextSize, false);
+          }
+          return nextSize;
+        }
+
         function syncLineGradientSettingFromInputs(applyLivePreview) {
           var currentSetting = normalizeLineGradientSetting(
             newUserSetting.lineGradient
@@ -14300,6 +14453,19 @@
             }
           });
         dimSettingListDiv
+          .select("#targetMarkOrangePreset")
+          .on("click", function () {
+            dimSettingListDiv
+              .select("#sliderTagHighlightColor")
+              .property("value", targetMarkOrangePresetColor);
+            dimSettingListDiv
+              .select("#sliderTagHighlightColorPicker")
+              .property("value", targetMarkOrangePresetColor);
+            newUserSetting.sliderTagHighlightColor = targetMarkOrangePresetColor;
+            syncSliderTagHighlightColorUI(targetMarkOrangePresetColor);
+            applySliderTagHighlightColor(targetMarkOrangePresetColor, false);
+          });
+        dimSettingListDiv
           .select("#sliderTagHighlightColorPicker")
           .property(
             "value",
@@ -14322,6 +14488,39 @@
           })
           .on("change", function () {
             commitSliderTagHighlightColorInputs();
+          });
+        syncTargetMarkFontSizeUI(newUserSetting.targetMarkFontSize);
+        dimSettingListDiv
+          .select("#targetMarkFontSizeSlider")
+          .property(
+            "value",
+            normalizeTargetMarkFontSize(
+              newUserSetting.targetMarkFontSize,
+              defaultTargetMarkFontSize
+            )
+          )
+          .on("input", function () {
+            setTargetMarkFontSizeFromAny(this.value, true);
+          })
+          .on("change", function () {
+            setTargetMarkFontSizeFromAny(this.value, true);
+          });
+        dimSettingListDiv
+          .select("#targetMarkFontSizeInput")
+          .property(
+            "value",
+            formatTargetMarkFontSize(
+              normalizeTargetMarkFontSize(
+                newUserSetting.targetMarkFontSize,
+                defaultTargetMarkFontSize
+              )
+            )
+          )
+          .on("input", function () {
+            setTargetMarkFontSizeFromAny(this.value, true);
+          })
+          .on("change", function () {
+            setTargetMarkFontSizeFromAny(this.value, true);
           });
 
         // show only the number of image label inputs that match available images/labels
@@ -15230,6 +15429,10 @@
             .select("#showInputOutputBarsInput")
             .property("checked");
           syncSliderTagHighlightColorFromInputs(false);
+          newUserSetting.targetMarkFontSize = normalizeTargetMarkFontSize(
+            d3.select("#targetMarkFontSizeInput").property("value"),
+            newUserSetting.targetMarkFontSize
+          );
           var currentLayoutRatios = getCurrentLayoutRatioSnapshot();
           newUserSetting.mainVerticalRatio =
             currentLayoutRatios.mainVerticalRatio;
@@ -15390,6 +15593,10 @@
             .select("#showInputOutputBarsInput")
             .property("checked");
           syncSliderTagHighlightColorFromInputs(false);
+          newUserSetting.targetMarkFontSize = normalizeTargetMarkFontSize(
+            d3.select("#targetMarkFontSizeInput").property("value"),
+            newUserSetting.targetMarkFontSize
+          );
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           // refresh radio labels immediately even before saving
@@ -15445,6 +15652,11 @@
           (_userSetting && _userSetting.sliderTagHighlightColor) ||
             defaultSliderTagHighlightColor
         );
+        var userTargetMarkFontSize = normalizeTargetMarkFontSize(
+          userSetting.targetMarkFontSize,
+          (_userSetting && _userSetting.targetMarkFontSize) ||
+            defaultTargetMarkFontSize
+        );
         var userLabelSize = userSetting.labelSize;
         var userLabelRotation = normalizeLabelRotation(
           userSetting.labelRotation,
@@ -15493,6 +15705,7 @@
         _userSetting.hideScatterPlots = userHideScatterPlots;
         _userSetting.showInputOutputBars = userShowInputOutputBars;
         _userSetting.sliderTagHighlightColor = userSliderTagHighlightColor;
+        _userSetting.targetMarkFontSize = userTargetMarkFontSize;
         if (userSliderOrder.length === 0) {
           userSliderOrder = deriveSliderOrderFromDimOrder(
             userDimOrder,
@@ -15506,6 +15719,7 @@
           });
         }
         applySliderTagHighlightColor(userSliderTagHighlightColor);
+        applyTargetMarkFontSize(userTargetMarkFontSize);
         applyLineGradientSetting(userLineGradient, true);
 
         if (isThereNewStudyInfo) {
@@ -16221,6 +16435,10 @@
           newUserSetting.sliderTagHighlightColor,
           globalUserSetting.sliderTagHighlightColor
         );
+        globalUserSetting.targetMarkFontSize = normalizeTargetMarkFontSize(
+          newUserSetting.targetMarkFontSize,
+          globalUserSetting.targetMarkFontSize
+        );
         globalUserSetting.lineGradient = cloneLineGradientSetting(
           newUserSetting.lineGradient || globalUserSetting.lineGradient
         );
@@ -16258,6 +16476,11 @@
         delete exportJson.ascending;
         delete exportJson.thumbnailSort;
         delete exportJson.sortAscending;
+        exportJson.targetMarkColor = normalizeSliderTagHighlightColor(
+          exportJson.sliderTagHighlightColor,
+          defaultSliderTagHighlightColor
+        );
+        delete exportJson.sliderTagHighlightColor;
         var jsonString = JSON.stringify(exportJson, null, 2);
         var jsonBlob = new Blob([jsonString], {
           type: "application/json;charset=utf-8",
@@ -16330,6 +16553,7 @@
             labelSize: defaultLabelSizeValue,
             labelSizeBase: defaultLabelSizeValue,
             sliderTagHighlightColor: defaultSliderTagHighlightColor,
+            targetMarkFontSize: defaultTargetMarkFontSize,
             lineGradient: {
               enabled: false,
               start: defaultLineGradientColors[0],
@@ -16413,9 +16637,13 @@
           var hasShowInputOutputBars = hasOwnKey(d, "showInputOutputBars");
           var hasLabelRotation = hasOwnKey(d, "labelRotation");
           var hasSliderTagHighlightColor =
+            hasOwnKey(d, "targetMarkColor") ||
             hasOwnKey(d, "sliderTagHighlightColor") ||
             hasOwnKey(d, "sliderHighlightColor") ||
             hasOwnKey(d, "tagHighlightColor");
+          var hasTargetMarkFontSize =
+            hasOwnKey(d, "targetMarkFontSize") ||
+            hasOwnKey(d, "tagFontSize");
           var hasLineGradient =
             hasOwnKey(d, "lineGradient") ||
             hasOwnKey(d, "lineGradientEnabled") ||
@@ -16505,12 +16733,17 @@
             : d.scatterplotsHidden;
           var loadedSliderTagHighlightColor = hasOwnKey(
             d,
-            "sliderTagHighlightColor"
+            "targetMarkColor"
           )
+            ? d.targetMarkColor
+            : hasOwnKey(d, "sliderTagHighlightColor")
             ? d.sliderTagHighlightColor
             : hasOwnKey(d, "sliderHighlightColor")
             ? d.sliderHighlightColor
             : d.tagHighlightColor;
+          var loadedTargetMarkFontSize = hasOwnKey(d, "targetMarkFontSize")
+            ? d.targetMarkFontSize
+            : d.tagFontSize;
 
           var defaultSetting = getDefaultSettingState();
           defaultSetting.labelRotation = getCurrentLabelRotation(graph);
@@ -16592,6 +16825,15 @@
             : normalizeSliderTagHighlightColor(
                 defaultSetting.sliderTagHighlightColor,
                 defaultSliderTagHighlightColor
+              );
+          mergedSetting.targetMarkFontSize = hasTargetMarkFontSize
+            ? normalizeTargetMarkFontSize(
+                loadedTargetMarkFontSize,
+                defaultSetting.targetMarkFontSize
+              )
+            : normalizeTargetMarkFontSize(
+                defaultSetting.targetMarkFontSize,
+                defaultTargetMarkFontSize
               );
           mergedSetting.lineGradient = hasLineGradient
             ? normalizeLineGradientSetting(rawLoadedLineGradient)
