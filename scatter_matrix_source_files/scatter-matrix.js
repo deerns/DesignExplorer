@@ -205,6 +205,12 @@ ScatterMatrix.prototype.render = function () {
       to_include = self.__numeric_variables.slice(0, Math.min(2, self.__numeric_variables.length));
     }
     self.__selected_variables = to_include.slice();
+    if (
+      typeof window !== "undefined" &&
+      typeof window.syncScatterSelectedVariablesToSetting === "function"
+    ) {
+      window.syncScatterSelectedVariablesToSetting(self.__selected_variables);
+    }
 
     var color_variable = undefined;
     var selected_colors = undefined;
@@ -253,6 +259,14 @@ ScatterMatrix.prototype.render = function () {
             }
             selected_colors = new_selected_colors;
             self.__selected_variables = to_include.slice();
+            if (
+              typeof window !== "undefined" &&
+              typeof window.syncScatterSelectedVariablesToSetting === "function"
+            ) {
+              window.syncScatterSelectedVariablesToSetting(
+                self.__selected_variables
+              );
+            }
             self.__draw(
               self.__cell_size,
               svg,
@@ -368,6 +382,14 @@ ScatterMatrix.prototype.render = function () {
         }
         to_include = new_to_include;
         self.__selected_variables = to_include.slice();
+        if (
+          typeof window !== "undefined" &&
+          typeof window.syncScatterSelectedVariablesToSetting === "function"
+        ) {
+          window.syncScatterSelectedVariablesToSetting(
+            self.__selected_variables
+          );
+        }
         self.__draw(
           self.__cell_size,
           svg,
@@ -437,6 +459,12 @@ ScatterMatrix.prototype.__draw = function (
     self.__selected_variables = Array.isArray(to_include)
       ? to_include.slice()
       : [];
+    if (
+      typeof window !== "undefined" &&
+      typeof window.syncScatterSelectedVariablesToSetting === "function"
+    ) {
+      window.syncScatterSelectedVariablesToSetting(self.__selected_variables);
+    }
 
     // filter data by selected colors
     if (color_variable && selected_colors) {

@@ -268,6 +268,7 @@ function overwriteInitialGlobalValues() {
           imageLabels: {},
           thumbnailSortBy: "",
           thumbnailSortAscending: true,
+          scatterSelectedVariables: [],
           hideScatterPlots: false,
           showInputOutputBars: false,
           mainVerticalRatio: 0.58,
