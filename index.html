@@ -14618,13 +14618,15 @@
               defaultSliderTickSize
           )
         );
+        var onGlobalSliderTickSizeSliderChange = function () {
+          var sliderVal = parseFloat(this.value);
+          if (isNaN(sliderVal)) return;
+          setGlobalSliderTickSizeFromAny(sliderVal, true);
+        };
         dimSettingListDiv
           .select("#globalSliderTickSizeSlider")
-          .on("input change", function () {
-            var sliderVal = parseFloat(this.value);
-            if (isNaN(sliderVal)) return;
-            setGlobalSliderTickSizeFromAny(sliderVal, true);
-          });
+          .on("input", onGlobalSliderTickSizeSliderChange)
+          .on("change", onGlobalSliderTickSizeSliderChange);
         dimSettingListDiv
           .select("#globalSliderTickSizeInput")
           .property(
@@ -14656,6 +14658,14 @@
             }
             setGlobalSliderTickSizeFromAny(value, true);
           });
+        var globalSliderTickSizeSliderEl = document.getElementById(
+          "globalSliderTickSizeSlider"
+        );
+        if (globalSliderTickSizeSliderEl) {
+          globalSliderTickSizeSliderEl.oninput =
+            globalSliderTickSizeSliderEl.onchange =
+              onGlobalSliderTickSizeSliderChange;
+        }
 
         function syncSliderTagHighlightColorFromInputs(applyLivePreview) {
           var currentColor = normalizeSliderTagHighlightColor(
