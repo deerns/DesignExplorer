@@ -454,7 +454,7 @@
       }
       .line-gradient-settings-row .line-gradient-control {
         display: grid;
-        grid-template-columns: 40px minmax(0, 170px) 30px;
+        grid-template-columns: 40px minmax(0, 170px) auto;
         align-items: center;
         gap: 8px;
         width: 100%;
@@ -485,7 +485,7 @@
         outline: 2px solid rgba(3, 56, 153, 0.35);
         outline-offset: 2px;
       }
-      #sliderTagHighlightColorRow .native-color-picker-input {
+      .line-gradient-settings-row .native-color-picker-input {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -495,13 +495,26 @@
         clip: rect(0, 0, 0, 0);
         border: 0;
       }
-      #sliderTagHighlightColorRow .line-gradient-control {
-        grid-template-columns: 40px minmax(0, 170px) auto;
-      }
-      #sliderTagHighlightColorRow .line-gradient-swatch-group {
+      .line-gradient-settings-row .line-gradient-swatch-group {
         display: inline-flex;
         align-items: center;
         gap: 8px;
+      }
+      #sliderTagHighlightColorRow .line-gradient-preset-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 10px;
+        padding-left: 12px;
+        border-left: 1px solid #d9d9d9;
+      }
+      #sliderTagHighlightColorRow .line-gradient-preset-label {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #5f6b7a;
       }
       #sliderTagHighlightColorRow .line-gradient-preset {
         width: 24px;
@@ -4858,49 +4871,22 @@
                               autocomplete="off"
                               placeholder="#102F86"
                             />
-                            <button
-                              id="lineGradientStartSwatch"
-                              class="line-gradient-swatch"
-                              type="button"
-                              aria-label="Open start color picker"
-                              aria-expanded="false"
-                            ></button>
-                            <div
-                              id="lineGradientStartPicker"
-                              class="line-gradient-picker-popover"
-                              aria-hidden="true"
-                            >
-                              <div class="line-gradient-picker-canvas-wrap">
-                                <canvas
-                                  id="lineGradientStartPickerCanvas"
-                                  class="line-gradient-picker-canvas"
-                                  width="180"
-                                  height="120"
-                                ></canvas>
-                                <span
-                                  id="lineGradientStartPickerIndicator"
-                                  class="line-gradient-picker-indicator"
-                                  aria-hidden="true"
-                                ></span>
-                              </div>
-                              <input
-                                id="lineGradientStartPickerHue"
-                                class="line-gradient-picker-hue"
-                                type="range"
-                                min="0"
-                                max="360"
-                                step="1"
-                              />
-                              <div class="line-gradient-picker-actions">
-                                <button
-                                  id="lineGradientStartPickerClose"
-                                  type="button"
-                                  class="btn btn-default btn-xs line-gradient-picker-close"
-                                >
-                                  Close
-                                </button>
-                              </div>
+                            <div class="line-gradient-swatch-group">
+                              <button
+                                id="lineGradientStartSwatch"
+                                class="line-gradient-swatch"
+                                type="button"
+                                aria-label="Choose start color"
+                              ></button>
                             </div>
+                            <input
+                              id="lineGradientStartPicker"
+                              class="native-color-picker-input"
+                              type="color"
+                              value="#102F86"
+                              tabindex="-1"
+                              aria-hidden="true"
+                            />
                           </div>
                           <div class="line-gradient-control">
                             <label for="lineGradientEnd">End</label>
@@ -4913,49 +4899,22 @@
                               autocomplete="off"
                               placeholder="#2FADDD"
                             />
-                            <button
-                              id="lineGradientEndSwatch"
-                              class="line-gradient-swatch"
-                              type="button"
-                              aria-label="Open end color picker"
-                              aria-expanded="false"
-                            ></button>
-                            <div
-                              id="lineGradientEndPicker"
-                              class="line-gradient-picker-popover"
-                              aria-hidden="true"
-                            >
-                              <div class="line-gradient-picker-canvas-wrap">
-                                <canvas
-                                  id="lineGradientEndPickerCanvas"
-                                  class="line-gradient-picker-canvas"
-                                  width="180"
-                                  height="120"
-                                ></canvas>
-                                <span
-                                  id="lineGradientEndPickerIndicator"
-                                  class="line-gradient-picker-indicator"
-                                  aria-hidden="true"
-                                ></span>
-                              </div>
-                              <input
-                                id="lineGradientEndPickerHue"
-                                class="line-gradient-picker-hue"
-                                type="range"
-                                min="0"
-                                max="360"
-                                step="1"
-                              />
-                              <div class="line-gradient-picker-actions">
-                                <button
-                                  id="lineGradientEndPickerClose"
-                                  type="button"
-                                  class="btn btn-default btn-xs line-gradient-picker-close"
-                                >
-                                  Close
-                                </button>
-                              </div>
+                            <div class="line-gradient-swatch-group">
+                              <button
+                                id="lineGradientEndSwatch"
+                                class="line-gradient-swatch"
+                                type="button"
+                                aria-label="Choose end color"
+                              ></button>
                             </div>
+                            <input
+                              id="lineGradientEndPicker"
+                              class="native-color-picker-input"
+                              type="color"
+                              value="#2FADDD"
+                              tabindex="-1"
+                              aria-hidden="true"
+                            />
                           </div>
                           <div id="lineGradientPreview"></div>
                         </div>
@@ -4984,14 +4943,19 @@
                                 type="button"
                                 aria-label="Choose target mark color"
                               ></button>
-                              <button
-                                id="targetMarkOrangePreset"
-                                class="line-gradient-preset"
-                                type="button"
-                                title="Use orange preset"
-                                aria-label="Use orange preset color"
-                                style="background-color: #FFA300"
-                              ></button>
+                              <div class="line-gradient-preset-group">
+                                <span class="line-gradient-preset-label"
+                                  >Preset</span
+                                >
+                                <button
+                                  id="targetMarkOrangePreset"
+                                  class="line-gradient-preset"
+                                  type="button"
+                                  title="Use orange preset"
+                                  aria-label="Use orange preset color"
+                                  style="background-color: #FFA300"
+                                ></button>
+                              </div>
                             </div>
                             <input
                               id="sliderTagHighlightColorPicker"
@@ -10633,86 +10597,32 @@
         ["start", "end"].forEach(function (key) {
           var config = getLineGradientPickerConfig(key);
           var swatch = document.getElementById(config.swatchId);
-          var canvas = document.getElementById(config.canvasId);
-          var hueInput = document.getElementById(config.hueId);
-          var closeButton = document.getElementById(config.closeId);
+          var input = document.getElementById(config.inputId);
+          var nativeInput = document.getElementById(config.popoverId);
 
-          if (swatch) {
+          if (swatch && nativeInput) {
             swatch.onclick = function (event) {
               event.preventDefault();
               event.stopPropagation();
-              openLineGradientPicker(config.key);
-            };
-          }
-
-          if (canvas) {
-            canvas.onmousedown = function (event) {
-              if (event.button !== 0) return;
-              event.preventDefault();
-              event.stopPropagation();
-              updateLineGradientPickerFromPoint(
-                config.key,
-                event.clientX,
-                event.clientY
-              );
-
-              function handleMouseMove(moveEvent) {
-                updateLineGradientPickerFromPoint(
-                  config.key,
-                  moveEvent.clientX,
-                  moveEvent.clientY
-                );
+              if (typeof nativeInput.click === "function") {
+                nativeInput.click();
               }
-
-              function handleMouseUp() {
-                document.removeEventListener("mousemove", handleMouseMove);
-                document.removeEventListener("mouseup", handleMouseUp);
-                applyLineGradientPickerStateToInput(config.key, true);
-              }
-
-              document.addEventListener("mousemove", handleMouseMove);
-              document.addEventListener("mouseup", handleMouseUp);
             };
           }
 
-          if (hueInput) {
-            hueInput.oninput = function (event) {
-              event.stopPropagation();
-              var state = ensureLineGradientPickerState(config.key);
-              state.h = clampLineGradientNumber(parseFloat(this.value) || 0, 0, 360);
-              drawLineGradientPicker(config.key);
-              applyLineGradientPickerStateToInput(config.key, false);
+          if (input && nativeInput) {
+            nativeInput.oninput = function () {
+              var nextColor = normalizeHexColor(this.value, config.defaultColor);
+              input.value = nextColor;
+              dispatchLineGradientInputEvent(input, "input");
             };
-            hueInput.onchange = function () {
-              applyLineGradientPickerStateToInput(config.key, true);
-            };
-          }
-
-          if (closeButton) {
-            closeButton.onclick = function (event) {
-              event.preventDefault();
-              event.stopPropagation();
-              applyLineGradientPickerStateToInput(config.key, true);
-              closeLineGradientPicker(config.key);
+            nativeInput.onchange = function () {
+              var nextColor = normalizeHexColor(this.value, config.defaultColor);
+              input.value = nextColor;
+              dispatchLineGradientInputEvent(input, "change");
             };
           }
         });
-
-        if (typeof window !== "undefined" && !window.__lineGradientPickerBound) {
-          document.addEventListener("mousedown", function (event) {
-            if (!isInsideLineGradientPicker(event.target)) {
-              closeAllLineGradientPickers();
-            }
-          });
-
-          document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape" || event.keyCode === 27) {
-              closeAllLineGradientPickers();
-            }
-          });
-
-          window.__lineGradientPickerBound = true;
-        }
       }
 
       function normalizeLineGradientSetting(setting) {
@@ -10750,6 +10660,8 @@
         var toggle = d3.select("#lineGradientEnabled");
         var startInput = d3.select("#lineGradientStart");
         var endInput = d3.select("#lineGradientEnd");
+        var startPicker = d3.select("#lineGradientStartPicker");
+        var endPicker = d3.select("#lineGradientEndPicker");
         var controlsRow = d3.select("#lineGradientControlsRow");
         var preview = d3.select("#lineGradientPreview");
         var activeElement =
@@ -10763,6 +10675,12 @@
         }
         if (!endInput.empty() && endInput.node() !== activeElement) {
           endInput.property("value", normalized.end);
+        }
+        if (!startPicker.empty() && startPicker.node() !== activeElement) {
+          startPicker.property("value", normalized.start);
+        }
+        if (!endPicker.empty() && endPicker.node() !== activeElement) {
+          endPicker.property("value", normalized.end);
         }
         syncLineGradientPreviewUI(normalized, controlsRow, preview);
       }
