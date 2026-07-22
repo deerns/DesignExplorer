@@ -790,7 +790,7 @@ function applySliderFontOverrides(setting) {
 
       cssRules.push(
         graphDimSelector +
-          " .axis .tick text{" +
+          " .axis .tick:not(.mark) text{" +
           "font-size:" +
           resolvedTick +
           " !important;" +
