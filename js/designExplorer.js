@@ -769,6 +769,12 @@ function applySliderFontOverrides(setting) {
       12,
       Math.round(resolvedTitlePx * 1.2)
     ) + "px";
+    var resolvedTagLineHeight = Math.max(
+      12,
+      Math.round(resolvedTickPx * 1.2)
+    ) + "px";
+    var resolvedTagPaddingY = Math.max(1, Math.round(resolvedTickPx * 0.1));
+    var resolvedTagPaddingX = Math.max(5, Math.round(resolvedTickPx * 0.45));
     var resolvedGridHeight = Math.max(
       20,
       Math.round(resolvedTickPx * 2.2)
@@ -855,6 +861,27 @@ function applySliderFontOverrides(setting) {
           "line-height:" +
           resolvedTick +
           " !important;" +
+          "}"
+      );
+
+      cssRules.push(
+        wrapperSelector +
+          " .irs-from," +
+          wrapperSelector +
+          " .irs-to," +
+          wrapperSelector +
+          " .irs-single{" +
+          "font-size:" +
+          resolvedTick +
+          " !important;" +
+          "line-height:" +
+          resolvedTagLineHeight +
+          " !important;" +
+          "padding:" +
+          resolvedTagPaddingY +
+          "px " +
+          resolvedTagPaddingX +
+          "px !important;" +
           "}"
       );
     }
