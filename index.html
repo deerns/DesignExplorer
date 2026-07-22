@@ -906,8 +906,8 @@
         content: "";
         position: absolute;
         top: -4px;
-        width: 2px;
-        height: 18px;
+        width: 4px;
+        height: 20px;
         background: currentColor;
       }
 
@@ -4602,16 +4602,6 @@
                 <div id="settingStudyInfo" class="panel-collapse collapse in">
                   <div class="panel-body">
                     <ul class="list-group">
-                      <li
-                        class="list-group-item form-inline"
-                        id="showInputOutputBarsRow"
-                      >
-                        <span class="setting-label">Input/Output Bars:</span>
-                        <input
-                          id="showInputOutputBarsInput"
-                          type="checkbox"
-                        />
-                      </li>
                       <li class="list-group-item form-inline">
                         <span class="setting-label">Study Name:</span>
                         <input
@@ -4677,6 +4667,16 @@
                         <span class="setting-label">Hide Scatterplots:</span>
                         <input
                           id="hideScatterPlotsInput"
+                          type="checkbox"
+                        />
+                      </li>
+                      <li
+                        class="list-group-item form-inline"
+                        id="showInputOutputBarsRow"
+                      >
+                        <span class="setting-label">Input/Output Bars:</span>
+                        <input
+                          id="showInputOutputBarsInput"
                           type="checkbox"
                         />
                       </li>
@@ -10824,6 +10824,7 @@
         if (!Array.isArray(visibleDims) || visibleDims.length === 0) return [];
 
         var fallbackHalfSpan = 28;
+        var interSegmentGap = 10;
 
         visibleDims.forEach(function (item, index) {
           var prev = index > 0 ? visibleDims[index - 1] : null;
@@ -10900,7 +10901,21 @@
           pushSegment(segmentStart, visibleDims.length - 1);
         }
 
-        return segments;
+        if (segments.length > 1) {
+          for (var i = 0; i < segments.length - 1; i++) {
+            var currentSegment = segments[i];
+            var nextSegment = segments[i + 1];
+            var halfGap = interSegmentGap / 2;
+
+            currentSegment.width = Math.max(0, currentSegment.width - halfGap);
+            nextSegment.left += halfGap;
+            nextSegment.width = Math.max(0, nextSegment.width - halfGap);
+          }
+        }
+
+        return segments.filter(function (segment) {
+          return isFinite(segment.width) && segment.width > 0;
+        });
       }
 
       function updatePcDimensionGroupBars() {
