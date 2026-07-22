@@ -390,7 +390,6 @@
         margin-left: 10px;
       }
       #labelSizeRow input[type="range"],
-      #sliderTagFontSizeRow input[type="range"],
       #targetMarkFontSizeRow input[type="range"],
       #dataSetting .slider-font-size-row input[type="range"] {
         width: 100%;
@@ -398,14 +397,12 @@
         margin: 0;
       }
       #labelSizeRow,
-      #sliderTagFontSizeRow,
       #targetMarkFontSizeRow,
       #dataSetting .slider-font-size-row {
         gap: 15px;
         flex-wrap: nowrap;
       }
       #labelSizeRow .label-size-field,
-      #sliderTagFontSizeRow .label-size-field,
       #targetMarkFontSizeRow .label-size-field,
       #dataSetting .slider-font-size-row .slider-font-size-field {
         flex: 1 1 auto;
@@ -413,14 +410,12 @@
         margin-left: 8px;
       }
       #labelSizeRow #labelSizeInput,
-      #sliderTagFontSizeRow #sliderTagFontSizeInput,
       #targetMarkFontSizeRow #targetMarkFontSizeInput {
         flex: 0 0 78px;
         min-width: 78px;
         text-align: right;
       }
       #labelSizeValue,
-      #sliderTagFontSizeValue,
       #targetMarkFontSizeValue,
       #dataSetting .slider-font-size-row .slider-font-size-value {
         text-align: right;
@@ -4947,24 +4942,6 @@
                             />
                           </div>
                         </div>
-                      </li>
-                      <li class="list-group-item form-inline" id="sliderTagFontSizeRow">
-                        <span class="setting-label">Slider Tag Size:</span>
-                        <div class="label-size-field">
-                          <input
-                            id="sliderTagFontSizeSlider"
-                            type="range"
-                            min="8"
-                            max="36"
-                            step="1"
-                          />
-                        </div>
-                        <input
-                          id="sliderTagFontSizeInput"
-                          class="form-control input-sm"
-                          type="text"
-                        />
-                        <span id="sliderTagFontSizeValue"></span>
                       </li>
                       <li class="list-group-item form-inline" id="targetMarkFontSizeRow">
                         <span class="setting-label">Target Mark Size:</span>
@@ -10289,6 +10266,7 @@
             normalized + "px"
           );
         }
+        applySliderTagFontSize(normalized, false);
         if (syncUi !== false) {
           syncTargetMarkFontSizeUI(normalized);
         }
@@ -14511,25 +14489,13 @@
           applySliderTagHighlightColor(nextColor);
         }
 
-        function setSliderTagFontSizeFromAny(value, applyLivePreview) {
-          var nextSize = normalizeSliderTagFontSize(
-            value,
-            newUserSetting.sliderTagFontSize
-          );
-          newUserSetting.sliderTagFontSize = nextSize;
-          syncSliderTagFontSizeUI(nextSize);
-          if (applyLivePreview) {
-            applySliderTagFontSize(nextSize, false);
-          }
-          return nextSize;
-        }
-
         function setTargetMarkFontSizeFromAny(value, applyLivePreview) {
           var nextSize = normalizeTargetMarkFontSize(
             value,
             newUserSetting.targetMarkFontSize
           );
           newUserSetting.targetMarkFontSize = nextSize;
+          newUserSetting.sliderTagFontSize = nextSize;
           syncTargetMarkFontSizeUI(nextSize);
           if (applyLivePreview) {
             applyTargetMarkFontSize(nextSize, false);
@@ -14660,39 +14626,6 @@
           })
           .on("change", function () {
             commitSliderTagHighlightColorInputs();
-          });
-        syncSliderTagFontSizeUI(newUserSetting.sliderTagFontSize);
-        dimSettingListDiv
-          .select("#sliderTagFontSizeSlider")
-          .property(
-            "value",
-            normalizeSliderTagFontSize(
-              newUserSetting.sliderTagFontSize,
-              defaultSliderTagFontSize
-            )
-          )
-          .on("input", function () {
-            setSliderTagFontSizeFromAny(this.value, true);
-          })
-          .on("change", function () {
-            setSliderTagFontSizeFromAny(this.value, true);
-          });
-        dimSettingListDiv
-          .select("#sliderTagFontSizeInput")
-          .property(
-            "value",
-            formatSliderTagFontSize(
-              normalizeSliderTagFontSize(
-                newUserSetting.sliderTagFontSize,
-                defaultSliderTagFontSize
-              )
-            )
-          )
-          .on("input", function () {
-            setSliderTagFontSizeFromAny(this.value, true);
-          })
-          .on("change", function () {
-            setSliderTagFontSizeFromAny(this.value, true);
           });
         syncTargetMarkFontSizeUI(newUserSetting.targetMarkFontSize);
         dimSettingListDiv
@@ -15634,14 +15567,11 @@
             .select("#showInputOutputBarsInput")
             .property("checked");
           syncSliderTagHighlightColorFromInputs(false);
-          newUserSetting.sliderTagFontSize = normalizeSliderTagFontSize(
-            d3.select("#sliderTagFontSizeInput").property("value"),
-            newUserSetting.sliderTagFontSize
-          );
           newUserSetting.targetMarkFontSize = normalizeTargetMarkFontSize(
             d3.select("#targetMarkFontSizeInput").property("value"),
             newUserSetting.targetMarkFontSize
           );
+          newUserSetting.sliderTagFontSize = newUserSetting.targetMarkFontSize;
           var currentLayoutRatios = getCurrentLayoutRatioSnapshot();
           newUserSetting.mainVerticalRatio =
             currentLayoutRatios.mainVerticalRatio;
@@ -15802,14 +15732,11 @@
             .select("#showInputOutputBarsInput")
             .property("checked");
           syncSliderTagHighlightColorFromInputs(false);
-          newUserSetting.sliderTagFontSize = normalizeSliderTagFontSize(
-            d3.select("#sliderTagFontSizeInput").property("value"),
-            newUserSetting.sliderTagFontSize
-          );
           newUserSetting.targetMarkFontSize = normalizeTargetMarkFontSize(
             d3.select("#targetMarkFontSizeInput").property("value"),
             newUserSetting.targetMarkFontSize
           );
+          newUserSetting.sliderTagFontSize = newUserSetting.targetMarkFontSize;
           syncLineGradientSettingFromInputs(false);
           updateImageLabelsFromInputs();
           // refresh radio labels immediately even before saving
@@ -15865,11 +15792,6 @@
           (_userSetting && _userSetting.sliderTagHighlightColor) ||
             defaultSliderTagHighlightColor
         );
-        var userSliderTagFontSize = normalizeSliderTagFontSize(
-          userSetting.sliderTagFontSize,
-          (_userSetting && _userSetting.sliderTagFontSize) ||
-            defaultSliderTagFontSize
-        );
         var userTargetMarkFontSize = normalizeTargetMarkFontSize(
           userSetting.targetMarkFontSize,
           (_userSetting && _userSetting.targetMarkFontSize) ||
@@ -15923,7 +15845,7 @@
         _userSetting.hideScatterPlots = userHideScatterPlots;
         _userSetting.showInputOutputBars = userShowInputOutputBars;
         _userSetting.sliderTagHighlightColor = userSliderTagHighlightColor;
-        _userSetting.sliderTagFontSize = userSliderTagFontSize;
+        _userSetting.sliderTagFontSize = userTargetMarkFontSize;
         _userSetting.targetMarkFontSize = userTargetMarkFontSize;
         if (userSliderOrder.length === 0) {
           userSliderOrder = deriveSliderOrderFromDimOrder(
@@ -15938,7 +15860,6 @@
           });
         }
         applySliderTagHighlightColor(userSliderTagHighlightColor);
-        applySliderTagFontSize(userSliderTagFontSize);
         applyTargetMarkFontSize(userTargetMarkFontSize);
         applyLineGradientSetting(userLineGradient, true);
 
