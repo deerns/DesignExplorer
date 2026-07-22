@@ -553,11 +553,12 @@
         border-radius: 6px;
         border: 1px solid #cccccc;
       }
-      #inputSliders .irs-from,
-      #inputSliders .irs-to,
-      #inputSliders .irs-single {
-        background: var(--slider-tag-highlight-color);
-        color: #ffffff;
+      #graph svg g.mark line {
+        stroke: var(--slider-tag-highlight-color);
+      }
+      #graph svg g.mark text {
+        fill: var(--slider-tag-highlight-color);
+        font-weight: 700;
       }
 
       /* match settings panel primary color to project blue */
@@ -4837,7 +4838,7 @@
                         class="list-group-item form-inline line-gradient-settings-row"
                         id="sliderTagHighlightColorRow"
                       >
-                        <span class="setting-label">Slider Tag Highlight:</span>
+                        <span class="setting-label">Target Mark Color:</span>
                         <div class="line-gradient-stack">
                           <div class="line-gradient-control">
                             <label for="sliderTagHighlightColor">Color</label>
@@ -4854,7 +4855,7 @@
                               id="sliderTagHighlightColorSwatch"
                               class="line-gradient-swatch"
                               type="button"
-                              aria-label="Choose slider tag highlight color"
+                              aria-label="Choose target mark color"
                             ></button>
                             <input
                               id="sliderTagHighlightColorPicker"
