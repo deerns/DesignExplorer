@@ -10145,6 +10145,10 @@
         if (syncUi !== false) {
           syncTargetMarkFontSizeUI(normalized);
         }
+        d3.selectAll("#graph svg g.mark text").style(
+          "font-size",
+          normalized + "px"
+        );
         return normalized;
       }
 
@@ -15980,6 +15984,10 @@
 
         var markValue = dimMark.value;
         var markPrefix = "";
+        var markFontSize = normalizeTargetMarkFontSize(
+          _userSetting && _userSetting.targetMarkFontSize,
+          defaultTargetMarkFontSize
+        );
 
         if (dimMark.prefix !== undefined) {
           markPrefix = dimMark.prefix;
@@ -16016,6 +16024,7 @@
             .attr("y", "0")
             .attr("dy", ".32em")
             .attr("text-anchor", "end")
+            .style("font-size", markFontSize + "px")
             .text(markPrefix + ": " + markValue);
         }
       }
