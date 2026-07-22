@@ -709,6 +709,41 @@ function getBaseLabelFontSizePercent() {
   return baseSize === null ? 90 : baseSize;
 }
 
+function getDefaultSliderLabelPixelBase() {
+  return 12;
+}
+
+function resolveLabelFontSizePercentValue(size) {
+  var presetResolved = resolveRelativeLabelFontSize(size);
+  var resolved = presetResolved !== null ? presetResolved : size;
+  var percent = normalizeSliderPercentSize(resolved);
+
+  if (percent === null) {
+    return null;
+  }
+
+  return Math.max(50, Math.min(200, percent));
+}
+
+function formatResolvedLabelFontSizePercent(size) {
+  var percent = resolveLabelFontSizePercentValue(size);
+  if (percent === null) {
+    return null;
+  }
+
+  return Math.round(percent * 100) / 100 + "%";
+}
+
+function convertLabelFontSizePercentToPixels(size) {
+  var percent = resolveLabelFontSizePercentValue(size);
+  if (percent === null) {
+    return null;
+  }
+
+  var pixels = (getDefaultSliderLabelPixelBase() * percent) / 100;
+  return Math.max(8, Math.round(pixels * 100) / 100);
+}
+
 function resolveRelativeLabelFontSize(size) {
   var scaleMap = {
     largeLabel: 1.2,
@@ -732,9 +767,16 @@ function applySliderFontOverrides(setting) {
   var effectiveSetting = setting || _userSetting || {};
   var titleMap = effectiveSetting.dimSliderTitleSizes || {};
   var tickMap = effectiveSetting.dimSliderTickSizes || {};
-  var baseTitleSize = normalizeSliderPercentSize(effectiveSetting.labelSize);
+  var baseTitleSize = resolveLabelFontSizePercentValue(
+    effectiveSetting.labelSize
+  );
+  if (baseTitleSize === null) {
+    baseTitleSize = resolveLabelFontSizePercentValue(
+      effectiveSetting.labelSizeBase
+    );
+  }
   var baseTickSize = normalizeSliderPixelSize(effectiveSetting.sliderTickSize);
-  var baseSliderLabelPx = 12;
+  var baseSliderLabelPx = getDefaultSliderLabelPixelBase();
   var styleEl = ensureSliderFontOverrideStyleTag();
   var cssRules = [];
   var dimNames = [];
@@ -814,8 +856,8 @@ function applySliderFontOverrides(setting) {
         graphDimSelector +
           " .label{" +
           "font-size:" +
-          resolvedTitlePercent +
-          "% !important;" +
+          resolvedTitlePx +
+          "px !important;" +
           "}"
       );
 
@@ -899,27 +941,22 @@ function applySliderFontOverrides(setting) {
 function applyLabelFontSize(size) {
   var presetResolved = resolveRelativeLabelFontSize(size);
   var shouldUpdateBaseSize = presetResolved === null;
-  var resolved = presetResolved !== null ? presetResolved : size;
+  var resolvedPercent = formatResolvedLabelFontSizePercent(
+    presetResolved !== null ? presetResolved : size
+  );
+  var resolvedPixels = convertLabelFontSizePercentToPixels(
+    presetResolved !== null ? presetResolved : size
+  );
 
-  if (typeof resolved === "number") {
-    resolved = resolved + "%";
-  } else if (typeof resolved === "string") {
-    var trimmed = resolved.trim();
-    // If only a number is provided, treat it as a percentage for consistency
-    if (/^[0-9.]+$/.test(trimmed)) {
-      resolved = trimmed + "%";
-    } else {
-      resolved = trimmed;
-    }
-  } else {
+  if (resolvedPercent === null || resolvedPixels === null) {
     return;
   }
 
   try {
-    d3.selectAll(".label").style("font-size", resolved);
+    d3.selectAll(".label").style("font-size", resolvedPixels + "px");
     applySliderFontOverrides(
       Object.assign({}, _userSetting || {}, {
-        labelSize: resolved,
+        labelSize: resolvedPercent,
       })
     );
   } catch (err) {
@@ -929,9 +966,9 @@ function applyLabelFontSize(size) {
   // persist into global settings if available
   if (typeof _userSetting !== "undefined") {
     if (shouldUpdateBaseSize) {
-      _userSetting.labelSizeBase = resolved;
+      _userSetting.labelSizeBase = resolvedPercent;
     }
-    _userSetting.labelSize = resolved;
+    _userSetting.labelSize = resolvedPercent;
   }
 }
 
