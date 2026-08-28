@@ -317,19 +317,24 @@
       #selectionToolbar {
         display: flex;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 3px;
+        flex-wrap: nowrap;
+        gap: 0;
         width: calc(100% - 12px);
         margin: 0 0 8px 12px;
         padding: 0;
-        border: 0;
+        overflow-x: auto;
+        border: 1px solid #c8d5e5;
+        border-radius: 6px;
         background: transparent;
       }
 
       #selectionToolbar > .btn,
       #selectionToolbar > a.btn {
         margin: 0;
-        border-radius: 6px !important;
+        flex: 0 0 auto;
+        border: 0 !important;
+        border-right: 1px solid #c8d5e5 !important;
+        border-radius: 0 !important;
       }
 
       #selectionToolbar > .btn:hover,
@@ -355,26 +360,18 @@
 
       #selectionToolbar > .btn-group {
         margin-left: auto;
-        border-radius: 6px;
-        overflow: hidden;
+        flex: 0 0 auto;
+        border-radius: 0;
+        overflow: visible;
       }
 
       #selectionToolbar > .btn-group > .btn {
         border-radius: 0;
       }
 
-      #selectionToolbar > .btn-group > .btn:first-child {
-        border-radius: 6px 0 0 6px;
-      }
-
-      #selectionToolbar > .btn-group > .btn:last-child {
-        border-radius: 0 6px 6px 0;
-      }
-
       @media (max-width: 860px) {
         #selectionToolbar > .btn-group {
-          width: 100% !important;
-          margin-left: 0;
+          width: auto !important;
         }
       }
 
@@ -4633,9 +4630,9 @@
               id="startGuidedTour"
               class="btn btn-default btn-xs"
               type="button"
-              title="Start tutorial"
+              title="Start tour"
             >
-              Tutorial
+              Tour
             </button>
           </div>
 
@@ -5170,7 +5167,7 @@
                   type="button"
                   class="btn btn-primary"
                 >
-                  Start tutorial
+                  Start tour
                 </button>
               </p>
             </div>
