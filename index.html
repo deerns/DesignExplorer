@@ -13125,8 +13125,7 @@
             selector: "#viewer2d",
             isImageSelectionDemo: true,
             title: "Inspect a selected image",
-            description:
-              "One thumbnail is selected for you. Its larger image and details appear here, so you can inspect one design at a time.",
+            description: getGuidedTourSelectedImageDescription,
           },
         ];
 
@@ -13192,6 +13191,8 @@
           thumbnailsOnRight: d3.select("#thumbnails-btm_container").classed("onRight"),
           thumbnailDrawerOpen: d3.select("#thumbnails-btm_container").classed("drawer-open"),
           thumbnailDrawerPinned: d3.select("#thumbnails-btm_container").classed("drawer-pinned"),
+          scrollX: window.pageXOffset || window.scrollX || 0,
+          scrollY: window.pageYOffset || window.scrollY || 0,
         };
       }
 
@@ -13254,6 +13255,9 @@
         isAnyItemSelected = state.isAnyItemSelected;
         guidedTourInitialState = null;
         updateThumbVisibility();
+        window.setTimeout(function () {
+          window.scrollTo(state.scrollX, state.scrollY);
+        }, 0);
       }
 
       function showGuidedTourInputOutputBars(focusType) {
@@ -13379,6 +13383,22 @@
         }
       }
 
+      function getGuidedTourSelectedImageDescription() {
+        var imageCount =
+          typeof getAvailableImageCount === "function" ? getAvailableImageCount() : 1;
+        var multipleImageNote =
+          imageCount > 1
+            ? " This study has " +
+              imageCount +
+              " image views. Use the image controls above the viewer or the arrow on the image to switch between them."
+            : "";
+
+        return (
+          "One thumbnail is selected for you. Its larger image and details appear here, so you can inspect one design at a time." +
+          multipleImageNote
+        );
+      }
+
       function updateGuidedTourNextButton(step) {
         var nextButton = document.getElementById("guidedTourNext");
         nextButton.textContent = "Next";
@@ -13464,13 +13484,27 @@
         if (step.isImageSelectionDemo) selectGuidedTourExampleImage();
 
         var target = step.target || document.querySelector(step.selector);
+        if (step.isInputOutputDemo) {
+          var focusSelector =
+            "#pcDimensionGroupBars .pc-dimension-group-bar-" +
+            step.inputOutputFocus;
+          target = document.querySelector(focusSelector) || target;
+        }
         if (!target || !isTutorialTargetVisible(target)) {
           guidedTourSteps.splice(guidedTourStepIndex, 1);
           renderGuidedTourStep();
           return;
         }
 
-        target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        var targetRect = target.getBoundingClientRect();
+        var isOutsideViewport =
+          targetRect.bottom < 0 ||
+          targetRect.top > window.innerHeight ||
+          targetRect.right < 0 ||
+          targetRect.left > window.innerWidth;
+        if (isOutsideViewport) {
+          target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        }
         window.setTimeout(function () {
           if (renderId !== guidedTourRenderId || guidedTourSteps.length === 0) {
             return;
