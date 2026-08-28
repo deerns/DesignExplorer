@@ -12942,6 +12942,7 @@
       var guidedTourDemoSelectionActive = false;
       var guidedTourDemoSelectionPhase = 0;
       var guidedTourInitialState = null;
+      var guidedTourInputOutputBarsActive = false;
 
       function isTutorialTargetVisible(selectorOrTarget) {
         var target =
@@ -13070,6 +13071,7 @@
           },
           {
             selector: "#graph",
+            isInputOutputDemo: true,
             title: "Inputs and outputs",
             description: getGuidedTourInputOutputDescription,
             shouldInclude: function () {
@@ -13127,6 +13129,7 @@
       function closeGuidedTour() {
         guidedTourRenderId += 1;
         restoreGuidedTourDemoSelection();
+        restoreGuidedTourInputOutputBars();
         restoreGuidedTourInitialState();
         guidedTourSteps = [];
         guidedTourStepIndex = 0;
@@ -13145,6 +13148,14 @@
               ? (graph.highlighted() || []).slice()
               : [],
           isAnyItemSelected: !!isAnyItemSelected,
+          brushExtents:
+            graph && typeof graph.brushExtents === "function"
+              ? cloneBrushExtents(graph.brushExtents())
+              : {},
+          showInputOutputBars:
+            _userSetting && typeof _userSetting === "object"
+              ? _userSetting.showInputOutputBars
+              : false,
           zoomedAreaHeight: d3.select("#zoomedArea").style("height"),
           thumbnailsOnRight: d3.select("#thumbnails-btm_container").classed("onRight"),
           thumbnailDrawerOpen: d3.select("#thumbnails-btm_container").classed("drawer-open"),
@@ -13156,6 +13167,16 @@
         if (!guidedTourInitialState) return;
 
         var state = guidedTourInitialState;
+        if (graph && typeof graph.brushReset === "function") {
+          graph.brushReset();
+          if (
+            Object.keys(state.brushExtents || {}).length > 0 &&
+            typeof graph.brushExtents === "function"
+          ) {
+            graph.brushExtents(state.brushExtents);
+          }
+        }
+
         var originalThumbnail = null;
         if (state.isAnyItemSelected && state.activeSelectedData) {
           d3.select("#thumbnails-btm")
@@ -13186,6 +13207,29 @@
         isAnyItemSelected = state.isAnyItemSelected;
         guidedTourInitialState = null;
         updateThumbVisibility();
+      }
+
+      function showGuidedTourInputOutputBars() {
+        if (!_userSetting || typeof updatePcDimensionGroupBars !== "function") {
+          return;
+        }
+
+        _userSetting.showInputOutputBars = true;
+        guidedTourInputOutputBarsActive = true;
+        updatePcDimensionGroupBars();
+      }
+
+      function restoreGuidedTourInputOutputBars() {
+        if (!guidedTourInputOutputBarsActive || !guidedTourInitialState) return;
+
+        _userSetting.showInputOutputBars = guidedTourInitialState.showInputOutputBars;
+        guidedTourInputOutputBarsActive = false;
+        if (typeof syncInputOutputBarsSettingState === "function") {
+          syncInputOutputBarsSettingState(_userSetting.showInputOutputBars);
+        }
+        if (typeof updatePcDimensionGroupBars === "function") {
+          updatePcDimensionGroupBars();
+        }
       }
 
       function restoreGuidedTourDemoSelection() {
@@ -13358,8 +13402,10 @@
 
         var step = guidedTourSteps[guidedTourStepIndex];
         if (!step.isSelectionDemo) restoreGuidedTourDemoSelection();
+        if (!step.isInputOutputDemo) restoreGuidedTourInputOutputBars();
         if (!step.isSelectionDemo) setGuidedTourStage("");
         if (step.isSelectionDemo) prepareGuidedTourDemoSelection(step);
+        if (step.isInputOutputDemo) showGuidedTourInputOutputBars();
         if (step.isImageSelectionDemo) selectGuidedTourExampleImage();
 
         var target = step.target || document.querySelector(step.selector);
