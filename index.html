@@ -266,6 +266,65 @@
         margin: 0;
       }
 
+      /* Guided tour overlay for shared studies and the on-page Help button. */
+      #guidedTourOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1060;
+        display: none;
+        background: rgba(4, 20, 48, 0.66);
+      }
+
+      #guidedTourHighlight {
+        position: fixed;
+        z-index: 1061;
+        display: none;
+        border: 3px solid #ffffff;
+        border-radius: 4px;
+        box-shadow: 0 0 0 5px rgba(3, 56, 153, 0.85);
+        pointer-events: none;
+      }
+
+      #guidedTourCard {
+        position: fixed;
+        z-index: 1062;
+        display: none;
+        width: min(360px, calc(100vw - 32px));
+        padding: 20px;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+        color: #1e2b3c;
+      }
+
+      #guidedTourCard h3 {
+        margin: 0 0 10px;
+        color: #033899;
+        font-size: 20px;
+      }
+
+      #guidedTourCard p {
+        margin: 0 0 16px;
+        line-height: 1.45;
+      }
+
+      #guidedTourProgress {
+        color: #68778b;
+        font-size: 12px;
+      }
+
+      #guidedTourActions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      #guidedTourActions .btn-primary {
+        background-color: #033899;
+        border-color: #033899;
+      }
+
       /* Settings modal alignment */
       #dataSetting .list-group-item.form-inline {
         display: flex;
@@ -4433,6 +4492,14 @@
                     >
                       Info <span class="glyphicon glyphicon-new-window"></span>
                     </a>
+                    <button
+                      id="startGuidedTour"
+                      class="btn btn-default btn-xs"
+                      type="button"
+                      title="Start guided tour"
+                    >
+                      Help <span class="glyphicon glyphicon-question-sign"></span>
+                    </button>
 
                     <!-- Change label size -->
                     <div
@@ -4844,6 +4911,15 @@
                 Design Explorer is an open source tool for exploring
                 multi-dimensional parametric studies!
               </h4>
+              <p class="text-center" style="margin-top: 18px">
+                <button
+                  id="startWelcomeGuidedTour"
+                  type="button"
+                  class="btn btn-primary"
+                >
+                  Start guided tour
+                </button>
+              </p>
             </div>
 
             <!-- Centered logo -->
@@ -4991,6 +5067,26 @@
             </div>
           </div>
         </div>
+        <div id="guidedTourOverlay" aria-hidden="true"></div>
+        <div id="guidedTourHighlight" aria-hidden="true"></div>
+        <section
+          id="guidedTourCard"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="guidedTourTitle"
+        >
+          <h3 id="guidedTourTitle"></h3>
+          <p id="guidedTourDescription"></p>
+          <div id="guidedTourActions">
+            <button id="guidedTourClose" type="button" class="btn btn-link btn-sm">
+              Skip tour
+            </button>
+            <span id="guidedTourProgress"></span>
+            <button id="guidedTourNext" type="button" class="btn btn-primary btn-sm">
+              Next
+            </button>
+          </div>
+        </section>
         <script>
           function triggerLoadData() {
             var folderLink = document.getElementById("folderLink").value || "";
@@ -12701,8 +12797,195 @@
         // });
       }
 
+      var guidedTourSteps = [];
+      var guidedTourStepIndex = 0;
+      var guidedTourRenderId = 0;
+
+      function isTutorialTargetVisible(selector) {
+        var target = document.querySelector(selector);
+        if (!target) return false;
+
+        var style = window.getComputedStyle(target);
+        var rect = target.getBoundingClientRect();
+        return (
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          parseFloat(style.opacity || "1") !== 0 &&
+          rect.width > 0 &&
+          rect.height > 0 &&
+          rect.bottom > 0 &&
+          rect.right > 0 &&
+          rect.top < window.innerHeight &&
+          rect.left < window.innerWidth
+        );
+      }
+
+      function buildGuidedTourSteps() {
+        var candidates = [
+          {
+            selector: "#topNavLeftGroup",
+            title: "Study header",
+            description:
+              "This area shows the study name and date when they are available. Use Get Data to load another study.",
+          },
+          {
+            selector: "#PcChartWrapper > .row > .btn-group",
+            title: "Selection toolbar",
+            description:
+              "Reset restores all designs. Exclude removes the current selection, Zoom keeps it, Save exports it, My Static Link creates a shareable link, and Setting changes the study display options.",
+          },
+          {
+            selector: "#sidebar-wrapper",
+            title: "Filters and legend",
+            description:
+              "Use the sliders to filter the study by input values. The legend explains the current design colours and lets you focus on categories.",
+          },
+          {
+            selector: "#graph",
+            title: "Parallel coordinates",
+            description:
+              "Each vertical axis is a study dimension. Drag on an axis to select a value range, drag axis headings to reorder them, and click a design line to inspect it.",
+          },
+          {
+            selector: "#radarChart",
+            title: "Scatter plots",
+            description:
+              "Compare two dimensions at a time. Click or drag within a plot to select designs, then use the Zoom action when it is shown.",
+          },
+          {
+            selector: "#zoomedArea",
+            title: "Selected design",
+            description:
+              "Details and the larger preview for the selected design appear here. The available image controls let you switch between the study images.",
+          },
+          {
+            selector: "#vis",
+            title: "View controls",
+            description:
+              "Choose which available image view to display. A 3D option is shown here only when the study provides a 3D model.",
+          },
+          {
+            selector: "#thumbnails-btm_container",
+            title: "Design thumbnails",
+            description:
+              "Browse the study designs as thumbnails. Click one to inspect it, and use the Thumbnails tab to open or close the drawer.",
+          },
+        ];
+
+        return candidates.filter(function (step) {
+          return isTutorialTargetVisible(step.selector);
+        });
+      }
+
+      function closeGuidedTour() {
+        guidedTourRenderId += 1;
+        guidedTourSteps = [];
+        guidedTourStepIndex = 0;
+        document.getElementById("guidedTourOverlay").style.display = "none";
+        document.getElementById("guidedTourHighlight").style.display = "none";
+        document.getElementById("guidedTourCard").style.display = "none";
+        document.getElementById("guidedTourOverlay").setAttribute("aria-hidden", "true");
+      }
+
+      function renderGuidedTourStep() {
+        var renderId = ++guidedTourRenderId;
+        if (guidedTourStepIndex >= guidedTourSteps.length) {
+          closeGuidedTour();
+          return;
+        }
+
+        var step = guidedTourSteps[guidedTourStepIndex];
+        var target = document.querySelector(step.selector);
+        if (!target || !isTutorialTargetVisible(step.selector)) {
+          guidedTourSteps.splice(guidedTourStepIndex, 1);
+          renderGuidedTourStep();
+          return;
+        }
+
+        target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+        window.setTimeout(function () {
+          if (renderId !== guidedTourRenderId || guidedTourSteps.length === 0) {
+            return;
+          }
+
+          var rect = target.getBoundingClientRect();
+          var padding = 6;
+          var highlight = document.getElementById("guidedTourHighlight");
+          var card = document.getElementById("guidedTourCard");
+          var nextButton = document.getElementById("guidedTourNext");
+
+          highlight.style.display = "block";
+          highlight.style.left = Math.max(0, rect.left - padding) + "px";
+          highlight.style.top = Math.max(0, rect.top - padding) + "px";
+          highlight.style.width = Math.min(window.innerWidth, rect.width + padding * 2) + "px";
+          highlight.style.height = Math.min(window.innerHeight, rect.height + padding * 2) + "px";
+
+          document.getElementById("guidedTourTitle").textContent = step.title;
+          document.getElementById("guidedTourDescription").textContent = step.description;
+          document.getElementById("guidedTourProgress").textContent =
+            guidedTourStepIndex + 1 + " of " + guidedTourSteps.length;
+          nextButton.textContent =
+            guidedTourStepIndex === guidedTourSteps.length - 1 ? "Finish" : "Next";
+
+          card.style.display = "block";
+          var cardWidth = card.offsetWidth;
+          var cardHeight = card.offsetHeight;
+          var preferredTop = rect.bottom + 18;
+          var top =
+            preferredTop + cardHeight <= window.innerHeight - 16
+              ? preferredTop
+              : Math.max(16, rect.top - cardHeight - 18);
+          var left = Math.min(
+            Math.max(16, rect.left),
+            window.innerWidth - cardWidth - 16
+          );
+          card.style.left = left + "px";
+          card.style.top = top + "px";
+        }, 260);
+      }
+
+      function startGuidedTour() {
+        d3.selectAll(".popupWindow").style("display", "none");
+        guidedTourSteps = buildGuidedTourSteps();
+        guidedTourStepIndex = 0;
+
+        if (guidedTourSteps.length === 0) {
+          alert("The guided tour will be available after the study has loaded.");
+          return;
+        }
+
+        document.getElementById("guidedTourOverlay").style.display = "block";
+        document.getElementById("guidedTourOverlay").setAttribute("aria-hidden", "false");
+        renderGuidedTourStep();
+      }
+
       window.onload = function () {
         var isIE = /*@cc_on!@*/ false || !!document.documentMode;
+
+        document
+          .getElementById("startGuidedTour")
+          .addEventListener("click", startGuidedTour);
+        document
+          .getElementById("startWelcomeGuidedTour")
+          .addEventListener("click", startGuidedTour);
+        document
+          .getElementById("guidedTourNext")
+          .addEventListener("click", function () {
+            guidedTourStepIndex += 1;
+            renderGuidedTourStep();
+          });
+        document
+          .getElementById("guidedTourClose")
+          .addEventListener("click", closeGuidedTour);
+        document
+          .getElementById("guidedTourOverlay")
+          .addEventListener("click", closeGuidedTour);
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" || e.keyCode === 27) closeGuidedTour();
+        });
+        window.addEventListener("resize", function () {
+          if (guidedTourSteps.length > 0) renderGuidedTourStep();
+        });
 
         if (isIE) {
           alert(
@@ -12714,8 +12997,10 @@
           window.location.href.toUpperCase().search("GFOLDER") > 0 ||
           window.location.href.toUpperCase().search("ID=") > 0
         ) {
-          // this is old user with google drive files.
-          d3.select("#welcome").style("display", "none");
+          // Shared studies keep the welcome message visible for first-time visitors.
+          d3.select("#welcome").style("display", "flex");
+          d3.select("#welcomeContainer").style("display", "flex");
+          d3.select("#loadDataContainer").style("display", "none");
           syncMainVerticalResizeHandleState();
           MP_getGoogleIDandLoad("URL");
         } else {
