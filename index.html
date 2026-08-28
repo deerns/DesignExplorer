@@ -267,39 +267,48 @@
       }
 
       /* Compact action toolbar above the comparison chart. */
-      #selectionToolbar {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 4px;
-        width: 100%;
-        margin: 0 0 8px;
-        padding: 5px;
-        border: 1px solid #dce5f1;
-        border-radius: 10px;
-        background: #f5f8fc;
-      }
-
-      #selectionToolbar > .btn,
-      #selectionToolbar > a.btn {
-        min-height: 28px;
-        padding: 5px 9px;
-        border: 1px solid #d3deec;
+      button.btn.btn-default,
+      a.btn.btn-default {
+        border-color: #c8d5e5;
         border-radius: 6px;
         background: #ffffff;
         color: #17345f;
         box-shadow: none;
         transition: background-color 160ms ease, border-color 160ms ease,
-          transform 160ms ease;
+          color 160ms ease, transform 160ms ease;
+      }
+
+      button.btn.btn-default:hover,
+      button.btn.btn-default:focus,
+      a.btn.btn-default:hover,
+      a.btn.btn-default:focus {
+        border-color: #8dacd5;
+        background: #eaf2ff;
+        color: #033899;
+        box-shadow: none;
+      }
+
+      #selectionToolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 3px;
+        width: 100%;
+        margin: 0 0 8px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+      }
+
+      #selectionToolbar > .btn,
+      #selectionToolbar > a.btn {
+        margin: 0;
       }
 
       #selectionToolbar > .btn:hover,
       #selectionToolbar > .btn:focus,
       #selectionToolbar > a.btn:hover,
       #selectionToolbar > a.btn:focus {
-        border-color: #8dacd5;
-        background: #eaf2ff;
-        color: #033899;
         transform: translateY(-1px);
       }
 
