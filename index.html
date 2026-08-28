@@ -5193,16 +5193,6 @@
                 style="max-width: 30%; height: auto"
               />
             </div>
-            <p class="text-center" style="margin: 12px 0 0">
-              <button
-                id="startWelcomeGuidedTour"
-                type="button"
-                class="btn btn-primary"
-              >
-                Start tour
-              </button>
-            </p>
-
             <!-- GIFs row: always side-by-side and contained -->
             <div
               style="
@@ -5259,6 +5249,14 @@
                 <a href="https://www.deerns.com/" target="_blank">Contact</a>
               </h5>
             </div>
+            <button
+              id="startWelcomeGuidedTourBottom"
+              type="button"
+              class="btn btn-primary"
+              style="position: absolute; right: 1.5em; bottom: 1em; z-index: 1001"
+            >
+              Start tour
+            </button>
           </div>
 
           <!--load data div-->
@@ -13730,7 +13728,7 @@
           .getElementById("startGuidedTour")
           .addEventListener("click", startGuidedTour);
         document
-          .getElementById("startWelcomeGuidedTour")
+          .getElementById("startWelcomeGuidedTourBottom")
           .addEventListener("click", startGuidedTour);
         document
           .getElementById("guidedTourNext")
