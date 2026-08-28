@@ -277,6 +277,7 @@
         background: #ffffff !important;
         color: #17345f !important;
         box-shadow: none;
+        font-family: inherit;
         transition: background-color 160ms ease, border-color 160ms ease,
           color 160ms ease, transform 160ms ease;
       }
@@ -322,9 +323,9 @@
       }
 
       #selectionToolbar #startGuidedTour {
-        border-color: #c8d5e5;
-        background: #ffffff;
-        color: #17345f;
+        border-color: #a9c5e8;
+        background: #f0f6ff !important;
+        color: #033899 !important;
         font-weight: 600;
       }
 
@@ -335,8 +336,36 @@
         color: #033899;
       }
 
+      /* Keep the primary data-loading action distinct from the toolbar buttons. */
+      #topNavLeftGroup .top-nav-action-btn {
+        border: none !important;
+        border-radius: 25px;
+        background: #033899 !important;
+        color: #ffffff !important;
+      }
+
+      #topNavLeftGroup .top-nav-action-btn:hover,
+      #topNavLeftGroup .top-nav-action-btn:focus {
+        background: #0a48b8 !important;
+        color: #ffffff !important;
+      }
+
       #selectionToolbar > .btn-group {
         margin-left: auto;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      #selectionToolbar > .btn-group > .btn {
+        border-radius: 0;
+      }
+
+      #selectionToolbar > .btn-group > .btn:first-child {
+        border-radius: 6px 0 0 6px;
+      }
+
+      #selectionToolbar > .btn-group > .btn:last-child {
+        border-radius: 0 6px 6px 0;
       }
 
       @media (max-width: 860px) {
@@ -4712,20 +4741,13 @@
                     </button>
                     <!--a class="btn btn-default btn-xs" href="http://www.mpendesign.com/category/tutorial/" target="_blank">Tutorial</a -->
                     <!--a class="btn btn-default btn-xs" href="https://www.thorntontomasetti.com/services/sustainability/" target="_blank">Services</a-->
-                    <a
-                      href="https://github.com/deerns/DesignExplorer/wiki"
-                      class="btn btn-default btn-xs"
-                      target="_blank"
-                    >
-                      Info <span class="glyphicon glyphicon-new-window"></span>
-                    </a>
                     <button
                       id="startGuidedTour"
                       class="btn btn-default btn-xs"
                       type="button"
                       title="Start tutorial"
                     >
-                      Tutorial <span class="glyphicon glyphicon-education"></span>
+                      Tutorial
                     </button>
 
                     <!-- Change label size -->
