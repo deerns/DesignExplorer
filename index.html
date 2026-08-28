@@ -362,6 +362,17 @@
         text-transform: uppercase;
       }
 
+      #guidedTourStage {
+        display: none;
+        margin: 0 0 14px;
+        padding: 7px 10px;
+        border-radius: 6px;
+        background: #e7f1ff;
+        color: #034f9d;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
       #guidedTourCard h3 {
         margin: 0 0 10px;
         color: #033899;
@@ -5191,6 +5202,7 @@
         >
           <span id="guidedTourKicker">Design Explorer guide</span>
           <h3 id="guidedTourTitle"></h3>
+          <div id="guidedTourStage"></div>
           <div id="guidedTourDescription"></div>
           <div id="guidedTourActions">
             <button id="guidedTourClose" type="button" class="btn btn-link btn-sm">
@@ -12967,12 +12979,18 @@
 
           if (values.length < 4) continue;
 
-          var initialStart = values[Math.floor((values.length - 1) * 0.2)];
-          var initialEnd = values[Math.ceil((values.length - 1) * 0.75)];
-          var adjustedStart = values[Math.floor((values.length - 1) * 0.38)];
-          var adjustedEnd = values[Math.ceil((values.length - 1) * 0.58)];
+          var initialStart = values[Math.floor((values.length - 1) * 0.12)];
+          var initialEnd = values[Math.ceil((values.length - 1) * 0.88)];
+          var adjustedStart = values[Math.floor((values.length - 1) * 0.44)];
+          var adjustedEnd = values[Math.ceil((values.length - 1) * 0.56)];
 
           if (initialStart === initialEnd || adjustedStart === adjustedEnd) continue;
+
+          var adjustedCount = data.filter(function (row) {
+            var value = Number(row[dimensionKey]);
+            return isFinite(value) && value >= adjustedStart && value <= adjustedEnd;
+          }).length;
+          if (adjustedCount === 0 || adjustedCount >= data.length * 0.65) continue;
 
           return {
             target: target,
@@ -13066,6 +13084,12 @@
         }
       }
 
+      function setGuidedTourStage(text) {
+        var stage = document.getElementById("guidedTourStage");
+        stage.textContent = text || "";
+        stage.style.display = text ? "block" : "none";
+      }
+
       function applyGuidedTourDemoSelection(step, renderId) {
         if (
           !step.isSelectionDemo ||
@@ -13083,10 +13107,19 @@
           graph.brushReset();
         }
 
-        var demoExtent = {};
-        demoExtent[guidedTourDemoSelection.dimensionKey] =
-          guidedTourDemoSelection.initialExtent;
-        graph.brushExtents(demoExtent);
+        setGuidedTourStage("1 of 3  |  Compare all designs");
+
+        window.setTimeout(function () {
+          if (renderId !== guidedTourRenderId || !guidedTourDemoSelectionActive) {
+            return;
+          }
+
+          var demoExtent = {};
+          demoExtent[guidedTourDemoSelection.dimensionKey] =
+            guidedTourDemoSelection.initialExtent;
+          graph.brushExtents(demoExtent);
+          setGuidedTourStage("2 of 3  |  Create a selection range");
+        }, 1050);
 
         window.setTimeout(function () {
           if (renderId !== guidedTourRenderId || !guidedTourDemoSelectionActive) {
@@ -13097,7 +13130,8 @@
           adjustedExtent[guidedTourDemoSelection.dimensionKey] =
             guidedTourDemoSelection.adjustedExtent;
           graph.brushExtents(adjustedExtent);
-        }, 1150);
+          setGuidedTourStage("3 of 3  |  Adjust the range to narrow the results");
+        }, 2350);
       }
 
       function moveGuidedTourLayersToBody() {
@@ -13171,6 +13205,7 @@
 
         var step = guidedTourSteps[guidedTourStepIndex];
         if (!step.isSelectionDemo) restoreGuidedTourDemoSelection();
+        if (!step.isSelectionDemo) setGuidedTourStage("");
 
         var target = step.target || document.querySelector(step.selector);
         if (!target || !isTutorialTargetVisible(target)) {
