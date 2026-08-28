@@ -389,10 +389,16 @@
         background: transparent;
       }
 
-      .guidedTourShade {
+      #guidedTourShade {
         position: fixed;
-        background: rgba(4, 20, 48, 0.58);
-        transition: opacity 220ms ease;
+        display: none;
+        background: transparent;
+        box-shadow: 0 0 0 100vmax rgba(4, 20, 48, 0.58);
+        pointer-events: none;
+        transition: left 420ms cubic-bezier(0.22, 1, 0.36, 1),
+          top 420ms cubic-bezier(0.22, 1, 0.36, 1),
+          width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+          height 420ms cubic-bezier(0.22, 1, 0.36, 1);
       }
 
       #guidedTourHighlight {
@@ -470,6 +476,8 @@
         position: fixed;
         z-index: 2147483647;
         display: none;
+        right: 24px;
+        bottom: 24px;
         width: min(390px, calc(100vw - 32px));
         padding: 24px;
         background: linear-gradient(145deg, #ffffff 0%, #f4f8ff 100%) !important;
@@ -479,8 +487,6 @@
         color: #1e2b3c;
         opacity: 1 !important;
         filter: none !important;
-        transition: left 360ms cubic-bezier(0.22, 1, 0.36, 1),
-          top 360ms cubic-bezier(0.22, 1, 0.36, 1);
       }
 
       #guidedTourKicker {
@@ -5328,10 +5334,7 @@
           </div>
         </div>
         <div id="guidedTourOverlay" aria-hidden="true">
-          <div id="guidedTourShadeTop" class="guidedTourShade"></div>
-          <div id="guidedTourShadeLeft" class="guidedTourShade"></div>
-          <div id="guidedTourShadeRight" class="guidedTourShade"></div>
-          <div id="guidedTourShadeBottom" class="guidedTourShade"></div>
+          <div id="guidedTourShade"></div>
         </div>
         <div id="guidedTourHighlight" aria-hidden="true"></div>
         <div id="guidedTourSecondaryHighlight" aria-hidden="true"></div>
@@ -13574,59 +13577,17 @@
       }
 
       function updateGuidedTourShades(rects, padding) {
-        var overlay = document.getElementById("guidedTourOverlay");
-        var viewportWidth = window.innerWidth;
-        var viewportHeight = window.innerHeight;
-        var holes = (rects || []).map(function (rect) {
-          return {
-            left: Math.max(0, rect.left - padding),
-            top: Math.max(0, rect.top - padding),
-            right: Math.min(viewportWidth, rect.right + padding),
-            bottom: Math.min(viewportHeight, rect.bottom + padding),
-          };
-        });
-        var xEdges = [0, viewportWidth];
-        var yEdges = [0, viewportHeight];
+        var rect = rects && rects[0];
+        var shade = document.getElementById("guidedTourShade");
+        if (!rect || !shade) return;
 
-        holes.forEach(function (hole) {
-          xEdges.push(hole.left, hole.right);
-          yEdges.push(hole.top, hole.bottom);
-        });
-        xEdges = xEdges.filter(function (value, index, values) {
-          return values.indexOf(value) === index;
-        }).sort(function (a, b) { return a - b; });
-        yEdges = yEdges.filter(function (value, index, values) {
-          return values.indexOf(value) === index;
-        }).sort(function (a, b) { return a - b; });
-
-        overlay.innerHTML = "";
-        for (var x = 0; x < xEdges.length - 1; x++) {
-          for (var y = 0; y < yEdges.length - 1; y++) {
-            var left = xEdges[x];
-            var top = yEdges[y];
-            var width = xEdges[x + 1] - left;
-            var height = yEdges[y + 1] - top;
-            var centerX = left + width / 2;
-            var centerY = top + height / 2;
-            var isInsideHole = holes.some(function (hole) {
-              return (
-                centerX >= hole.left &&
-                centerX <= hole.right &&
-                centerY >= hole.top &&
-                centerY <= hole.bottom
-              );
-            });
-            if (isInsideHole || width <= 0 || height <= 0) continue;
-
-            var shade = document.createElement("div");
-            shade.className = "guidedTourShade";
-            shade.style.left = left + "px";
-            shade.style.top = top + "px";
-            shade.style.width = width + "px";
-            shade.style.height = height + "px";
-            overlay.appendChild(shade);
-          }
-        }
+        shade.style.display = "block";
+        shade.style.left = Math.max(0, rect.left - padding) + "px";
+        shade.style.top = Math.max(0, rect.top - padding) + "px";
+        shade.style.width =
+          Math.min(window.innerWidth, rect.width + padding * 2) + "px";
+        shade.style.height =
+          Math.min(window.innerHeight, rect.height + padding * 2) + "px";
       }
 
       function showGuidedTourDemoBrush(step, rect, renderId) {
@@ -13737,20 +13698,10 @@
             guidedTourStepIndex + 1 + " of " + guidedTourSteps.length;
           updateGuidedTourNextButton(step);
 
+          // The card stays in a predictable place while the spotlight moves.
+          card.style.left = "";
+          card.style.top = "";
           card.style.display = "block";
-          var cardWidth = card.offsetWidth;
-          var cardHeight = card.offsetHeight;
-          var preferredTop = rect.bottom + 18;
-          var top =
-            preferredTop + cardHeight <= window.innerHeight - 16
-              ? preferredTop
-              : Math.max(16, rect.top - cardHeight - 18);
-          var left = Math.min(
-            Math.max(16, rect.left),
-            window.innerWidth - cardWidth - 16
-          );
-          card.style.left = left + "px";
-          card.style.top = top + "px";
         }, 260);
       }
 
