@@ -266,6 +266,68 @@
         margin: 0;
       }
 
+      /* Compact action toolbar above the comparison chart. */
+      #selectionToolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        width: 100%;
+        margin: 0 0 8px;
+        padding: 5px;
+        border: 1px solid #dce5f1;
+        border-radius: 10px;
+        background: #f5f8fc;
+      }
+
+      #selectionToolbar > .btn,
+      #selectionToolbar > a.btn {
+        min-height: 28px;
+        padding: 5px 9px;
+        border: 1px solid #d3deec;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #17345f;
+        box-shadow: none;
+        transition: background-color 160ms ease, border-color 160ms ease,
+          transform 160ms ease;
+      }
+
+      #selectionToolbar > .btn:hover,
+      #selectionToolbar > .btn:focus,
+      #selectionToolbar > a.btn:hover,
+      #selectionToolbar > a.btn:focus {
+        border-color: #8dacd5;
+        background: #eaf2ff;
+        color: #033899;
+        transform: translateY(-1px);
+      }
+
+      #selectionToolbar #startGuidedTour {
+        border-color: #033899;
+        background: #033899;
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      #selectionToolbar #startGuidedTour:hover,
+      #selectionToolbar #startGuidedTour:focus {
+        border-color: #0b65c2;
+        background: #0b65c2;
+        color: #ffffff;
+      }
+
+      #selectionToolbar > .btn-group {
+        margin-left: auto;
+      }
+
+      @media (max-width: 860px) {
+        #selectionToolbar > .btn-group {
+          width: 100% !important;
+          margin-left: 0;
+        }
+      }
+
       /* Guided tour overlay for shared studies and the on-page Help button. */
       #guidedTourOverlay {
         position: fixed;
@@ -4584,7 +4646,7 @@
               <div id="PcChartWrapper" class="col-lg-9">
                 <div class="row">
                   <!-- parallel coordiantes' buttons (reset,remove... ) -->
-                  <div class="btn-group col-xs-12">
+                  <div id="selectionToolbar" class="btn-group col-xs-12">
                     <button
                       type="button"
                       class="btn btn-default btn-xs"
@@ -4643,9 +4705,9 @@
                       id="startGuidedTour"
                       class="btn btn-default btn-xs"
                       type="button"
-                      title="Start guided tour"
+                      title="Start tutorial"
                     >
-                      Help <span class="glyphicon glyphicon-question-sign"></span>
+                      Tutorial <span class="glyphicon glyphicon-education"></span>
                     </button>
 
                     <!-- Change label size -->
@@ -5064,7 +5126,7 @@
                   type="button"
                   class="btn btn-primary"
                 >
-                  Start guided tour
+                  Start tutorial
                 </button>
               </p>
             </div>
