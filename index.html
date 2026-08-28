@@ -96,6 +96,22 @@
         min-width: 0;
       }
 
+      #topNavBrandActions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      #topNavBrandActions #startGuidedTour {
+        padding: 3px 9px;
+        border-color: #a9c5e8;
+        background: #f0f6ff !important;
+        color: #033899 !important;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
       #topNavLeftGroup .top-nav-action-btn {
         background-color: #033899;
         color: #ffffff;
@@ -303,8 +319,8 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 3px;
-        width: 100%;
-        margin: 0 0 8px;
+        width: calc(100% - 12px);
+        margin: 0 0 8px 12px;
         padding: 0;
         border: 0;
         background: transparent;
@@ -313,6 +329,7 @@
       #selectionToolbar > .btn,
       #selectionToolbar > a.btn {
         margin: 0;
+        border-radius: 6px !important;
       }
 
       #selectionToolbar > .btn:hover,
@@ -320,20 +337,6 @@
       #selectionToolbar > a.btn:hover,
       #selectionToolbar > a.btn:focus {
         transform: translateY(-1px);
-      }
-
-      #selectionToolbar #startGuidedTour {
-        border-color: #a9c5e8;
-        background: #f0f6ff !important;
-        color: #033899 !important;
-        font-weight: 600;
-      }
-
-      #selectionToolbar #startGuidedTour:hover,
-      #selectionToolbar #startGuidedTour:focus {
-        border-color: #8dacd5;
-        background: #eaf2ff;
-        color: #033899;
       }
 
       /* Keep the primary data-loading action distinct from the toolbar buttons. */
@@ -4617,14 +4620,24 @@
       <div id="topNavBar">
         <!-- Left group: logo + button -->
         <div id="topNavLeftGroup">
-          <!-- Left logo -->
-          <a href="http://designexplorer.deerns.com/" title="Design Explorer">
-            <img
-              src="./img/Design_Explorer_logo_regular.svg"
-              alt="Design Explorer Logo"
-              style="height: 40px"
-            />
-          </a>
+          <div id="topNavBrandActions">
+            <!-- Left logo -->
+            <a href="http://designexplorer.deerns.com/" title="Design Explorer">
+              <img
+                src="./img/Design_Explorer_logo_regular.svg"
+                alt="Design Explorer Logo"
+                style="height: 40px"
+              />
+            </a>
+            <button
+              id="startGuidedTour"
+              class="btn btn-default btn-xs"
+              type="button"
+              title="Start tutorial"
+            >
+              Tutorial
+            </button>
+          </div>
 
           <!-- Get Data button, 20px to the right -->
           <button
@@ -4741,15 +4754,6 @@
                     </button>
                     <!--a class="btn btn-default btn-xs" href="http://www.mpendesign.com/category/tutorial/" target="_blank">Tutorial</a -->
                     <!--a class="btn btn-default btn-xs" href="https://www.thorntontomasetti.com/services/sustainability/" target="_blank">Services</a-->
-                    <button
-                      id="startGuidedTour"
-                      class="btn btn-default btn-xs"
-                      type="button"
-                      title="Start tutorial"
-                    >
-                      Tutorial
-                    </button>
-
                     <!-- Change label size -->
                     <div
                       class="btn-group col-xs-3"
