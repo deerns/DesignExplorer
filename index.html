@@ -13593,23 +13593,26 @@
           );
           var card = document.getElementById("guidedTourCard");
           var nextButton = document.getElementById("guidedTourNext");
-          var sliderRect = step.isInputOutputDemo
-            ? getGuidedTourVisibleSlidersRect()
-            : null;
+
+          if (step.isInputOutputDemo) {
+            var graphRect = document.getElementById("graph").getBoundingClientRect();
+            rect = {
+              left: rect.left,
+              top: rect.top,
+              right: rect.right,
+              bottom: Math.max(rect.bottom, graphRect.bottom),
+              width: rect.width,
+              height: Math.max(rect.bottom, graphRect.bottom) - rect.top,
+            };
+          }
 
           highlight.style.display = "block";
           highlight.style.left = Math.max(0, rect.left - padding) + "px";
           highlight.style.top = Math.max(0, rect.top - padding) + "px";
           highlight.style.width = Math.min(window.innerWidth, rect.width + padding * 2) + "px";
           highlight.style.height = Math.min(window.innerHeight, rect.height + padding * 2) + "px";
-          secondaryHighlight.style.display = sliderRect ? "block" : "none";
-          if (sliderRect) {
-            secondaryHighlight.style.left = Math.max(0, sliderRect.left - padding) + "px";
-            secondaryHighlight.style.top = Math.max(0, sliderRect.top - padding) + "px";
-            secondaryHighlight.style.width = Math.min(window.innerWidth, sliderRect.width + padding * 2) + "px";
-            secondaryHighlight.style.height = Math.min(window.innerHeight, sliderRect.height + padding * 2) + "px";
-          }
-          updateGuidedTourShades(sliderRect ? [rect, sliderRect] : [rect], padding);
+          secondaryHighlight.style.display = "none";
+          updateGuidedTourShades([rect], padding);
           showGuidedTourDemoBrush(step, rect, renderId);
 
           document.getElementById("guidedTourTitle").textContent = step.title;
