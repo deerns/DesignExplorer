@@ -398,6 +398,17 @@
         vertical-align: -1px;
       }
 
+      #pcDimensionGroupBars.tour-focus-input .pc-dimension-group-bar-output,
+      #pcDimensionGroupBars.tour-focus-output .pc-dimension-group-bar-input {
+        opacity: 0.16;
+      }
+
+      #pcDimensionGroupBars.tour-focus-input .pc-dimension-group-bar-input,
+      #pcDimensionGroupBars.tour-focus-output .pc-dimension-group-bar-output {
+        filter: drop-shadow(0 2px 3px rgba(3, 56, 153, 0.28));
+        opacity: 1;
+      }
+
       #guidedTourCard .tour-steps {
         display: grid;
         gap: 8px;
@@ -13031,18 +13042,23 @@
         return colors.input && colors.output ? colors : null;
       }
 
-      function getGuidedTourInputOutputDescription() {
+      function getGuidedTourDimensionGroupDescription(type) {
         var colors = getGuidedTourInputOutputInfo();
         if (!colors) return "";
 
+        var isInput = type === "input";
+        var label = isInput ? "input" : "output";
+        var meaning = isInput
+          ? "Inputs are the values you set before running the model."
+          : "Outputs are the results produced by the model.";
+
         return (
-          "The model dimensions are colour-coded using this study's current settings: " +
           '<span class="tour-color-swatch" style="background-color:' +
-          colors.input +
-          '"></span><strong>input</strong> dimensions and ' +
-          '<span class="tour-color-swatch" style="background-color:' +
-          colors.output +
-          '"></span><strong>output</strong> dimensions. Inputs are the values you set; outputs are the results produced by the model.'
+          colors[type] +
+          '"></span><strong>' +
+          label +
+          " dimensions</strong> use the current study colour shown above the matching axes. " +
+          meaning
         );
       }
 
@@ -13072,8 +13088,23 @@
           {
             selector: "#graph",
             isInputOutputDemo: true,
-            title: "Inputs and outputs",
-            description: getGuidedTourInputOutputDescription,
+            inputOutputFocus: "input",
+            title: "Model inputs",
+            description: function () {
+              return getGuidedTourDimensionGroupDescription("input");
+            },
+            shouldInclude: function () {
+              return !!getGuidedTourInputOutputInfo();
+            },
+          },
+          {
+            selector: "#graph",
+            isInputOutputDemo: true,
+            inputOutputFocus: "output",
+            title: "Model outputs",
+            description: function () {
+              return getGuidedTourDimensionGroupDescription("output");
+            },
             shouldInclude: function () {
               return !!getGuidedTourInputOutputInfo();
             },
@@ -13109,12 +13140,13 @@
           .sort(function (a, b) {
             var order = {
               "Read the comparison chart": 0,
-              "Inputs and outputs": 1,
-              "Make a selection": 2,
-              "Filters and legend": 3,
-              "Scatter plots": 4,
-              "Design thumbnails": 5,
-              "Inspect a selected image": 6,
+              "Model inputs": 1,
+              "Model outputs": 2,
+              "Make a selection": 3,
+              "Filters and legend": 4,
+              "Scatter plots": 5,
+              "Design thumbnails": 6,
+              "Inspect a selected image": 7,
             };
             var aOrder = Object.prototype.hasOwnProperty.call(order, a.title)
               ? order[a.title]
@@ -13177,6 +13209,21 @@
           }
         }
 
+        var restoredData =
+          graph && typeof graph.brushed === "function" && Array.isArray(graph.brushed())
+            ? graph.brushed()
+            : graph && typeof graph.data === "function"
+              ? graph.data()
+              : [];
+        if (typeof syncGraphSelectionViews === "function") {
+          syncGraphSelectionViews(restoredData);
+        } else if (typeof updateImageGrid === "function") {
+          updateImageGrid(restoredData, false);
+        }
+        if (typeof updateSlidersTickValues === "function") {
+          updateSlidersTickValues(restoredData);
+        }
+
         var originalThumbnail = null;
         if (state.isAnyItemSelected && state.activeSelectedData) {
           d3.select("#thumbnails-btm")
@@ -13209,7 +13256,7 @@
         updateThumbVisibility();
       }
 
-      function showGuidedTourInputOutputBars() {
+      function showGuidedTourInputOutputBars(focusType) {
         if (!_userSetting || typeof updatePcDimensionGroupBars !== "function") {
           return;
         }
@@ -13217,6 +13264,9 @@
         _userSetting.showInputOutputBars = true;
         guidedTourInputOutputBarsActive = true;
         updatePcDimensionGroupBars();
+        d3.select("#pcDimensionGroupBars")
+          .classed("tour-focus-input", focusType === "input")
+          .classed("tour-focus-output", focusType === "output");
       }
 
       function restoreGuidedTourInputOutputBars() {
@@ -13224,6 +13274,9 @@
 
         _userSetting.showInputOutputBars = guidedTourInitialState.showInputOutputBars;
         guidedTourInputOutputBarsActive = false;
+        d3.select("#pcDimensionGroupBars")
+          .classed("tour-focus-input", false)
+          .classed("tour-focus-output", false);
         if (typeof syncInputOutputBarsSettingState === "function") {
           syncInputOutputBarsSettingState(_userSetting.showInputOutputBars);
         }
@@ -13405,7 +13458,9 @@
         if (!step.isInputOutputDemo) restoreGuidedTourInputOutputBars();
         if (!step.isSelectionDemo) setGuidedTourStage("");
         if (step.isSelectionDemo) prepareGuidedTourDemoSelection(step);
-        if (step.isInputOutputDemo) showGuidedTourInputOutputBars();
+        if (step.isInputOutputDemo) {
+          showGuidedTourInputOutputBars(step.inputOutputFocus);
+        }
         if (step.isImageSelectionDemo) selectGuidedTourExampleImage();
 
         var target = step.target || document.querySelector(step.selector);
