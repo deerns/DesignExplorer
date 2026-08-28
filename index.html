@@ -267,24 +267,33 @@
       }
 
       /* Compact action toolbar above the comparison chart. */
-      button.btn.btn-default,
-      a.btn.btn-default {
+      button.btn:not(.btn-link),
+      a.btn,
+      .file-upload,
+      .nav-btn,
+      #topNavLeftGroup .top-nav-action-btn {
         border-color: #c8d5e5;
         border-radius: 6px;
-        background: #ffffff;
-        color: #17345f;
+        background: #ffffff !important;
+        color: #17345f !important;
         box-shadow: none;
         transition: background-color 160ms ease, border-color 160ms ease,
           color 160ms ease, transform 160ms ease;
       }
 
-      button.btn.btn-default:hover,
-      button.btn.btn-default:focus,
-      a.btn.btn-default:hover,
-      a.btn.btn-default:focus {
+      button.btn:not(.btn-link):hover,
+      button.btn:not(.btn-link):focus,
+      a.btn:hover,
+      a.btn:focus,
+      .file-upload:hover,
+      .file-upload:focus,
+      .nav-btn:hover,
+      .nav-btn:focus,
+      #topNavLeftGroup .top-nav-action-btn:hover,
+      #topNavLeftGroup .top-nav-action-btn:focus {
         border-color: #8dacd5;
-        background: #eaf2ff;
-        color: #033899;
+        background: #eaf2ff !important;
+        color: #033899 !important;
         box-shadow: none;
       }
 
@@ -313,17 +322,17 @@
       }
 
       #selectionToolbar #startGuidedTour {
-        border-color: #033899;
-        background: #033899;
-        color: #ffffff;
+        border-color: #c8d5e5;
+        background: #ffffff;
+        color: #17345f;
         font-weight: 600;
       }
 
       #selectionToolbar #startGuidedTour:hover,
       #selectionToolbar #startGuidedTour:focus {
-        border-color: #0b65c2;
-        background: #0b65c2;
-        color: #ffffff;
+        border-color: #8dacd5;
+        background: #eaf2ff;
+        color: #033899;
       }
 
       #selectionToolbar > .btn-group {
