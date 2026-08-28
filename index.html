@@ -96,22 +96,6 @@
         min-width: 0;
       }
 
-      #topNavBrandActions {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-      }
-
-      #topNavBrandActions #startGuidedTour {
-        padding: 3px 9px;
-        border-color: #a9c5e8;
-        background: #f0f6ff !important;
-        color: #033899 !important;
-        font-size: 11px;
-        font-weight: 600;
-      }
-
       #topNavLeftGroup .top-nav-action-btn {
         background-color: #033899;
         color: #ffffff;
@@ -317,24 +301,19 @@
       #selectionToolbar {
         display: flex;
         align-items: center;
-        flex-wrap: nowrap;
-        gap: 0;
-        width: calc(100% - 12px);
-        margin: 0 0 8px 12px;
+        flex-wrap: wrap;
+        gap: 3px;
+        width: 100%;
+        margin: 0 0 8px;
         padding: 0;
-        overflow-x: auto;
-        border: 1px solid #c8d5e5;
-        border-radius: 6px;
+        border: 0;
         background: transparent;
       }
 
       #selectionToolbar > .btn,
       #selectionToolbar > a.btn {
         margin: 0;
-        flex: 0 0 auto;
-        border: 0 !important;
-        border-right: 1px solid #c8d5e5 !important;
-        border-radius: 0 !important;
+        border-radius: 6px !important;
       }
 
       #selectionToolbar > .btn:hover,
@@ -360,18 +339,26 @@
 
       #selectionToolbar > .btn-group {
         margin-left: auto;
-        flex: 0 0 auto;
-        border-radius: 0;
-        overflow: visible;
+        border-radius: 6px;
+        overflow: hidden;
       }
 
       #selectionToolbar > .btn-group > .btn {
         border-radius: 0;
       }
 
+      #selectionToolbar > .btn-group > .btn:first-child {
+        border-radius: 6px 0 0 6px;
+      }
+
+      #selectionToolbar > .btn-group > .btn:last-child {
+        border-radius: 0 6px 6px 0;
+      }
+
       @media (max-width: 860px) {
         #selectionToolbar > .btn-group {
-          width: auto !important;
+          width: 100% !important;
+          margin-left: 0;
         }
       }
 
@@ -4617,24 +4604,14 @@
       <div id="topNavBar">
         <!-- Left group: logo + button -->
         <div id="topNavLeftGroup">
-          <div id="topNavBrandActions">
-            <!-- Left logo -->
-            <a href="http://designexplorer.deerns.com/" title="Design Explorer">
-              <img
-                src="./img/Design_Explorer_logo_regular.svg"
-                alt="Design Explorer Logo"
-                style="height: 40px"
-              />
-            </a>
-            <button
-              id="startGuidedTour"
-              class="btn btn-default btn-xs"
-              type="button"
-              title="Start tour"
-            >
-              Tour
-            </button>
-          </div>
+          <!-- Left logo -->
+          <a href="http://designexplorer.deerns.com/" title="Design Explorer">
+            <img
+              src="./img/Design_Explorer_logo_regular.svg"
+              alt="Design Explorer Logo"
+              style="height: 40px"
+            />
+          </a>
 
           <!-- Get Data button, 20px to the right -->
           <button
@@ -4748,6 +4725,14 @@
                       onclick="showStillLink()"
                     >
                       My Static Link
+                    </button>
+                    <button
+                      id="startGuidedTour"
+                      class="btn btn-default btn-xs"
+                      type="button"
+                      title="Start tutorial"
+                    >
+                      Tutorial
                     </button>
                     <!--a class="btn btn-default btn-xs" href="http://www.mpendesign.com/category/tutorial/" target="_blank">Tutorial</a -->
                     <!--a class="btn btn-default btn-xs" href="https://www.thorntontomasetti.com/services/sustainability/" target="_blank">Services</a-->
@@ -5167,7 +5152,7 @@
                   type="button"
                   class="btn btn-primary"
                 >
-                  Start tour
+                  Start tutorial
                 </button>
               </p>
             </div>
