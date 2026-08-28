@@ -302,9 +302,9 @@
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 3px;
-        width: 100%;
-        margin: 0 0 8px;
+        gap: 0;
+        width: calc(100% - 12px);
+        margin: 0 0 8px 12px;
         padding: 0;
         border: 0;
         background: transparent;
@@ -313,7 +313,25 @@
       #selectionToolbar > .btn,
       #selectionToolbar > a.btn {
         margin: 0;
-        border-radius: 6px !important;
+        border-radius: 0 !important;
+      }
+
+      #selectionToolbar > .btn + .btn,
+      #selectionToolbar > a.btn + .btn,
+      #selectionToolbar > .btn + a.btn {
+        margin-left: -1px;
+      }
+
+      #selectionToolbar > #menu-toggle {
+        border-radius: 6px 0 0 6px !important;
+      }
+
+      #selectionToolbar > #startGuidedTour {
+        border-color: #a9c5e8 !important;
+        border-radius: 0 6px 6px 0 !important;
+        background: #f0f6ff !important;
+        color: #033899 !important;
+        font-weight: 600;
       }
 
       #selectionToolbar > .btn:hover,
@@ -4730,9 +4748,9 @@
                       id="startGuidedTour"
                       class="btn btn-default btn-xs"
                       type="button"
-                      title="Start tutorial"
+                      title="Start tour"
                     >
-                      Tutorial
+                      Tour
                     </button>
                     <!--a class="btn btn-default btn-xs" href="http://www.mpendesign.com/category/tutorial/" target="_blank">Tutorial</a -->
                     <!--a class="btn btn-default btn-xs" href="https://www.thorntontomasetti.com/services/sustainability/" target="_blank">Services</a-->
@@ -5152,7 +5170,7 @@
                   type="button"
                   class="btn btn-primary"
                 >
-                  Start tutorial
+                  Start tour
                 </button>
               </p>
             </div>
