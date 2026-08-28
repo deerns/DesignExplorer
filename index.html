@@ -388,6 +388,16 @@
         color: #033899;
       }
 
+      #guidedTourCard .tour-color-swatch {
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        margin: 0 5px 0 2px;
+        border: 1px solid rgba(0, 0, 0, 0.22);
+        border-radius: 50%;
+        vertical-align: -1px;
+      }
+
       #guidedTourCard .tour-steps {
         display: grid;
         gap: 8px;
@@ -12931,6 +12941,7 @@
       var guidedTourSavedBrushExtents = null;
       var guidedTourDemoSelectionActive = false;
       var guidedTourDemoSelectionPhase = 0;
+      var guidedTourInitialState = null;
 
       function isTutorialTargetVisible(selectorOrTarget) {
         var target =
@@ -13004,6 +13015,36 @@
         return null;
       }
 
+      function getGuidedTourInputOutputInfo() {
+        if (typeof getInputOutputDimensionGroups !== "function") return null;
+
+        var groups = getInputOutputDimensionGroups();
+        var colors = { input: null, output: null };
+        d3.select("#graph").selectAll(".dimension text.label").each(function (dimKey) {
+          var type = getPcDimensionGroupType(dimKey, groups);
+          if (type && !colors[type]) {
+            colors[type] = window.getComputedStyle(this).fill;
+          }
+        });
+
+        return colors.input && colors.output ? colors : null;
+      }
+
+      function getGuidedTourInputOutputDescription() {
+        var colors = getGuidedTourInputOutputInfo();
+        if (!colors) return "";
+
+        return (
+          "The model dimensions are colour-coded using this study's current settings: " +
+          '<span class="tour-color-swatch" style="background-color:' +
+          colors.input +
+          '"></span><strong>input</strong> dimensions and ' +
+          '<span class="tour-color-swatch" style="background-color:' +
+          colors.output +
+          '"></span><strong>output</strong> dimensions. Inputs are the values you set; outputs are the results produced by the model.'
+        );
+      }
+
       function buildGuidedTourSteps() {
         var candidates = [
           {
@@ -13028,6 +13069,14 @@
               "Each line represents one design, and each vertical axis represents a study dimension. Drag an axis label to reorder the axes, or click a line to inspect that design.",
           },
           {
+            selector: "#graph",
+            title: "Inputs and outputs",
+            description: getGuidedTourInputOutputDescription,
+            shouldInclude: function () {
+              return !!getGuidedTourInputOutputInfo();
+            },
+          },
+          {
             selector: "#radarChart",
             title: "Scatter plots",
             description:
@@ -13050,6 +13099,7 @@
 
         return candidates
           .filter(function (step) {
+            if (step.shouldInclude && !step.shouldInclude()) return false;
             return step.isImageSelectionDemo
               ? !!document.querySelector(step.selector)
               : isTutorialTargetVisible(step.target || step.selector);
@@ -13057,11 +13107,12 @@
           .sort(function (a, b) {
             var order = {
               "Read the comparison chart": 0,
-              "Make a selection": 1,
-              "Filters and legend": 2,
-              "Scatter plots": 3,
-              "Design thumbnails": 4,
-              "Inspect a selected image": 5,
+              "Inputs and outputs": 1,
+              "Make a selection": 2,
+              "Filters and legend": 3,
+              "Scatter plots": 4,
+              "Design thumbnails": 5,
+              "Inspect a selected image": 6,
             };
             var aOrder = Object.prototype.hasOwnProperty.call(order, a.title)
               ? order[a.title]
@@ -13076,6 +13127,7 @@
       function closeGuidedTour() {
         guidedTourRenderId += 1;
         restoreGuidedTourDemoSelection();
+        restoreGuidedTourInitialState();
         guidedTourSteps = [];
         guidedTourStepIndex = 0;
         document.getElementById("guidedTourOverlay").style.display = "none";
@@ -13083,6 +13135,57 @@
         document.getElementById("guidedTourDemoBrush").style.display = "none";
         document.getElementById("guidedTourCard").style.display = "none";
         document.getElementById("guidedTourOverlay").setAttribute("aria-hidden", "true");
+      }
+
+      function captureGuidedTourInitialState() {
+        guidedTourInitialState = {
+          activeSelectedData: activeSelectedData || null,
+          highlighted:
+            graph && typeof graph.highlighted === "function"
+              ? (graph.highlighted() || []).slice()
+              : [],
+          isAnyItemSelected: !!isAnyItemSelected,
+          zoomedAreaHeight: d3.select("#zoomedArea").style("height"),
+          thumbnailsOnRight: d3.select("#thumbnails-btm_container").classed("onRight"),
+          thumbnailDrawerOpen: d3.select("#thumbnails-btm_container").classed("drawer-open"),
+          thumbnailDrawerPinned: d3.select("#thumbnails-btm_container").classed("drawer-pinned"),
+        };
+      }
+
+      function restoreGuidedTourInitialState() {
+        if (!guidedTourInitialState) return;
+
+        var state = guidedTourInitialState;
+        var originalThumbnail = null;
+        if (state.isAnyItemSelected && state.activeSelectedData) {
+          d3.select("#thumbnails-btm")
+            .selectAll("img")
+            .each(function (datum) {
+              if (!originalThumbnail && datum === state.activeSelectedData) {
+                originalThumbnail = this;
+              }
+            });
+        }
+
+        if (originalThumbnail && typeof updateLayoutOnSelect === "function") {
+          updateLayoutOnSelect.call(originalThumbnail);
+        } else if (typeof updateLayoutOnDeselect === "function") {
+          updateLayoutOnDeselect();
+        }
+
+        if (graph && typeof graph.highlight === "function" && state.highlighted.length) {
+          graph.highlight(state.highlighted);
+        }
+
+        d3.select("#zoomedArea").style("height", state.zoomedAreaHeight);
+        d3.select("#thumbnails-btm_container")
+          .classed("onRight", state.thumbnailsOnRight)
+          .classed("drawer-open", state.thumbnailDrawerOpen)
+          .classed("drawer-pinned", state.thumbnailDrawerPinned);
+        activeSelectedData = state.activeSelectedData;
+        isAnyItemSelected = state.isAnyItemSelected;
+        guidedTourInitialState = null;
+        updateThumbVisibility();
       }
 
       function restoreGuidedTourDemoSelection() {
@@ -13287,7 +13390,10 @@
           showGuidedTourDemoBrush(step, rect, renderId);
 
           document.getElementById("guidedTourTitle").textContent = step.title;
-          document.getElementById("guidedTourDescription").innerHTML = step.description;
+          document.getElementById("guidedTourDescription").innerHTML =
+            typeof step.description === "function"
+              ? step.description()
+              : step.description;
           document.getElementById("guidedTourProgress").textContent =
             guidedTourStepIndex + 1 + " of " + guidedTourSteps.length;
           updateGuidedTourNextButton(step);
@@ -13312,6 +13418,7 @@
       function startGuidedTour() {
         d3.selectAll(".popupWindow").style("display", "none");
         moveGuidedTourLayersToBody();
+        captureGuidedTourInitialState();
         guidedTourDemoSelection = getGuidedTourDemoSelection();
         guidedTourSteps = buildGuidedTourSteps();
         guidedTourStepIndex = 0;
