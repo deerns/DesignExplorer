@@ -272,6 +272,11 @@
         inset: 0;
         z-index: 2147483645;
         display: none;
+        background: transparent;
+      }
+
+      .guidedTourShade {
+        position: fixed;
         background: rgba(4, 20, 48, 0.58);
       }
 
@@ -5120,7 +5125,12 @@
             </div>
           </div>
         </div>
-        <div id="guidedTourOverlay" aria-hidden="true"></div>
+        <div id="guidedTourOverlay" aria-hidden="true">
+          <div id="guidedTourShadeTop" class="guidedTourShade"></div>
+          <div id="guidedTourShadeLeft" class="guidedTourShade"></div>
+          <div id="guidedTourShadeRight" class="guidedTourShade"></div>
+          <div id="guidedTourShadeBottom" class="guidedTourShade"></div>
+        </div>
         <div id="guidedTourHighlight" aria-hidden="true"></div>
         <section
           id="guidedTourCard"
@@ -12941,6 +12951,32 @@
         );
       }
 
+      function updateGuidedTourShades(rect, padding) {
+        var left = Math.max(0, rect.left - padding);
+        var top = Math.max(0, rect.top - padding);
+        var right = Math.min(window.innerWidth, rect.right + padding);
+        var bottom = Math.min(window.innerHeight, rect.bottom + padding);
+        var holeWidth = Math.max(0, right - left);
+        var holeHeight = Math.max(0, bottom - top);
+
+        var shades = {
+          guidedTourShadeTop: [0, 0, window.innerWidth, top],
+          guidedTourShadeLeft: [0, top, left, holeHeight],
+          guidedTourShadeRight: [right, top, window.innerWidth - right, holeHeight],
+          guidedTourShadeBottom: [0, bottom, window.innerWidth, window.innerHeight - bottom],
+        };
+
+        Object.keys(shades).forEach(function (id) {
+          var shade = document.getElementById(id);
+          var dimensions = shades[id];
+          if (!shade) return;
+          shade.style.left = dimensions[0] + "px";
+          shade.style.top = dimensions[1] + "px";
+          shade.style.width = dimensions[2] + "px";
+          shade.style.height = dimensions[3] + "px";
+        });
+      }
+
       function renderGuidedTourStep() {
         var renderId = ++guidedTourRenderId;
         if (guidedTourStepIndex >= guidedTourSteps.length) {
@@ -12973,6 +13009,7 @@
           highlight.style.top = Math.max(0, rect.top - padding) + "px";
           highlight.style.width = Math.min(window.innerWidth, rect.width + padding * 2) + "px";
           highlight.style.height = Math.min(window.innerHeight, rect.height + padding * 2) + "px";
+          updateGuidedTourShades(rect, padding);
 
           document.getElementById("guidedTourTitle").textContent = step.title;
           document.getElementById("guidedTourDescription").innerHTML = step.description;
