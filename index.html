@@ -13057,7 +13057,13 @@
               "Make a selection": 1,
               "Filters and legend": 2,
             };
-            return (order[a.title] || 10) - (order[b.title] || 10);
+            var aOrder = Object.prototype.hasOwnProperty.call(order, a.title)
+              ? order[a.title]
+              : 10;
+            var bOrder = Object.prototype.hasOwnProperty.call(order, b.title)
+              ? order[b.title]
+              : 10;
+            return aOrder - bOrder;
           });
       }
 
@@ -13159,14 +13165,7 @@
 
       function updateGuidedTourNextButton(step) {
         var nextButton = document.getElementById("guidedTourNext");
-        if (step && step.isSelectionDemo && guidedTourDemoSelectionActive) {
-          var labels = ["Show selection", "Adjust range", "Continue"];
-          nextButton.textContent = labels[guidedTourDemoSelectionPhase];
-          return;
-        }
-
-        nextButton.textContent =
-          guidedTourStepIndex === guidedTourSteps.length - 1 ? "Finish" : "Next";
+        nextButton.textContent = "Next";
       }
 
       function moveGuidedTourLayersToBody() {
