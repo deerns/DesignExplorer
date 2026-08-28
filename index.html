@@ -251,12 +251,11 @@
         margin: 0;
       }
       /* keep main image labels spaced like thumb controls */
-      #IMG1Label,
-      #IMG2Label,
-      #IMG3Label {
+      #vis label[id^="IMG"] {
         display: inline-flex;
         align-items: center;
         gap: 8px;
+        margin-right: 8px;
       }
       #threeDLabel {
         display: inline-flex;
@@ -265,10 +264,6 @@
       }
       #vis input.toggleView {
         margin: 0;
-      }
-      #IMG1Label,
-      #IMG2Label {
-        margin-right: 8px;
       }
 
       /* Settings modal alignment */
@@ -1580,8 +1575,123 @@
     _userSetting = mergeUserSettingWithDefaults(
       typeof _userSetting !== "undefined" ? _userSetting : null
     );
+    var maxSupportedImageSlots = 6;
     var imageLinkKeys = [];
     var imageKeyAliases = {};
+
+    function normalizeSupportedImageCount(count) {
+      var parsed = parseInt(count, 10);
+      if (!isFinite(parsed) || parsed < 0) {
+        return 0;
+      }
+      return Math.max(0, Math.min(maxSupportedImageSlots, parsed));
+    }
+
+    function getSupportedImageIndices(count) {
+      var resolvedCount =
+        arguments.length === 0
+          ? maxSupportedImageSlots
+          : normalizeSupportedImageCount(count);
+      return d3.range(resolvedCount).map(function (i) {
+        return i + 1;
+      });
+    }
+
+    function getSupported2dViewKeys(count) {
+      return getSupportedImageIndices(count).map(function (idx) {
+        return "2D_" + idx;
+      });
+    }
+
+    function getAvailableImageCount() {
+      return normalizeSupportedImageCount(
+        imageLinkKeys && imageLinkKeys.length ? imageLinkKeys.length : 0
+      );
+    }
+
+    function getImageLabelInputSelector(idx) {
+      return "#img" + idx + "LabelInput";
+    }
+
+    function getImageLabelRowSelector(idx) {
+      return "#img" + idx + "LabelRow";
+    }
+
+    function getMainImageLabelSelector(idx) {
+      return "#IMG" + idx + "Label";
+    }
+
+    function getMainImageLabelTextSelector(idx) {
+      return "#IMG" + idx + "LabelText";
+    }
+
+    function getMainImageToggleSelector(idx) {
+      return "#IMG_" + idx;
+    }
+
+    function getThumbImageLabelSelector(idx) {
+      return "#thumbIMG" + idx + "Label";
+    }
+
+    function getThumbImageLabelTextSelector(idx) {
+      return "#thumbIMG" + idx + "LabelText";
+    }
+
+    function getDefaultImageLabel(idx, imgCount) {
+      return idx === 1 && normalizeSupportedImageCount(imgCount) < 2
+        ? "2D"
+        : "#" + idx;
+    }
+
+    function syncImageLabelSettingRowsVisibility(imgCount) {
+      var visibleCount = normalizeSupportedImageCount(imgCount);
+      getSupportedImageIndices().forEach(function (idx) {
+        var row = d3.select(getImageLabelRowSelector(idx));
+        if (!row.empty()) {
+          row.style("display", idx <= visibleCount ? "flex" : "none");
+        }
+      });
+    }
+
+    function sanitizeImageLabelSettings(labelMap) {
+      var source =
+        labelMap && typeof labelMap === "object" && !Array.isArray(labelMap)
+          ? labelMap
+          : {};
+      var sanitized = {};
+      var allowedKeys = {};
+      var availableCount = getAvailableImageCount();
+
+      getSupportedImageIndices(availableCount).forEach(function (idx) {
+        allowedKeys[normalizeImageLabelKey("IMG_" + idx)] = true;
+        if (idx === 1) {
+          allowedKeys[normalizeImageLabelKey("IMG")] = true;
+        }
+
+        var actualKey = imageLinkKeys && imageLinkKeys[idx - 1];
+        if (actualKey) {
+          allowedKeys[normalizeImageLabelKey(actualKey)] = true;
+        }
+
+        var aliasKey = imageKeyAliases && imageKeyAliases["IMG_" + idx];
+        if (aliasKey) {
+          allowedKeys[normalizeImageLabelKey(aliasKey)] = true;
+        }
+      });
+
+      Object.keys(source).forEach(function (key) {
+        var normalizedKey = normalizeImageLabelKey(key);
+        var value = source[key];
+        var trimmed =
+          value === undefined || value === null ? "" : String(value).trim();
+        if (!trimmed.length || !allowedKeys[normalizedKey]) {
+          return;
+        }
+        sanitized[normalizedKey] = trimmed;
+      });
+
+      return sanitized;
+    }
 
     function resetDatasetScopedUserSettings() {
       _userSetting =
@@ -1973,6 +2083,7 @@
         source.sliderOrder,
         validSliderLookup
       );
+      sanitized.imageLabels = sanitizeImageLabelSettings(source.imageLabels);
       sanitized.scatterSelectedVariables = normalizeScatterSelectedVariables(
         getScatterSelectedVariablesSettingValue(source),
         validDimLookup
@@ -3941,7 +4052,7 @@
       var container = d3.select("#viewer2d-toggles");
       if (container.empty()) return;
 
-      var count = imageLinkKeys.length || 0;
+      var count = getAvailableImageCount();
       container.selectAll("*").remove();
 
       if (count < 2) {
@@ -3951,14 +4062,10 @@
 
       container.style("display", "block");
 
-      var data = d3.range(count).map(function (i) {
-        var idx = i + 1;
+      var data = getSupportedImageIndices(count).map(function (idx) {
         return {
           value: "2D_" + idx,
-          label: getImageLabel(
-            "IMG_" + idx,
-            idx === 1 && count < 2 ? "2D" : "#" + idx
-          ),
+          label: getImageLabel("IMG_" + idx, getDefaultImageLabel(idx, count)),
         };
       });
 
@@ -4566,6 +4673,36 @@
                     />
                     <span id="IMG3LabelText">#3</span></label
                   >
+                  <label id="IMG4Label" class="hidden"
+                    ><input
+                      type="checkbox"
+                      class="toggleView"
+                      data-debug-group="vis-main"
+                      value="2D_4"
+                      id="IMG_4"
+                    />
+                    <span id="IMG4LabelText">#4</span></label
+                  >
+                  <label id="IMG5Label" class="hidden"
+                    ><input
+                      type="checkbox"
+                      class="toggleView"
+                      data-debug-group="vis-main"
+                      value="2D_5"
+                      id="IMG_5"
+                    />
+                    <span id="IMG5LabelText">#5</span></label
+                  >
+                  <label id="IMG6Label" class="hidden"
+                    ><input
+                      type="checkbox"
+                      class="toggleView"
+                      data-debug-group="vis-main"
+                      value="2D_6"
+                      id="IMG_6"
+                    />
+                    <span id="IMG6LabelText">#6</span></label
+                  >
                   <label id="threeDLabel" class="hidden"
                     ><input
                       type="radio"
@@ -5008,6 +5145,30 @@
                         <span class="setting-label">Label Image #3:</span>
                         <input
                           id="img3LabelInput"
+                          class="form-control input-sm"
+                          type="text"
+                        />
+                      </li>
+                      <li class="list-group-item form-inline" id="img4LabelRow">
+                        <span class="setting-label">Label Image #4:</span>
+                        <input
+                          id="img4LabelInput"
+                          class="form-control input-sm"
+                          type="text"
+                        />
+                      </li>
+                      <li class="list-group-item form-inline" id="img5LabelRow">
+                        <span class="setting-label">Label Image #5:</span>
+                        <input
+                          id="img5LabelInput"
+                          class="form-control input-sm"
+                          type="text"
+                        />
+                      </li>
+                      <li class="list-group-item form-inline" id="img6LabelRow">
+                        <span class="setting-label">Label Image #6:</span>
+                        <input
+                          id="img6LabelInput"
                           class="form-control input-sm"
                           type="text"
                         />
@@ -9526,7 +9687,7 @@
       function updateThumbVisibility() {
         var form = ensureThumbControls();
         if (!form) return;
-        var hasSecondImg = (imageLinkKeys.length || 0) > 1;
+        var hasSecondImg = getAvailableImageCount() > 1;
         var show = thumbShouldShow(hasSecondImg);
         form.style("display", show ? "inline-flex" : "none");
       }
@@ -9575,40 +9736,25 @@
             .style("display", "inline-flex")
             .style("align-items", "center")
             .style("gap", "8px");
-
-          var label1 = form.append("label").attr("id", "thumbIMG1Label");
-          label1
-            .append("input")
-            .attr("type", "radio")
-            .attr("class", "thumbToggleView")
-            .attr("data-debug-group", "thumb-toggles")
-            .attr("name", "thumbMode")
-            .attr("value", "2D_1")
-            .attr("id", "thumb_IMG_1")
-            .property("checked", true);
-          label1.append("span").attr("id", "thumbIMG1LabelText").text("#1");
-
-          var label2 = form.append("label").attr("id", "thumbIMG2Label");
-          label2
-            .append("input")
-            .attr("type", "radio")
-            .attr("class", "thumbToggleView")
-            .attr("data-debug-group", "thumb-toggles")
-            .attr("name", "thumbMode")
-            .attr("value", "2D_2")
-            .attr("id", "thumb_IMG_2");
-          label2.append("span").attr("id", "thumbIMG2LabelText").text("#2");
-
-          var label3 = form.append("label").attr("id", "thumbIMG3Label");
-          label3
-            .append("input")
-            .attr("type", "radio")
-            .attr("class", "thumbToggleView")
-            .attr("data-debug-group", "thumb-toggles")
-            .attr("name", "thumbMode")
-            .attr("value", "2D_3")
-            .attr("id", "thumb_IMG_3");
-          label3.append("span").attr("id", "thumbIMG3LabelText").text("#3");
+          getSupportedImageIndices().forEach(function (idx) {
+            var label = form
+              .append("label")
+              .attr("id", "thumbIMG" + idx + "Label")
+              .classed("hidden", idx > 1);
+            label
+              .append("input")
+              .attr("type", "radio")
+              .attr("class", "thumbToggleView")
+              .attr("data-debug-group", "thumb-toggles")
+              .attr("name", "thumbMode")
+              .attr("value", "2D_" + idx)
+              .attr("id", "thumb_IMG_" + idx)
+              .property("checked", idx === 1);
+            label
+              .append("span")
+              .attr("id", "thumbIMG" + idx + "LabelText")
+              .text("#" + idx);
+          });
         }
 
         form.style("display", "inline-flex");
@@ -9655,39 +9801,33 @@
       }
 
       function updateImageRadioLabels(imgCount) {
-        var hasPrimaryImg = imgCount > 0;
-        var hasSecondImg = imgCount > 1;
-        var hasThirdImg = imgCount > 2;
-        var hasMultiple2d = hasSecondImg || hasThirdImg;
-        var defaultLabel1 = hasSecondImg ? "#1" : "2D";
-        var defaultLabel2 = "#2";
-        var defaultLabel3 = "#3";
+        var visibleCount = normalizeSupportedImageCount(imgCount);
+        var hasPrimaryImg = visibleCount > 0;
+        var hasMultiple2d = visibleCount > 1;
 
         set2dToggleInputMode(hasMultiple2d);
 
-        $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
-        d3.select("#IMG1Label").classed("hidden", !hasPrimaryImg);
-        if (!hasPrimaryImg) {
-          d3.select("#IMG_1").property("checked", false);
-        }
-
-        d3.select("#IMG2Label").classed("hidden", !hasSecondImg);
-        if (hasSecondImg) {
-          $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
-        } else {
-          d3.select("#IMG_2").property("checked", false);
-        }
-        d3.select("#IMG3Label").classed("hidden", !hasThirdImg);
-        if (hasThirdImg) {
-          $("#IMG3LabelText").text(getImageLabel("IMG_3", defaultLabel3));
-        } else {
-          d3.select("#IMG_3").property("checked", false);
-        }
+        getSupportedImageIndices().forEach(function (idx) {
+          var isVisible = idx <= visibleCount;
+          d3
+            .select(getMainImageLabelSelector(idx))
+            .classed("hidden", !isVisible);
+          if (isVisible) {
+            $(getMainImageLabelTextSelector(idx)).text(
+              getImageLabel(
+                "IMG_" + idx,
+                getDefaultImageLabel(idx, visibleCount)
+              )
+            );
+          } else {
+            d3.select(getMainImageToggleSelector(idx)).property("checked", false);
+          }
+        });
 
         if (
           hasPrimaryImg &&
           currentView !== "3D" &&
-          !d3.select("#IMG_1").property("checked")
+          !d3.select(getMainImageToggleSelector(1)).property("checked")
         ) {
           var anyChecked = false;
           d3.selectAll("input.toggleView").filter(function () {
@@ -9703,21 +9843,22 @@
         // thumbnails toggle (only when multiple image columns)
         var thumbForm = ensureThumbControls();
         if (thumbForm) {
-          var showThumbs = thumbShouldShow(hasSecondImg || hasThirdImg);
+          var showThumbs = thumbShouldShow(hasMultiple2d);
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
-          $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
-          d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
-          if (hasSecondImg) {
-            $("#thumbIMG2LabelText").text(
-              getImageLabel("IMG_2", defaultLabel2)
-            );
-          }
-          d3.select("#thumbIMG3Label").classed("hidden", !hasThirdImg);
-          if (hasThirdImg) {
-            $("#thumbIMG3LabelText").text(
-              getImageLabel("IMG_3", defaultLabel3)
-            );
-          }
+          getSupportedImageIndices().forEach(function (idx) {
+            var isVisible = idx <= visibleCount;
+            d3
+              .select(getThumbImageLabelSelector(idx))
+              .classed("hidden", !isVisible);
+            if (isVisible) {
+              $(getThumbImageLabelTextSelector(idx)).text(
+                getImageLabel(
+                  "IMG_" + idx,
+                  getDefaultImageLabel(idx, visibleCount)
+                )
+              );
+            }
+          });
 
           // keep the thumb radio selection aligned to the active view
           var activeThumb = getActiveThumbView();
@@ -9738,35 +9879,35 @@
       }
 
       function refreshImageRadioTexts() {
-        var hasPrimaryImg = !d3.select("#IMG1Label").classed("hidden");
-        var hasSecondImg = !d3.select("#IMG2Label").classed("hidden");
-        var hasThirdImg = !d3.select("#IMG3Label").classed("hidden");
-        set2dToggleInputMode(hasSecondImg || hasThirdImg);
-        var defaultLabel1 = hasSecondImg || hasThirdImg ? "#1" : "2D";
-        var defaultLabel2 = "#2";
-        var defaultLabel3 = "#3";
-        d3.select("#IMG1Label").classed("hidden", !hasPrimaryImg);
-        $("#IMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
-        $("#IMG2LabelText").text(getImageLabel("IMG_2", defaultLabel2));
-        $("#IMG3LabelText").text(getImageLabel("IMG_3", defaultLabel3));
+        var visibleCount = getAvailableImageCount();
+        set2dToggleInputMode(visibleCount > 1);
+        getSupportedImageIndices().forEach(function (idx) {
+          d3
+            .select(getMainImageLabelSelector(idx))
+            .classed("hidden", idx > visibleCount);
+          $(getMainImageLabelTextSelector(idx)).text(
+            getImageLabel(
+              "IMG_" + idx,
+              getDefaultImageLabel(idx, visibleCount)
+            )
+          );
+        });
 
         // thumbnails toggle labels
         var thumbForm = ensureThumbControls();
         if (thumbForm) {
-          var showThumbs = thumbShouldShow(hasSecondImg || hasThirdImg);
-          $("#thumbIMG1LabelText").text(getImageLabel("IMG_1", defaultLabel1));
-          d3.select("#thumbIMG2Label").classed("hidden", !hasSecondImg);
-          if (hasSecondImg) {
-            $("#thumbIMG2LabelText").text(
-              getImageLabel("IMG_2", defaultLabel2)
+          var showThumbs = thumbShouldShow(visibleCount > 1);
+          getSupportedImageIndices().forEach(function (idx) {
+            d3
+              .select(getThumbImageLabelSelector(idx))
+              .classed("hidden", idx > visibleCount);
+            $(getThumbImageLabelTextSelector(idx)).text(
+              getImageLabel(
+                "IMG_" + idx,
+                getDefaultImageLabel(idx, visibleCount)
+              )
             );
-          }
-          d3.select("#thumbIMG3Label").classed("hidden", !hasThirdImg);
-          if (hasThirdImg) {
-            $("#thumbIMG3LabelText").text(
-              getImageLabel("IMG_3", defaultLabel3)
-            );
-          }
+          });
           thumbForm.style("display", showThumbs ? "inline-flex" : "none");
         }
 
@@ -9803,114 +9944,65 @@
       // Apply image labels immediately and update UI; safe for global calls
       function applyImageLabelsImmediate(labels) {
         labels = labels || {};
+        var mergedLabels = sanitizeImageLabelSettings(labels);
 
-        var img1Input = document.getElementById("img1LabelInput");
-        var img2Input = document.getElementById("img2LabelInput");
-        var img3Input = document.getElementById("img3LabelInput");
-        var liveImg1 = (
-          img1Input && img1Input.value ? img1Input.value : ""
-        ).trim();
-        var liveImg2 = (
-          img2Input && img2Input.value ? img2Input.value : ""
-        ).trim();
-        var liveImg3 = (
-          img3Input && img3Input.value ? img3Input.value : ""
-        ).trim();
-        if (liveImg1.length > 0) labels.IMG_1 = liveImg1;
-        if (liveImg2.length > 0) labels.IMG_2 = liveImg2;
-        if (liveImg3.length > 0) labels.IMG_3 = liveImg3;
+        getSupportedImageIndices(getAvailableImageCount()).forEach(function (idx) {
+          var input = document.getElementById("img" + idx + "LabelInput");
+          var liveValue = (
+            input && input.value ? input.value : ""
+          ).trim();
+          if (liveValue.length > 0) {
+            mergedLabels["IMG_" + idx] = liveValue;
+          }
+        });
 
         // persist into global settings immediately
-        _userSetting.imageLabels = Object.assign(
-          {},
-          _userSetting.imageLabels || {},
-          labels
-        );
+        _userSetting.imageLabels = Object.assign({}, mergedLabels);
 
         // sync internal state then force UI refresh
-        setImageLabels(labels);
-        var effectiveLabels = _userSetting.imageLabels || {};
-        var count = Math.max(
-          imageLinkKeys.length || 0,
-          Object.keys(effectiveLabels).length
-        );
+        setImageLabels(mergedLabels);
+        var effectiveLabels = sanitizeImageLabelSettings(_userSetting.imageLabels);
+        var count = getAvailableImageCount();
         updateImageRadioLabels(count);
 
         // hard set the DOM text from the latest inputs (fallback to defaults and effective labels)
-        var hasPrimaryImg = (imageLinkKeys.length || 0) > 0;
-        var hasSecondImg = count > 1;
-        var hasThirdImg = count > 2;
-        var defaultLabel1 = hasSecondImg ? "#1" : "2D";
-        var defaultLabel2 = "#2";
-        var defaultLabel3 = "#3";
-        var finalLabel1 = liveImg1.length
-          ? liveImg1
-          : resolveImageLabelFromMap(effectiveLabels, "IMG_1", defaultLabel1);
-        var finalLabel2 = liveImg2.length
-          ? liveImg2
-          : resolveImageLabelFromMap(effectiveLabels, "IMG_2", defaultLabel2);
-        var finalLabel3 = liveImg3.length
-          ? liveImg3
-          : resolveImageLabelFromMap(effectiveLabels, "IMG_3", defaultLabel3);
-
-        $("#IMG1LabelText").text(finalLabel1);
-        d3.select("#IMG1Label").classed("hidden", !hasPrimaryImg);
-        if (hasSecondImg) {
-          $("#IMG2LabelText").text(finalLabel2);
-          d3.select("#IMG2Label").classed("hidden", false);
-        } else {
-          d3.select("#IMG2Label").classed("hidden", true);
-        }
-        if (hasThirdImg) {
-          $("#IMG3LabelText").text(finalLabel3);
-          d3.select("#IMG3Label").classed("hidden", false);
-        } else {
-          d3.select("#IMG3Label").classed("hidden", true);
-        }
+        getSupportedImageIndices().forEach(function (idx) {
+          var input = document.getElementById("img" + idx + "LabelInput");
+          var liveValue = (
+            input && input.value ? input.value : ""
+          ).trim();
+          var finalLabel = liveValue.length
+            ? liveValue
+            : resolveImageLabelFromMap(
+                effectiveLabels,
+                "IMG_" + idx,
+                getDefaultImageLabel(idx, count)
+              );
+          $(getMainImageLabelTextSelector(idx)).text(finalLabel);
+          d3
+            .select(getMainImageLabelSelector(idx))
+            .classed("hidden", idx > count);
+        });
 
         renderViewer2dToggles();
       }
 
       function syncRadioLabelsFromCurrentInputs() {
-        var liveImg1 = ($("#img1LabelInput").val() || "").trim();
-        var liveImg2 = ($("#img2LabelInput").val() || "").trim();
-        var liveImg3 = ($("#img3LabelInput").val() || "").trim();
-        var hasPrimaryImg = imageLinkKeys.length > 0;
-        var hasSecondImg = imageLinkKeys.length > 1;
-        var hasThirdImg = imageLinkKeys.length > 2;
-
-        var defaultLabel1 = hasSecondImg || hasThirdImg ? "#1" : "2D";
-        var defaultLabel2 = "#2";
-        var defaultLabel3 = "#3";
-
-        var label1 =
-          liveImg1.length > 0
-            ? liveImg1
-            : getImageLabel("IMG_1", defaultLabel1);
-        var label2 =
-          liveImg2.length > 0
-            ? liveImg2
-            : getImageLabel("IMG_2", defaultLabel2);
-        var label3 =
-          liveImg3.length > 0
-            ? liveImg3
-            : getImageLabel("IMG_3", defaultLabel3);
-
-        $("#IMG1LabelText").text(label1);
-        d3.select("#IMG1Label").classed("hidden", !hasPrimaryImg);
-
-        if (hasSecondImg) {
-          d3.select("#IMG2Label").classed("hidden", false);
-          $("#IMG2LabelText").text(label2);
-        } else {
-          d3.select("#IMG2Label").classed("hidden", true);
-        }
-        if (hasThirdImg) {
-          d3.select("#IMG3Label").classed("hidden", false);
-          $("#IMG3LabelText").text(label3);
-        } else {
-          d3.select("#IMG3Label").classed("hidden", true);
-        }
+        var count = getAvailableImageCount();
+        getSupportedImageIndices().forEach(function (idx) {
+          var liveValue = ($(getImageLabelInputSelector(idx)).val() || "").trim();
+          var label =
+            liveValue.length > 0
+              ? liveValue
+              : getImageLabel(
+                  "IMG_" + idx,
+                  getDefaultImageLabel(idx, count)
+                );
+          $(getMainImageLabelTextSelector(idx)).text(label);
+          d3
+            .select(getMainImageLabelSelector(idx))
+            .classed("hidden", idx > count);
+        });
       }
 
       // helper: choose image url based on current toggle with safe fallbacks
@@ -9978,7 +10070,10 @@
           var imgMatch = upperKey.match(/^IMG[\s_-]*(\d+)?$/);
           if (imgMatch) {
             var idx = imgMatch[1] ? parseInt(imgMatch[1], 10) : 1;
-            if (imageLinkKeys.indexOf(cleanKey) === -1) {
+            if (
+              idx <= maxSupportedImageSlots &&
+              imageLinkKeys.indexOf(cleanKey) === -1
+            ) {
               imageLinkKeys.push(cleanKey);
             }
             if (idx === 1 || isNaN(idx)) {
@@ -9988,7 +10083,7 @@
               imageKeyAliases.IMG_2 = cleanKey;
             } else if (idx === 3) {
               imageKeyAliases.IMG_3 = cleanKey;
-            } else if (idx > 3) {
+            } else if (idx <= maxSupportedImageSlots) {
               imageKeyAliases["IMG_" + idx] = cleanKey;
             }
           } else if (upperKey === "IMG") {
@@ -9998,10 +10093,18 @@
             imageKeyAliases.IMG = cleanKey;
             imageKeyAliases.IMG_1 = cleanKey;
           } else if (upperKey.startsWith("IMG_")) {
-            if (imageLinkKeys.indexOf(cleanKey) === -1) {
+            var upperImgMatch = upperKey.match(/^IMG_(\d+)$/);
+            var upperImgIdx = upperImgMatch ? parseInt(upperImgMatch[1], 10) : NaN;
+            if (
+              (!isFinite(upperImgIdx) || upperImgIdx <= maxSupportedImageSlots) &&
+              imageLinkKeys.indexOf(cleanKey) === -1
+            ) {
               imageLinkKeys.push(cleanKey);
             }
-            if (!imageKeyAliases[upperKey]) {
+            if (
+              (!isFinite(upperImgIdx) || upperImgIdx <= maxSupportedImageSlots) &&
+              !imageKeyAliases[upperKey]
+            ) {
               imageKeyAliases[upperKey] = cleanKey;
             }
           } else if (upperKey.startsWith("THREED")) {
@@ -10016,9 +10119,7 @@
           var inputParams = {},
             outputParams = {},
             otherParams = {},
-            img1Params = {},
-            img2Params = {},
-            img3Params = {};
+            imageParams = {};
           (threeDParams = {}), (cleanedParams = {});
 
           keys.forEach(function (key, i) {
@@ -10039,26 +10140,18 @@
               var idxStr = imgMatchRow && imgMatchRow[1] ? imgMatchRow[1] : "";
               var imgIdx = idxStr.length ? parseInt(idxStr, 10) : 1;
               if (!isFinite(imgIdx) || imgIdx < 1) imgIdx = 1;
+              if (imgIdx > maxSupportedImageSlots) return;
+
+              imageParams[cleanKey] = row[key];
+              imageParams["IMG_" + imgIdx] = row[key];
 
               if (imgIdx === 1) {
-                img1Params[cleanKey] = row[key];
-                img1Params.IMG_1 = row[key];
+                imageParams.IMG = row[key];
                 imageKeyAliases.IMG = cleanKey;
                 if (!imageKeyAliases.IMG_1) {
                   imageKeyAliases.IMG_1 = cleanKey;
                 }
-              } else if (imgIdx === 2) {
-                img2Params[cleanKey] = row[key];
-                if (!imageKeyAliases.IMG_2) {
-                  imageKeyAliases.IMG_2 = cleanKey;
-                }
-              } else if (imgIdx === 3) {
-                img3Params[cleanKey] = row[key];
-                if (!imageKeyAliases.IMG_3) {
-                  imageKeyAliases.IMG_3 = cleanKey;
-                }
               } else {
-                // support additional IMG columns beyond 3
                 if (!imageKeyAliases["IMG_" + imgIdx]) {
                   imageKeyAliases["IMG_" + imgIdx] = cleanKey;
                 }
@@ -10075,9 +10168,7 @@
             inputParams,
             outputParams,
             otherParams,
-            img1Params,
-            img2Params,
-            img3Params,
+            imageParams,
             threeDParams
           );
 
@@ -10101,7 +10192,7 @@
         }
 
         //check imageLinkKeys array if it is empty
-        if (imageLinkKeys.length == 0) {
+        if (getAvailableImageCount() == 0) {
           hasImgLink = false;
           d3.select("#thumbnails-btm_container").remove();
 
@@ -13475,7 +13566,7 @@
         var match = canonical.match(/^IMG_(\d+)$/);
         if (match && match[1]) {
           var idx = parseInt(match[1], 10);
-          return imageLinkKeys.length >= idx;
+          return getAvailableImageCount() >= idx;
         }
         return false;
       }
@@ -13629,9 +13720,11 @@
           return sortViewKeysByImageOrder(checked);
         }
 
-        var fallbackViews = ["2D_1", "2D_2", "2D_3"].filter(function (viewKey) {
-          return hasAliasForToggle(viewKey);
-        });
+        var fallbackViews = getSupported2dViewKeys(getAvailableImageCount()).filter(
+          function (viewKey) {
+            return hasAliasForToggle(viewKey);
+          }
+        );
         if (selectedData) {
           fallbackViews = fallbackViews.filter(function (viewKey) {
             return hasImageForToggle(viewKey, selectedData);
@@ -13806,9 +13899,11 @@
           return;
         }
 
-        var available = ["2D_1", "2D_2", "2D_3"].filter(function (val) {
-          return hasImageForToggle(val, selected);
-        });
+        var available = getSupported2dViewKeys(getAvailableImageCount()).filter(
+          function (val) {
+            return hasImageForToggle(val, selected);
+          }
+        );
 
         if (available.length <= 1) {
           return;
@@ -14084,19 +14179,22 @@
           effectiveStudyDate = navStudyDate;
         }
 
-        var effectiveImageLabels = Object.assign({}, _userSetting.imageLabels || {});
-        var img1Current = ($("#IMG1LabelText").text() || "").trim();
-        var img2Current = ($("#IMG2LabelText").text() || "").trim();
-        var img3Current = ($("#IMG3LabelText").text() || "").trim();
-        if (!effectiveImageLabels["IMG_1"] && img1Current && img1Current !== "2D" && img1Current !== "#1") {
-          effectiveImageLabels["IMG_1"] = img1Current;
-        }
-        if (!effectiveImageLabels["IMG_2"] && img2Current && img2Current !== "#2") {
-          effectiveImageLabels["IMG_2"] = img2Current;
-        }
-        if (!effectiveImageLabels["IMG_3"] && img3Current && img3Current !== "#3") {
-          effectiveImageLabels["IMG_3"] = img3Current;
-        }
+        var effectiveImageLabels = sanitizeImageLabelSettings(
+          Object.assign({}, _userSetting.imageLabels || {})
+        );
+        getSupportedImageIndices(getAvailableImageCount()).forEach(function (idx) {
+          var currentLabel = (
+            $(getMainImageLabelTextSelector(idx)).text() || ""
+          ).trim();
+          var defaultLabel = getDefaultImageLabel(idx, getAvailableImageCount());
+          if (
+            !effectiveImageLabels["IMG_" + idx] &&
+            currentLabel &&
+            currentLabel !== defaultLabel
+          ) {
+            effectiveImageLabels["IMG_" + idx] = currentLabel;
+          }
+        });
 
         var newUserSetting = {
           studyInfo: {
@@ -14671,45 +14769,21 @@
           .on("change", function (d) {
             newUserSetting.studyInfo.date = $(this).val();
           });
-        dimSettingListDiv
-          .select("#img1LabelInput")
-          .property("value", newUserSetting.imageLabels["IMG_1"] || "")
-          .on("input change", function () {
-            var value = ($(this).val() || "").trim();
-            if (value.length === 0) {
-              delete newUserSetting.imageLabels["IMG_1"];
-            } else {
-              newUserSetting.imageLabels["IMG_1"] = value;
-            }
-            applyImageLabelsImmediate(newUserSetting.imageLabels);
-            syncRadioLabelsFromCurrentInputs();
-          });
-        dimSettingListDiv
-          .select("#img2LabelInput")
-          .property("value", newUserSetting.imageLabels["IMG_2"] || "")
-          .on("input change", function () {
-            var value = ($(this).val() || "").trim();
-            if (value.length === 0) {
-              delete newUserSetting.imageLabels["IMG_2"];
-            } else {
-              newUserSetting.imageLabels["IMG_2"] = value;
-            }
-            applyImageLabelsImmediate(newUserSetting.imageLabels);
-            syncRadioLabelsFromCurrentInputs();
-          });
-        dimSettingListDiv
-          .select("#img3LabelInput")
-          .property("value", newUserSetting.imageLabels["IMG_3"] || "")
-          .on("input change", function () {
-            var value = ($(this).val() || "").trim();
-            if (value.length === 0) {
-              delete newUserSetting.imageLabels["IMG_3"];
-            } else {
-              newUserSetting.imageLabels["IMG_3"] = value;
-            }
-            applyImageLabelsImmediate(newUserSetting.imageLabels);
-            syncRadioLabelsFromCurrentInputs();
-          });
+        getSupportedImageIndices().forEach(function (idx) {
+          dimSettingListDiv
+            .select(getImageLabelInputSelector(idx))
+            .property("value", newUserSetting.imageLabels["IMG_" + idx] || "")
+            .on("input change", function () {
+              var value = ($(this).val() || "").trim();
+              if (value.length === 0) {
+                delete newUserSetting.imageLabels["IMG_" + idx];
+              } else {
+                newUserSetting.imageLabels["IMG_" + idx] = value;
+              }
+              applyImageLabelsImmediate(newUserSetting.imageLabels);
+              syncRadioLabelsFromCurrentInputs();
+            });
+        });
         dimSettingListDiv
           .select("#labelSizeInput")
           .property("value", newUserSetting.labelSize || "")
@@ -15024,20 +15098,7 @@
           });
 
         // show only the number of image label inputs that match available images/labels
-        var imgCount = Math.max(
-          imageLinkKeys.length || 0,
-          Object.keys(newUserSetting.imageLabels || {}).length
-        );
-        var hasSecondImg = imgCount > 1;
-        var hasThirdImg = imgCount > 2;
-        d3.select("#img2LabelRow").style(
-          "display",
-          hasSecondImg ? "flex" : "none"
-        );
-        d3.select("#img3LabelRow").style(
-          "display",
-          hasThirdImg ? "flex" : "none"
-        );
+        syncImageLabelSettingRowsVisibility(getAvailableImageCount());
 
         function isDimHiddenInNewSetting(dimName) {
           return isDimHiddenBySetting(
@@ -15790,27 +15851,17 @@
         previewSliderFontOverrides();
 
         function updateImageLabelsFromInputs() {
-          var img1Val = ($("#img1LabelInput").val() || "").trim();
-          var img2Val = ($("#img2LabelInput").val() || "").trim();
-          var img3Val = ($("#img3LabelInput").val() || "").trim();
-
-          if (img1Val.length === 0) {
-            delete newUserSetting.imageLabels["IMG_1"];
-          } else {
-            newUserSetting.imageLabels["IMG_1"] = img1Val;
-          }
-
-          if (img2Val.length === 0) {
-            delete newUserSetting.imageLabels["IMG_2"];
-          } else {
-            newUserSetting.imageLabels["IMG_2"] = img2Val;
-          }
-
-          if (img3Val.length === 0) {
-            delete newUserSetting.imageLabels["IMG_3"];
-          } else {
-            newUserSetting.imageLabels["IMG_3"] = img3Val;
-          }
+          newUserSetting.imageLabels = sanitizeImageLabelSettings(
+            newUserSetting.imageLabels
+          );
+          getSupportedImageIndices(getAvailableImageCount()).forEach(function (idx) {
+            var imgVal = ($(getImageLabelInputSelector(idx)).val() || "").trim();
+            if (imgVal.length === 0) {
+              delete newUserSetting.imageLabels["IMG_" + idx];
+            } else {
+              newUserSetting.imageLabels["IMG_" + idx] = imgVal;
+            }
+          });
         }
 
         function resolveImageLabelFromMap(labelMap, key, fallback) {
@@ -15842,60 +15893,38 @@
 
         function applyImageLabelsImmediate(labels) {
           labels = labels || {};
-
-          // include current input values to avoid stale label maps
-          var liveImg1 = ($("#img1LabelInput").val() || "").trim();
-          var liveImg2 = ($("#img2LabelInput").val() || "").trim();
-          var liveImg3 = ($("#img3LabelInput").val() || "").trim();
-          if (liveImg1.length > 0) labels.IMG_1 = liveImg1;
-          if (liveImg2.length > 0) labels.IMG_2 = liveImg2;
-          if (liveImg3.length > 0) labels.IMG_3 = liveImg3;
+          var mergedLabels = sanitizeImageLabelSettings(labels);
+          getSupportedImageIndices(getAvailableImageCount()).forEach(function (idx) {
+            var liveImg = ($(getImageLabelInputSelector(idx)).val() || "").trim();
+            if (liveImg.length > 0) {
+              mergedLabels["IMG_" + idx] = liveImg;
+            }
+          });
 
           // persist into global settings immediately
-          _userSetting.imageLabels = Object.assign(
-            {},
-            _userSetting.imageLabels || {},
-            labels
-          );
+          _userSetting.imageLabels = Object.assign({}, mergedLabels);
 
           // sync internal state then force UI refresh
-          setImageLabels(labels);
-          var effectiveLabels = _userSetting.imageLabels || {};
-          var count = Math.max(
-            imageLinkKeys.length || 0,
-            Object.keys(effectiveLabels).length
-          );
+          setImageLabels(mergedLabels);
+          var effectiveLabels = sanitizeImageLabelSettings(_userSetting.imageLabels);
+          var count = getAvailableImageCount();
           updateImageRadioLabels(count);
 
           // hard set the DOM text from the latest inputs (fallback to defaults and effective labels)
-          var hasSecondImg = count > 1;
-          var hasThirdImg = count > 2;
-          var defaultLabel1 = hasSecondImg ? "#1" : "2D";
-          var defaultLabel2 = "#2";
-          var defaultLabel3 = "#3";
-          var finalLabel1 = liveImg1.length
-            ? liveImg1
-            : resolveImageLabelFromMap(effectiveLabels, "IMG_1", defaultLabel1);
-          var finalLabel2 = liveImg2.length
-            ? liveImg2
-            : resolveImageLabelFromMap(effectiveLabels, "IMG_2", defaultLabel2);
-          var finalLabel3 = liveImg3.length
-            ? liveImg3
-            : resolveImageLabelFromMap(effectiveLabels, "IMG_3", defaultLabel3);
-
-          $("#IMG1LabelText").text(finalLabel1);
-          if (hasSecondImg) {
-            $("#IMG2LabelText").text(finalLabel2);
-            d3.select("#IMG2Label").classed("hidden", false);
-          } else {
-            d3.select("#IMG2Label").classed("hidden", true);
-          }
-          if (hasThirdImg) {
-            $("#IMG3LabelText").text(finalLabel3);
-            d3.select("#IMG3Label").classed("hidden", false);
-          } else {
-            d3.select("#IMG3Label").classed("hidden", true);
-          }
+          getSupportedImageIndices().forEach(function (idx) {
+            var liveImg = ($(getImageLabelInputSelector(idx)).val() || "").trim();
+            var finalLabel = liveImg.length
+              ? liveImg
+              : resolveImageLabelFromMap(
+                  effectiveLabels,
+                  "IMG_" + idx,
+                  getDefaultImageLabel(idx, count)
+                );
+            $(getMainImageLabelTextSelector(idx)).text(finalLabel);
+            d3
+              .select(getMainImageLabelSelector(idx))
+              .classed("hidden", idx > count);
+          });
         }
 
         //set up button event
@@ -15985,60 +16014,21 @@
               });
               scheduleMainSliderSyncPasses(_userSetting, [0, 80]);
             }
-            var hasSecondImg =
-              Math.max(
-                imageLinkKeys.length || 0,
-                Object.keys(_userSetting.imageLabels || {}).length
-              ) > 1;
-            var hasThirdImg =
-              Math.max(
-                imageLinkKeys.length || 0,
-                Object.keys(_userSetting.imageLabels || {}).length
-              ) > 2;
-            var defaultLabel1 = hasSecondImg ? "#1" : "2D";
-            var defaultLabel2 = "#2";
-            var defaultLabel3 = "#3";
-            var liveImg1 = ($("#img1LabelInput").val() || "").trim();
-            var liveImg2 = ($("#img2LabelInput").val() || "").trim();
-            var liveImg3 = ($("#img3LabelInput").val() || "").trim();
-            var label1 =
-              liveImg1.length > 0
-                ? liveImg1
+            var count = getAvailableImageCount();
+            getSupportedImageIndices().forEach(function (idx) {
+              var liveImg = ($(getImageLabelInputSelector(idx)).val() || "").trim();
+              var label = liveImg.length > 0
+                ? liveImg
                 : resolveImageLabelFromMap(
                     _userSetting.imageLabels || {},
-                    "IMG_1",
-                    defaultLabel1
+                    "IMG_" + idx,
+                    getDefaultImageLabel(idx, count)
                   );
-            var label2 =
-              liveImg2.length > 0
-                ? liveImg2
-                : resolveImageLabelFromMap(
-                    _userSetting.imageLabels || {},
-                    "IMG_2",
-                    defaultLabel2
-                  );
-            var label3 =
-              liveImg3.length > 0
-                ? liveImg3
-                : resolveImageLabelFromMap(
-                    _userSetting.imageLabels || {},
-                    "IMG_3",
-                    defaultLabel3
-                  );
-
-            $("#IMG1LabelText").text(label1);
-            if (hasSecondImg) {
-              $("#IMG2LabelText").text(label2);
-              d3.select("#IMG2Label").classed("hidden", false);
-            } else {
-              d3.select("#IMG2Label").classed("hidden", true);
-            }
-            if (hasThirdImg) {
-              $("#IMG3LabelText").text(label3);
-              d3.select("#IMG3Label").classed("hidden", false);
-            } else {
-              d3.select("#IMG3Label").classed("hidden", true);
-            }
+              $(getMainImageLabelTextSelector(idx)).text(label);
+              d3
+                .select(getMainImageLabelSelector(idx))
+                .classed("hidden", idx > count);
+            });
           }, 0);
         });
 
@@ -16368,12 +16358,7 @@
         setImageLabels(userImageLabels);
         setTimeout(function () {
           setImageLabels(_userSetting.imageLabels || {});
-          updateImageRadioLabels(
-            Math.max(
-              imageLinkKeys.length || 0,
-              Object.keys(_userSetting.imageLabels || {}).length
-            )
-          );
+          updateImageRadioLabels(getAvailableImageCount());
           refreshImageRadioTexts();
           applyImageLabelsImmediate(_userSetting.imageLabels || {});
           syncRadioLabelsFromCurrentInputs();
@@ -16582,7 +16567,7 @@
 
       function setImageLabels(imageLabels) {
         imageLabels = imageLabels || {};
-        var normalized = Object.assign({}, _userSetting.imageLabels || {});
+        var normalized = sanitizeImageLabelSettings(_userSetting.imageLabels || {});
 
         d3.keys(imageLabels).forEach(function (key) {
           var value = imageLabels[key];
@@ -16596,11 +16581,9 @@
           normalized[canon] = trimmed;
         });
 
-        _userSetting.imageLabels = normalized;
+        _userSetting.imageLabels = sanitizeImageLabelSettings(normalized);
 
-        var labelCount = Object.keys(_userSetting.imageLabels || {}).length;
-        var imgCount = imageLinkKeys.length || 0;
-        updateImageRadioLabels(Math.max(imgCount, labelCount));
+        updateImageRadioLabels(getAvailableImageCount());
       }
 
       function syncGraphDimensionTitles() {
@@ -17597,12 +17580,7 @@
             // in case radios render after labels, refresh once more
             setTimeout(function () {
               setImageLabels(_userSetting.imageLabels);
-              updateImageRadioLabels(
-                Math.max(
-                  imageLinkKeys.length || 0,
-                  Object.keys(_userSetting.imageLabels || {}).length
-                )
-              );
+              updateImageRadioLabels(getAvailableImageCount());
               refreshImageRadioTexts();
               refreshGraphLabelsWithRetry(0);
               if (_userSetting.labelSize) {
