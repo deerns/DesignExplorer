@@ -13012,20 +13012,20 @@
             isSelectionDemo: true,
             title: "Make a selection",
             description:
-              "<strong>This is the main interaction.</strong> The example now applies a real temporary filter, so the thumbnails update with the selected designs." +
-              '<ol class="tour-steps"><li data-step="1">Choose a blue axis with the value you want to filter.</li><li data-step="2">Click and drag vertically to create a selection range.</li><li data-step="3">Watch the thumbnails update, then drag either range edge to adjust it.</li></ol>',
+              "<strong>This is the main interaction.</strong> The tour applies a temporary filter, so the thumbnail list changes with the selected designs." +
+              '<ol class="tour-steps"><li data-step="1">Choose a blue axis for the value you want to filter.</li><li data-step="2">Click and drag vertically to create a range.</li><li data-step="3">Use Next to narrow the range and see the thumbnails update.</li></ol>',
           },
           {
             selector: "#sidebar-wrapper",
             title: "Filters and legend",
             description:
-              "Use the sliders to filter the study by input values. The legend explains the current design colours and lets you focus on categories.",
+              "Use the sliders to filter the study by input values. The legend shows the current design colours and lets you focus on categories.",
           },
           {
             selector: "#graph",
             title: "Read the comparison chart",
             description:
-              "Each line is one design and every vertical axis is a study dimension. Drag an axis heading to reorder the dimensions, or click a line to inspect a specific design.",
+              "Each line represents one design, and each vertical axis represents a study dimension. Drag an axis label to reorder the axes, or click a line to inspect that design.",
           },
           {
             selector: "#radarChart",
@@ -13034,28 +13034,34 @@
               "Compare two dimensions at a time. Click or drag within a plot to select designs, then use the Zoom action when it is shown.",
           },
           {
-            selector: "#zoomedArea",
-            title: "Selected design",
-            description:
-              "Details and the larger preview for the selected design appear here. The available image controls let you switch between the study images.",
-          },
-          {
             selector: "#thumbnails-btm_container",
             title: "Design thumbnails",
             description:
-              "Browse the study designs as thumbnails. Click one to inspect it, and use the Thumbnails tab to open or close the drawer.",
+              "Browse the study designs as thumbnails. Select one to inspect it, and use the Thumbnails tab to open or close the drawer.",
+          },
+          {
+            selector: "#viewer2d",
+            isImageSelectionDemo: true,
+            title: "Inspect a selected image",
+            description:
+              "One thumbnail is selected for you. Its larger image and details appear here, so you can inspect one design at a time.",
           },
         ];
 
         return candidates
           .filter(function (step) {
-            return isTutorialTargetVisible(step.target || step.selector);
+            return step.isImageSelectionDemo
+              ? !!document.querySelector(step.selector)
+              : isTutorialTargetVisible(step.target || step.selector);
           })
           .sort(function (a, b) {
             var order = {
               "Read the comparison chart": 0,
               "Make a selection": 1,
               "Filters and legend": 2,
+              "Scatter plots": 3,
+              "Design thumbnails": 4,
+              "Inspect a selected image": 5,
             };
             var aOrder = Object.prototype.hasOwnProperty.call(order, a.title)
               ? order[a.title]
@@ -13126,9 +13132,9 @@
         }
 
         var stages = [
-          "1 of 3  |  Compare all designs",
-          "2 of 3  |  Create a selection range",
-          "3 of 3  |  Adjust the range to narrow the results",
+          "All designs are visible",
+          "A selection range is active",
+          "The range is narrowed",
         ];
         setGuidedTourStage(stages[guidedTourDemoSelectionPhase]);
       }
@@ -13143,7 +13149,7 @@
           demoExtent[guidedTourDemoSelection.dimensionKey] =
             guidedTourDemoSelection.initialExtent;
           graph.brushExtents(demoExtent);
-          setGuidedTourStage("2 of 3  |  Create a selection range");
+          setGuidedTourStage("A selection range is active");
           guidedTourDemoSelectionPhase = 1;
           return true;
         }
@@ -13153,14 +13159,24 @@
           adjustedExtent[guidedTourDemoSelection.dimensionKey] =
             guidedTourDemoSelection.adjustedExtent;
           graph.brushExtents(adjustedExtent);
-          setGuidedTourStage("3 of 3  |  Adjust the range to narrow the results");
+          setGuidedTourStage("The range is narrowed");
           guidedTourDemoSelectionPhase = 2;
           return true;
         }
 
         restoreGuidedTourDemoSelection();
-        setGuidedTourStage("Complete  |  Original selection restored");
+        setGuidedTourStage("The original selection is restored");
         return false;
+      }
+
+      function selectGuidedTourExampleImage() {
+        var thumbnail = document.querySelector("#thumbnails-btm img");
+        if (!thumbnail || typeof updateLayoutOnSelect !== "function") return;
+
+        updateLayoutOnSelect.call(thumbnail);
+        if (typeof syncMainVerticalResizeHandleState === "function") {
+          syncMainVerticalResizeHandleState();
+        }
       }
 
       function updateGuidedTourNextButton(step) {
@@ -13241,6 +13257,7 @@
         if (!step.isSelectionDemo) restoreGuidedTourDemoSelection();
         if (!step.isSelectionDemo) setGuidedTourStage("");
         if (step.isSelectionDemo) prepareGuidedTourDemoSelection(step);
+        if (step.isImageSelectionDemo) selectGuidedTourExampleImage();
 
         var target = step.target || document.querySelector(step.selector);
         if (!target || !isTutorialTargetVisible(target)) {
