@@ -290,6 +290,53 @@
         pointer-events: none;
       }
 
+      #guidedTourDemoBrush {
+        position: fixed;
+        z-index: 2147483646;
+        display: none;
+        min-width: 42px;
+        border: 2px solid #0b65c2;
+        border-radius: 6px;
+        background: rgba(45, 145, 255, 0.2);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.94);
+        pointer-events: none;
+        transition: top 700ms ease-in-out, height 700ms ease-in-out;
+      }
+
+      #guidedTourDemoBrush::before {
+        position: absolute;
+        top: 50%;
+        left: calc(100% + 10px);
+        width: max-content;
+        padding: 4px 7px;
+        border-radius: 4px;
+        background: #033899;
+        color: #ffffff;
+        content: "Example range";
+        font-size: 11px;
+        font-weight: 700;
+        transform: translateY(-50%);
+      }
+
+      #guidedTourDemoBrush .tour-brush-handle {
+        position: absolute;
+        left: 50%;
+        width: 16px;
+        height: 8px;
+        border-radius: 8px;
+        background: #ffffff;
+        border: 2px solid #0b65c2;
+        transform: translateX(-50%);
+      }
+
+      #guidedTourDemoBrush .tour-brush-handle:first-child {
+        top: -6px;
+      }
+
+      #guidedTourDemoBrush .tour-brush-handle:last-child {
+        bottom: -6px;
+      }
+
       #guidedTourCard {
         position: fixed;
         z-index: 2147483647;
@@ -5132,6 +5179,10 @@
           <div id="guidedTourShadeBottom" class="guidedTourShade"></div>
         </div>
         <div id="guidedTourHighlight" aria-hidden="true"></div>
+        <div id="guidedTourDemoBrush" aria-hidden="true">
+          <span class="tour-brush-handle"></span>
+          <span class="tour-brush-handle"></span>
+        </div>
         <section
           id="guidedTourCard"
           role="dialog"
@@ -12864,9 +12915,15 @@
       var guidedTourSteps = [];
       var guidedTourStepIndex = 0;
       var guidedTourRenderId = 0;
+      var guidedTourDemoSelection = null;
+      var guidedTourSavedBrushExtents = null;
+      var guidedTourDemoSelectionActive = false;
 
-      function isTutorialTargetVisible(selector) {
-        var target = document.querySelector(selector);
+      function isTutorialTargetVisible(selectorOrTarget) {
+        var target =
+          typeof selectorOrTarget === "string"
+            ? document.querySelector(selectorOrTarget)
+            : selectorOrTarget;
         if (!target) return false;
 
         var style = window.getComputedStyle(target);
@@ -12884,14 +12941,60 @@
         );
       }
 
+      function getGuidedTourDemoSelection() {
+        if (!graph || typeof graph.dimensions !== "function") return null;
+
+        var dimensions = graph.dimensions() || {};
+        var data = typeof graph.data === "function" ? graph.data() || [] : [];
+        var dimensionNodes = document.querySelectorAll("#graph .dimension");
+
+        for (var i = 0; i < dimensionNodes.length; i++) {
+          var target = dimensionNodes[i];
+          var dimensionKey = target.__data__;
+          if (!dimensionKey || !dimensions[dimensionKey]) continue;
+
+          var values = data
+            .map(function (row) {
+              return Number(row[dimensionKey]);
+            })
+            .filter(function (value) {
+              return isFinite(value);
+            })
+            .sort(d3.ascending)
+            .filter(function (value, index, allValues) {
+              return index === 0 || value !== allValues[index - 1];
+            });
+
+          if (values.length < 4) continue;
+
+          var initialStart = values[Math.floor((values.length - 1) * 0.2)];
+          var initialEnd = values[Math.ceil((values.length - 1) * 0.75)];
+          var adjustedStart = values[Math.floor((values.length - 1) * 0.38)];
+          var adjustedEnd = values[Math.ceil((values.length - 1) * 0.58)];
+
+          if (initialStart === initialEnd || adjustedStart === adjustedEnd) continue;
+
+          return {
+            target: target,
+            dimensionKey: dimensionKey,
+            initialExtent: [initialStart, initialEnd],
+            adjustedExtent: [adjustedStart, adjustedEnd],
+          };
+        }
+
+        return null;
+      }
+
       function buildGuidedTourSteps() {
         var candidates = [
           {
             selector: "#graph .dimension",
+            target: guidedTourDemoSelection && guidedTourDemoSelection.target,
+            isSelectionDemo: true,
             title: "Make a selection",
             description:
-              "<strong>This is the main interaction.</strong> Select designs by brushing directly on a vertical axis in the parallel-coordinates chart." +
-              '<ol class="tour-steps"><li data-step="1">Choose a blue axis with the value you want to filter.</li><li data-step="2">Click and drag vertically to create a selection range.</li><li data-step="3">Repeat on other axes to refine the matching designs.</li></ol>',
+              "<strong>This is the main interaction.</strong> The example now applies a real temporary filter, so the thumbnails update with the selected designs." +
+              '<ol class="tour-steps"><li data-step="1">Choose a blue axis with the value you want to filter.</li><li data-step="2">Click and drag vertically to create a selection range.</li><li data-step="3">Watch the thumbnails update, then drag either range edge to adjust it.</li></ol>',
           },
           {
             selector: "#sidebar-wrapper",
@@ -12926,22 +13029,79 @@
         ];
 
         return candidates.filter(function (step) {
-          return isTutorialTargetVisible(step.selector);
+          return isTutorialTargetVisible(step.target || step.selector);
         });
       }
 
       function closeGuidedTour() {
         guidedTourRenderId += 1;
+        restoreGuidedTourDemoSelection();
         guidedTourSteps = [];
         guidedTourStepIndex = 0;
         document.getElementById("guidedTourOverlay").style.display = "none";
         document.getElementById("guidedTourHighlight").style.display = "none";
+        document.getElementById("guidedTourDemoBrush").style.display = "none";
         document.getElementById("guidedTourCard").style.display = "none";
         document.getElementById("guidedTourOverlay").setAttribute("aria-hidden", "true");
       }
 
+      function restoreGuidedTourDemoSelection() {
+        if (
+          !guidedTourDemoSelectionActive ||
+          !graph ||
+          typeof graph.brushReset !== "function"
+        ) {
+          return;
+        }
+
+        var savedExtents = cloneBrushExtents(guidedTourSavedBrushExtents);
+        guidedTourDemoSelectionActive = false;
+        guidedTourSavedBrushExtents = null;
+        graph.brushReset();
+        if (
+          Object.keys(savedExtents).length > 0 &&
+          typeof graph.brushExtents === "function"
+        ) {
+          graph.brushExtents(savedExtents);
+        }
+      }
+
+      function applyGuidedTourDemoSelection(step, renderId) {
+        if (
+          !step.isSelectionDemo ||
+          !guidedTourDemoSelection ||
+          !graph ||
+          typeof graph.brushExtents !== "function" ||
+          typeof graph.brushReset !== "function"
+        ) {
+          return;
+        }
+
+        if (!guidedTourDemoSelectionActive) {
+          guidedTourSavedBrushExtents = cloneBrushExtents(graph.brushExtents());
+          guidedTourDemoSelectionActive = true;
+          graph.brushReset();
+        }
+
+        var demoExtent = {};
+        demoExtent[guidedTourDemoSelection.dimensionKey] =
+          guidedTourDemoSelection.initialExtent;
+        graph.brushExtents(demoExtent);
+
+        window.setTimeout(function () {
+          if (renderId !== guidedTourRenderId || !guidedTourDemoSelectionActive) {
+            return;
+          }
+
+          var adjustedExtent = {};
+          adjustedExtent[guidedTourDemoSelection.dimensionKey] =
+            guidedTourDemoSelection.adjustedExtent;
+          graph.brushExtents(adjustedExtent);
+        }, 1150);
+      }
+
       function moveGuidedTourLayersToBody() {
-        ["guidedTourOverlay", "guidedTourHighlight", "guidedTourCard"].forEach(
+        ["guidedTourOverlay", "guidedTourHighlight", "guidedTourCard", "guidedTourDemoBrush"].forEach(
           function (id) {
             var element = document.getElementById(id);
             if (element && element.parentNode !== document.body) {
@@ -12977,6 +13137,31 @@
         });
       }
 
+      function showGuidedTourDemoBrush(step, rect, renderId) {
+        var demoBrush = document.getElementById("guidedTourDemoBrush");
+        if (step.isSelectionDemo || step.selector !== "#graph .dimension") {
+          demoBrush.style.display = "none";
+          return;
+        }
+
+        var brushHeight = Math.max(70, rect.height * 0.34);
+        var brushTop = rect.top + rect.height * 0.28;
+        demoBrush.style.display = "block";
+        demoBrush.style.left = rect.left - 20 + "px";
+        demoBrush.style.top = brushTop + "px";
+        demoBrush.style.width = Math.max(42, rect.width + 40) + "px";
+        demoBrush.style.height = brushHeight + "px";
+
+        window.setTimeout(function () {
+          if (renderId !== guidedTourRenderId || guidedTourSteps.length === 0) {
+            return;
+          }
+
+          demoBrush.style.top = rect.top + rect.height * 0.42 + "px";
+          demoBrush.style.height = Math.max(56, rect.height * 0.2) + "px";
+        }, 1150);
+      }
+
       function renderGuidedTourStep() {
         var renderId = ++guidedTourRenderId;
         if (guidedTourStepIndex >= guidedTourSteps.length) {
@@ -12985,8 +13170,10 @@
         }
 
         var step = guidedTourSteps[guidedTourStepIndex];
-        var target = document.querySelector(step.selector);
-        if (!target || !isTutorialTargetVisible(step.selector)) {
+        if (!step.isSelectionDemo) restoreGuidedTourDemoSelection();
+
+        var target = step.target || document.querySelector(step.selector);
+        if (!target || !isTutorialTargetVisible(target)) {
           guidedTourSteps.splice(guidedTourStepIndex, 1);
           renderGuidedTourStep();
           return;
@@ -13010,6 +13197,8 @@
           highlight.style.width = Math.min(window.innerWidth, rect.width + padding * 2) + "px";
           highlight.style.height = Math.min(window.innerHeight, rect.height + padding * 2) + "px";
           updateGuidedTourShades(rect, padding);
+          showGuidedTourDemoBrush(step, rect, renderId);
+          applyGuidedTourDemoSelection(step, renderId);
 
           document.getElementById("guidedTourTitle").textContent = step.title;
           document.getElementById("guidedTourDescription").innerHTML = step.description;
@@ -13038,6 +13227,7 @@
       function startGuidedTour() {
         d3.selectAll(".popupWindow").style("display", "none");
         moveGuidedTourLayersToBody();
+        guidedTourDemoSelection = getGuidedTourDemoSelection();
         guidedTourSteps = buildGuidedTourSteps();
         guidedTourStepIndex = 0;
 
