@@ -270,14 +270,14 @@
       #guidedTourOverlay {
         position: fixed;
         inset: 0;
-        z-index: 1060;
+        z-index: 2147483645;
         display: none;
-        background: rgba(4, 20, 48, 0.66);
+        background: rgba(4, 20, 48, 0.58);
       }
 
       #guidedTourHighlight {
         position: fixed;
-        z-index: 1061;
+        z-index: 2147483646;
         display: none;
         border: 3px solid #ffffff;
         border-radius: 4px;
@@ -287,14 +287,27 @@
 
       #guidedTourCard {
         position: fixed;
-        z-index: 1062;
+        z-index: 2147483647;
         display: none;
-        width: min(360px, calc(100vw - 32px));
-        padding: 20px;
-        background: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+        width: min(390px, calc(100vw - 32px));
+        padding: 24px;
+        background: linear-gradient(145deg, #ffffff 0%, #f4f8ff 100%) !important;
+        border: 1px solid rgba(3, 56, 153, 0.16);
+        border-radius: 14px;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
         color: #1e2b3c;
+        opacity: 1 !important;
+        filter: none !important;
+      }
+
+      #guidedTourKicker {
+        display: block;
+        margin-bottom: 8px;
+        color: #0b65c2;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
       }
 
       #guidedTourCard h3 {
@@ -303,9 +316,46 @@
         font-size: 20px;
       }
 
-      #guidedTourCard p {
+      #guidedTourDescription {
         margin: 0 0 16px;
         line-height: 1.45;
+      }
+
+      #guidedTourCard strong {
+        color: #033899;
+      }
+
+      #guidedTourCard .tour-steps {
+        display: grid;
+        gap: 8px;
+        margin: 16px 0 18px;
+        padding: 0;
+        list-style: none;
+      }
+
+      #guidedTourCard .tour-steps li {
+        position: relative;
+        padding: 9px 10px 9px 38px;
+        background: #ffffff;
+        border: 1px solid #d8e4f7;
+        border-radius: 7px;
+        font-size: 13px;
+      }
+
+      #guidedTourCard .tour-steps li::before {
+        position: absolute;
+        left: 10px;
+        top: 8px;
+        display: grid;
+        width: 20px;
+        height: 20px;
+        place-items: center;
+        border-radius: 50%;
+        background: #033899;
+        color: #ffffff;
+        content: attr(data-step);
+        font-size: 11px;
+        font-weight: 700;
       }
 
       #guidedTourProgress {
@@ -323,6 +373,9 @@
       #guidedTourActions .btn-primary {
         background-color: #033899;
         border-color: #033899;
+        padding: 7px 16px;
+        border-radius: 20px;
+        font-weight: 600;
       }
 
       /* Settings modal alignment */
@@ -5075,8 +5128,9 @@
           aria-modal="true"
           aria-labelledby="guidedTourTitle"
         >
+          <span id="guidedTourKicker">Design Explorer guide</span>
           <h3 id="guidedTourTitle"></h3>
-          <p id="guidedTourDescription"></p>
+          <div id="guidedTourDescription"></div>
           <div id="guidedTourActions">
             <button id="guidedTourClose" type="button" class="btn btn-link btn-sm">
               Skip tour
@@ -12823,16 +12877,11 @@
       function buildGuidedTourSteps() {
         var candidates = [
           {
-            selector: "#topNavLeftGroup",
-            title: "Study header",
+            selector: "#graph .dimension",
+            title: "Make a selection",
             description:
-              "This area shows the study name and date when they are available. Use Get Data to load another study.",
-          },
-          {
-            selector: "#PcChartWrapper > .row > .btn-group",
-            title: "Selection toolbar",
-            description:
-              "Reset restores all designs. Exclude removes the current selection, Zoom keeps it, Save exports it, My Static Link creates a shareable link, and Setting changes the study display options.",
+              "<strong>This is the main interaction.</strong> Select designs by brushing directly on a vertical axis in the parallel-coordinates chart." +
+              '<ol class="tour-steps"><li data-step="1">Choose a blue axis with the value you want to filter.</li><li data-step="2">Click and drag vertically to create a selection range.</li><li data-step="3">Repeat on other axes to refine the matching designs.</li></ol>',
           },
           {
             selector: "#sidebar-wrapper",
@@ -12842,9 +12891,9 @@
           },
           {
             selector: "#graph",
-            title: "Parallel coordinates",
+            title: "Read the comparison chart",
             description:
-              "Each vertical axis is a study dimension. Drag on an axis to select a value range, drag axis headings to reorder them, and click a design line to inspect it.",
+              "Each line is one design and every vertical axis is a study dimension. Drag an axis heading to reorder the dimensions, or click a line to inspect a specific design.",
           },
           {
             selector: "#radarChart",
@@ -12857,12 +12906,6 @@
             title: "Selected design",
             description:
               "Details and the larger preview for the selected design appear here. The available image controls let you switch between the study images.",
-          },
-          {
-            selector: "#vis",
-            title: "View controls",
-            description:
-              "Choose which available image view to display. A 3D option is shown here only when the study provides a 3D model.",
           },
           {
             selector: "#thumbnails-btm_container",
@@ -12885,6 +12928,17 @@
         document.getElementById("guidedTourHighlight").style.display = "none";
         document.getElementById("guidedTourCard").style.display = "none";
         document.getElementById("guidedTourOverlay").setAttribute("aria-hidden", "true");
+      }
+
+      function moveGuidedTourLayersToBody() {
+        ["guidedTourOverlay", "guidedTourHighlight", "guidedTourCard"].forEach(
+          function (id) {
+            var element = document.getElementById(id);
+            if (element && element.parentNode !== document.body) {
+              document.body.appendChild(element);
+            }
+          }
+        );
       }
 
       function renderGuidedTourStep() {
@@ -12921,7 +12975,7 @@
           highlight.style.height = Math.min(window.innerHeight, rect.height + padding * 2) + "px";
 
           document.getElementById("guidedTourTitle").textContent = step.title;
-          document.getElementById("guidedTourDescription").textContent = step.description;
+          document.getElementById("guidedTourDescription").innerHTML = step.description;
           document.getElementById("guidedTourProgress").textContent =
             guidedTourStepIndex + 1 + " of " + guidedTourSteps.length;
           nextButton.textContent =
@@ -12946,6 +13000,7 @@
 
       function startGuidedTour() {
         d3.selectAll(".popupWindow").style("display", "none");
+        moveGuidedTourLayersToBody();
         guidedTourSteps = buildGuidedTourSteps();
         guidedTourStepIndex = 0;
 
