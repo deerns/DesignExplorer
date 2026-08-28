@@ -12930,6 +12930,7 @@
       var guidedTourDemoSelection = null;
       var guidedTourSavedBrushExtents = null;
       var guidedTourDemoSelectionActive = false;
+      var guidedTourDemoSelectionPhase = 0;
 
       function isTutorialTargetVisible(selectorOrTarget) {
         var target =
@@ -13051,9 +13052,12 @@
             return isTutorialTargetVisible(step.target || step.selector);
           })
           .sort(function (a, b) {
-            if (a.selector === "#sidebar-wrapper") return -1;
-            if (b.selector === "#sidebar-wrapper") return 1;
-            return 0;
+            var order = {
+              "Read the comparison chart": 0,
+              "Make a selection": 1,
+              "Filters and legend": 2,
+            };
+            return (order[a.title] || 10) - (order[b.title] || 10);
           });
       }
 
@@ -13080,6 +13084,7 @@
 
         var savedExtents = cloneBrushExtents(guidedTourSavedBrushExtents);
         guidedTourDemoSelectionActive = false;
+        guidedTourDemoSelectionPhase = 0;
         guidedTourSavedBrushExtents = null;
         graph.brushReset();
         if (
@@ -13096,7 +13101,7 @@
         stage.style.display = text ? "block" : "none";
       }
 
-      function applyGuidedTourDemoSelection(step, renderId) {
+      function prepareGuidedTourDemoSelection(step) {
         if (
           !step.isSelectionDemo ||
           !guidedTourDemoSelection ||
@@ -13110,43 +13115,58 @@
         if (!guidedTourDemoSelectionActive) {
           guidedTourSavedBrushExtents = cloneBrushExtents(graph.brushExtents());
           guidedTourDemoSelectionActive = true;
+          guidedTourDemoSelectionPhase = 0;
           graph.brushReset();
         }
 
-        setGuidedTourStage("1 of 3  |  Compare all designs");
+        var stages = [
+          "1 of 3  |  Compare all designs",
+          "2 of 3  |  Create a selection range",
+          "3 of 3  |  Adjust the range to narrow the results",
+        ];
+        setGuidedTourStage(stages[guidedTourDemoSelectionPhase]);
+      }
 
-        window.setTimeout(function () {
-          if (renderId !== guidedTourRenderId || !guidedTourDemoSelectionActive) {
-            return;
-          }
+      function advanceGuidedTourDemoSelection() {
+        if (!guidedTourDemoSelectionActive || !guidedTourDemoSelection || !graph) {
+          return false;
+        }
 
+        if (guidedTourDemoSelectionPhase === 0) {
           var demoExtent = {};
           demoExtent[guidedTourDemoSelection.dimensionKey] =
             guidedTourDemoSelection.initialExtent;
           graph.brushExtents(demoExtent);
           setGuidedTourStage("2 of 3  |  Create a selection range");
-        }, 1050);
+          guidedTourDemoSelectionPhase = 1;
+          return true;
+        }
 
-        window.setTimeout(function () {
-          if (renderId !== guidedTourRenderId || !guidedTourDemoSelectionActive) {
-            return;
-          }
-
+        if (guidedTourDemoSelectionPhase === 1) {
           var adjustedExtent = {};
           adjustedExtent[guidedTourDemoSelection.dimensionKey] =
             guidedTourDemoSelection.adjustedExtent;
           graph.brushExtents(adjustedExtent);
           setGuidedTourStage("3 of 3  |  Adjust the range to narrow the results");
-        }, 2350);
+          guidedTourDemoSelectionPhase = 2;
+          return true;
+        }
 
-        window.setTimeout(function () {
-          if (renderId !== guidedTourRenderId || !guidedTourDemoSelectionActive) {
-            return;
-          }
+        restoreGuidedTourDemoSelection();
+        setGuidedTourStage("Complete  |  Original selection restored");
+        return false;
+      }
 
-          restoreGuidedTourDemoSelection();
-          setGuidedTourStage("Complete  |  Original selection restored");
-        }, 3700);
+      function updateGuidedTourNextButton(step) {
+        var nextButton = document.getElementById("guidedTourNext");
+        if (step && step.isSelectionDemo && guidedTourDemoSelectionActive) {
+          var labels = ["Show selection", "Adjust range", "Continue"];
+          nextButton.textContent = labels[guidedTourDemoSelectionPhase];
+          return;
+        }
+
+        nextButton.textContent =
+          guidedTourStepIndex === guidedTourSteps.length - 1 ? "Finish" : "Next";
       }
 
       function moveGuidedTourLayersToBody() {
@@ -13221,6 +13241,7 @@
         var step = guidedTourSteps[guidedTourStepIndex];
         if (!step.isSelectionDemo) restoreGuidedTourDemoSelection();
         if (!step.isSelectionDemo) setGuidedTourStage("");
+        if (step.isSelectionDemo) prepareGuidedTourDemoSelection(step);
 
         var target = step.target || document.querySelector(step.selector);
         if (!target || !isTutorialTargetVisible(target)) {
@@ -13248,14 +13269,12 @@
           highlight.style.height = Math.min(window.innerHeight, rect.height + padding * 2) + "px";
           updateGuidedTourShades(rect, padding);
           showGuidedTourDemoBrush(step, rect, renderId);
-          applyGuidedTourDemoSelection(step, renderId);
 
           document.getElementById("guidedTourTitle").textContent = step.title;
           document.getElementById("guidedTourDescription").innerHTML = step.description;
           document.getElementById("guidedTourProgress").textContent =
             guidedTourStepIndex + 1 + " of " + guidedTourSteps.length;
-          nextButton.textContent =
-            guidedTourStepIndex === guidedTourSteps.length - 1 ? "Finish" : "Next";
+          updateGuidedTourNextButton(step);
 
           card.style.display = "block";
           var cardWidth = card.offsetWidth;
@@ -13303,6 +13322,15 @@
         document
           .getElementById("guidedTourNext")
           .addEventListener("click", function () {
+            var currentStep = guidedTourSteps[guidedTourStepIndex];
+            if (
+              currentStep &&
+              currentStep.isSelectionDemo &&
+              advanceGuidedTourDemoSelection()
+            ) {
+              updateGuidedTourNextButton(currentStep);
+              return;
+            }
             guidedTourStepIndex += 1;
             renderGuidedTourStep();
           });
