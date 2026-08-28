@@ -290,6 +290,16 @@
         pointer-events: none;
       }
 
+      #guidedTourSecondaryHighlight {
+        position: fixed;
+        z-index: 2147483646;
+        display: none;
+        border: 3px solid #ffffff;
+        border-radius: 4px;
+        box-shadow: 0 0 0 5px rgba(3, 56, 153, 0.85);
+        pointer-events: none;
+      }
+
       #guidedTourDemoBrush {
         position: fixed;
         z-index: 2147483646;
@@ -5211,6 +5221,7 @@
           <div id="guidedTourShadeBottom" class="guidedTourShade"></div>
         </div>
         <div id="guidedTourHighlight" aria-hidden="true"></div>
+        <div id="guidedTourSecondaryHighlight" aria-hidden="true"></div>
         <div id="guidedTourDemoBrush" aria-hidden="true">
           <span class="tour-brush-handle"></span>
           <span class="tour-brush-handle"></span>
@@ -13166,6 +13177,7 @@
         guidedTourStepIndex = 0;
         document.getElementById("guidedTourOverlay").style.display = "none";
         document.getElementById("guidedTourHighlight").style.display = "none";
+        document.getElementById("guidedTourSecondaryHighlight").style.display = "none";
         document.getElementById("guidedTourDemoBrush").style.display = "none";
         document.getElementById("guidedTourCard").style.display = "none";
         document.getElementById("guidedTourOverlay").setAttribute("aria-hidden", "true");
@@ -13405,7 +13417,7 @@
       }
 
       function moveGuidedTourLayersToBody() {
-        ["guidedTourOverlay", "guidedTourHighlight", "guidedTourCard", "guidedTourDemoBrush"].forEach(
+        ["guidedTourOverlay", "guidedTourHighlight", "guidedTourSecondaryHighlight", "guidedTourCard", "guidedTourDemoBrush"].forEach(
           function (id) {
             var element = document.getElementById(id);
             if (element && element.parentNode !== document.body) {
@@ -13415,30 +13427,60 @@
         );
       }
 
-      function updateGuidedTourShades(rect, padding) {
-        var left = Math.max(0, rect.left - padding);
-        var top = Math.max(0, rect.top - padding);
-        var right = Math.min(window.innerWidth, rect.right + padding);
-        var bottom = Math.min(window.innerHeight, rect.bottom + padding);
-        var holeWidth = Math.max(0, right - left);
-        var holeHeight = Math.max(0, bottom - top);
-
-        var shades = {
-          guidedTourShadeTop: [0, 0, window.innerWidth, top],
-          guidedTourShadeLeft: [0, top, left, holeHeight],
-          guidedTourShadeRight: [right, top, window.innerWidth - right, holeHeight],
-          guidedTourShadeBottom: [0, bottom, window.innerWidth, window.innerHeight - bottom],
-        };
-
-        Object.keys(shades).forEach(function (id) {
-          var shade = document.getElementById(id);
-          var dimensions = shades[id];
-          if (!shade) return;
-          shade.style.left = dimensions[0] + "px";
-          shade.style.top = dimensions[1] + "px";
-          shade.style.width = dimensions[2] + "px";
-          shade.style.height = dimensions[3] + "px";
+      function updateGuidedTourShades(rects, padding) {
+        var overlay = document.getElementById("guidedTourOverlay");
+        var viewportWidth = window.innerWidth;
+        var viewportHeight = window.innerHeight;
+        var holes = (rects || []).map(function (rect) {
+          return {
+            left: Math.max(0, rect.left - padding),
+            top: Math.max(0, rect.top - padding),
+            right: Math.min(viewportWidth, rect.right + padding),
+            bottom: Math.min(viewportHeight, rect.bottom + padding),
+          };
         });
+        var xEdges = [0, viewportWidth];
+        var yEdges = [0, viewportHeight];
+
+        holes.forEach(function (hole) {
+          xEdges.push(hole.left, hole.right);
+          yEdges.push(hole.top, hole.bottom);
+        });
+        xEdges = xEdges.filter(function (value, index, values) {
+          return values.indexOf(value) === index;
+        }).sort(function (a, b) { return a - b; });
+        yEdges = yEdges.filter(function (value, index, values) {
+          return values.indexOf(value) === index;
+        }).sort(function (a, b) { return a - b; });
+
+        overlay.innerHTML = "";
+        for (var x = 0; x < xEdges.length - 1; x++) {
+          for (var y = 0; y < yEdges.length - 1; y++) {
+            var left = xEdges[x];
+            var top = yEdges[y];
+            var width = xEdges[x + 1] - left;
+            var height = yEdges[y + 1] - top;
+            var centerX = left + width / 2;
+            var centerY = top + height / 2;
+            var isInsideHole = holes.some(function (hole) {
+              return (
+                centerX >= hole.left &&
+                centerX <= hole.right &&
+                centerY >= hole.top &&
+                centerY <= hole.bottom
+              );
+            });
+            if (isInsideHole || width <= 0 || height <= 0) continue;
+
+            var shade = document.createElement("div");
+            shade.className = "guidedTourShade";
+            shade.style.left = left + "px";
+            shade.style.top = top + "px";
+            shade.style.width = width + "px";
+            shade.style.height = height + "px";
+            overlay.appendChild(shade);
+          }
+        }
       }
 
       function showGuidedTourDemoBrush(step, rect, renderId) {
@@ -13513,15 +13555,32 @@
           var rect = target.getBoundingClientRect();
           var padding = 6;
           var highlight = document.getElementById("guidedTourHighlight");
+          var secondaryHighlight = document.getElementById(
+            "guidedTourSecondaryHighlight"
+          );
           var card = document.getElementById("guidedTourCard");
           var nextButton = document.getElementById("guidedTourNext");
+          var sliderTarget = step.isInputOutputDemo
+            ? document.getElementById("inputSliders")
+            : null;
+          var sliderRect =
+            sliderTarget && isTutorialTargetVisible(sliderTarget)
+              ? sliderTarget.getBoundingClientRect()
+              : null;
 
           highlight.style.display = "block";
           highlight.style.left = Math.max(0, rect.left - padding) + "px";
           highlight.style.top = Math.max(0, rect.top - padding) + "px";
           highlight.style.width = Math.min(window.innerWidth, rect.width + padding * 2) + "px";
           highlight.style.height = Math.min(window.innerHeight, rect.height + padding * 2) + "px";
-          updateGuidedTourShades(rect, padding);
+          secondaryHighlight.style.display = sliderRect ? "block" : "none";
+          if (sliderRect) {
+            secondaryHighlight.style.left = Math.max(0, sliderRect.left - padding) + "px";
+            secondaryHighlight.style.top = Math.max(0, sliderRect.top - padding) + "px";
+            secondaryHighlight.style.width = Math.min(window.innerWidth, sliderRect.width + padding * 2) + "px";
+            secondaryHighlight.style.height = Math.min(window.innerHeight, sliderRect.height + padding * 2) + "px";
+          }
+          updateGuidedTourShades(sliderRect ? [rect, sliderRect] : [rect], padding);
           showGuidedTourDemoBrush(step, rect, renderId);
 
           document.getElementById("guidedTourTitle").textContent = step.title;
