@@ -13411,6 +13411,39 @@
         );
       }
 
+      function getGuidedTourVisibleSlidersRect() {
+        var visibleRects = Array.prototype.filter
+          .call(document.querySelectorAll("#inputSliders .inputSlider"), function (node) {
+            return isTutorialTargetVisible(node);
+          })
+          .map(function (node) {
+            return node.getBoundingClientRect();
+          });
+
+        if (visibleRects.length === 0) return null;
+
+        var combined = visibleRects.reduce(function (combined, rect) {
+          return {
+            left: Math.min(combined.left, rect.left),
+            top: Math.min(combined.top, rect.top),
+            right: Math.max(combined.right, rect.right),
+            bottom: Math.max(combined.bottom, rect.bottom),
+            width: 0,
+            height: 0,
+          };
+        }, {
+          left: visibleRects[0].left,
+          top: visibleRects[0].top,
+          right: visibleRects[0].right,
+          bottom: visibleRects[0].bottom,
+          width: 0,
+          height: 0,
+        });
+        combined.width = combined.right - combined.left;
+        combined.height = combined.bottom - combined.top;
+        return combined;
+      }
+
       function updateGuidedTourNextButton(step) {
         var nextButton = document.getElementById("guidedTourNext");
         nextButton.textContent = "Next";
@@ -13560,13 +13593,9 @@
           );
           var card = document.getElementById("guidedTourCard");
           var nextButton = document.getElementById("guidedTourNext");
-          var sliderTarget = step.isInputOutputDemo
-            ? document.getElementById("inputSliders")
+          var sliderRect = step.isInputOutputDemo
+            ? getGuidedTourVisibleSlidersRect()
             : null;
-          var sliderRect =
-            sliderTarget && isTutorialTargetVisible(sliderTarget)
-              ? sliderTarget.getBoundingClientRect()
-              : null;
 
           highlight.style.display = "block";
           highlight.style.left = Math.max(0, rect.left - padding) + "px";
