@@ -13046,9 +13046,15 @@
           },
         ];
 
-        return candidates.filter(function (step) {
-          return isTutorialTargetVisible(step.target || step.selector);
-        });
+        return candidates
+          .filter(function (step) {
+            return isTutorialTargetVisible(step.target || step.selector);
+          })
+          .sort(function (a, b) {
+            if (a.selector === "#sidebar-wrapper") return -1;
+            if (b.selector === "#sidebar-wrapper") return 1;
+            return 0;
+          });
       }
 
       function closeGuidedTour() {
@@ -13132,6 +13138,15 @@
           graph.brushExtents(adjustedExtent);
           setGuidedTourStage("3 of 3  |  Adjust the range to narrow the results");
         }, 2350);
+
+        window.setTimeout(function () {
+          if (renderId !== guidedTourRenderId || !guidedTourDemoSelectionActive) {
+            return;
+          }
+
+          restoreGuidedTourDemoSelection();
+          setGuidedTourStage("Complete  |  Original selection restored");
+        }, 3700);
       }
 
       function moveGuidedTourLayersToBody() {
