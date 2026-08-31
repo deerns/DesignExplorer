@@ -13639,8 +13639,15 @@
       }
 
       function getGuidedTourVisibleSlidersRect() {
+        // Highlight the slider tracks themselves, not the surrounding sidebar panel.
+        var sliderTracks = document.querySelectorAll(
+          "#inputSliders .inputSlider .irs-line"
+        );
+        var sliderNodes = sliderTracks.length
+          ? sliderTracks
+          : document.querySelectorAll("#inputSliders .inputSlider");
         var visibleRects = Array.prototype.filter
-          .call(document.querySelectorAll("#inputSliders .inputSlider"), function (node) {
+          .call(sliderNodes, function (node) {
             return isTutorialTargetVisible(node);
           })
           .map(function (node) {
@@ -13669,6 +13676,17 @@
         combined.width = combined.right - combined.left;
         combined.height = combined.bottom - combined.top;
         return combined;
+      }
+
+      function getGuidedTourFirstSliderTrack() {
+        var tracks = document.querySelectorAll(
+          "#inputSliders .inputSlider .irs-line"
+        );
+        for (var i = 0; i < tracks.length; i++) {
+          var rect = tracks[i].getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) return tracks[i];
+        }
+        return null;
       }
 
       function updateGuidedTourNavigation(step) {
@@ -13778,6 +13796,16 @@
         }
 
         var targetRect = target.getBoundingClientRect();
+        var sliderTrack = step.isSliderValueDemo
+          ? getGuidedTourFirstSliderTrack()
+          : null;
+        if (sliderTrack && !isTutorialTargetVisible(sliderTrack)) {
+          sliderTrack.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
+        }
         var isOutsideViewport =
           targetRect.bottom < 0 ||
           targetRect.top > window.innerHeight ||
