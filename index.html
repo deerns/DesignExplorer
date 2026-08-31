@@ -13216,17 +13216,17 @@
         if (!colors) return "";
 
         var isInput = type === "input";
-        var label = isInput ? "input" : "output";
+        var label = isInput ? "Input" : "Output";
         var meaning = isInput
-          ? "Inputs are the values you set before running the model."
-          : "Outputs are the results produced by the model.";
+          ? "Input dimensions are the values set before the model is run."
+          : "Output dimensions are the results produced by the model.";
 
         return (
           '<span class="tour-color-swatch" style="background-color:' +
           colors[type] +
           '"></span><strong>' +
           label +
-          " dimensions</strong> use the current study colour shown above the matching axes. " +
+          " dimensions</strong> use the colour shown on their axes. " +
           meaning
         );
       }
@@ -13239,20 +13239,20 @@
             isSelectionDemo: true,
             title: "Make a selection",
             description:
-              "<strong>This is the main interaction.</strong> The tour applies a temporary filter, so the thumbnail list changes with the selected designs." +
-              '<ol class="tour-steps"><li data-step="1">Choose a blue axis for the value you want to filter.</li><li data-step="2">Click and drag vertically to create a range.</li><li data-step="3">Use Next to narrow the range and see the thumbnails update.</li></ol>',
+              "<strong>This is the main interaction.</strong> The tour applies a temporary filter, updating the thumbnails to show only the selected designs." +
+              '<ol class="tour-steps"><li data-step="1">Choose the axis for the value you want to filter.</li><li data-step="2">Click and drag vertically to select a range.</li><li data-step="3">Select Next to narrow the range and update the thumbnails.</li></ol>',
           },
           {
             selector: "#sidebar-wrapper",
             title: "Filters and legend",
             description:
-              "Use the sliders to filter the study by input values. The legend shows the current design colours and lets you focus on categories.",
+              "Use the sliders to filter designs by their input values. The legend shows the current design colours and lets you focus on individual categories.",
           },
           {
             selector: "#graph",
             title: "Read the comparison chart",
             description:
-              "Each line represents one design, and each vertical axis represents a study dimension. Drag an axis label to reorder the axes, or click a line to inspect that design.",
+              "Each line represents a design, and each vertical axis represents a study dimension. Drag an axis label to reorder the axes, or select a line to inspect that design.",
           },
           {
             selector: "#graph",
@@ -13282,13 +13282,13 @@
             selector: "#radarChart",
             title: "Scatter plots",
             description:
-              "Compare two dimensions at a time. Click or drag within a plot to select designs, then use the Zoom action when it is shown.",
+              "Compare two dimensions at a time. Click or drag within a plot to select designs. When a selection is active, use the Zoom control to focus on it.",
           },
           {
             selector: "#thumbnails-btm_container",
             title: "Design thumbnails",
             description:
-              "Browse the study designs as thumbnails. Select one to inspect it, and use the Thumbnails tab to open or close the drawer.",
+              "Browse the designs as thumbnails. Select one to inspect it, and use the Thumbnails tab to open or close this drawer.",
           },
           {
             selector: "#viewer2d",
@@ -13302,7 +13302,7 @@
             attributesExpanded: true,
             title: "Numeric attributes",
             description:
-              "The selected design's numeric input and output values appear here. Use this panel to read the exact values behind the thumbnail.",
+              "This panel shows the exact input and output values for the selected design.",
           },
           {
             selector: "#inputSliders",
@@ -13311,7 +13311,7 @@
             isSliderValueDemo: true,
             title: "Selected values in sliders",
             description:
-              "The selected design is mirrored in the sliders as well, so you can see its input values immediately and adjust from there.",
+              "The sliders show the exact input values of the selected design. You can adjust the values from here.",
             shouldInclude: function () {
               return !!getGuidedTourVisibleSlidersRect();
             },
@@ -13609,11 +13609,11 @@
           imageCount > 1
             ? " This study has " +
               imageCount +
-              " image views. Use the image controls above the viewer or the arrow on the image to switch between them."
+              " image views. Use the controls above the viewer or the arrow on the image to switch between them."
             : "";
 
         return (
-          "One thumbnail is selected for you. Its larger image and details appear here, so you can inspect one design at a time." +
+          "A thumbnail is selected for you. Its larger image and details appear here, allowing you to inspect the design." +
           multipleImageNote
         );
       }
