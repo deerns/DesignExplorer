@@ -582,21 +582,42 @@
       #guidedTourProgress {
         color: #68778b;
         font-size: 12px;
+        margin-left: auto;
       }
 
       #guidedTourActions {
         display: flex;
-        justify-content: space-between;
         align-items: center;
         gap: 10px;
+      }
+
+      #guidedTourNav {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #guidedTourActions .tour-nav-secondary,
+      #guidedTourActions .btn-primary {
+        padding: 7px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+      }
+
+      #guidedTourActions .tour-nav-secondary {
+        background: #ffffff;
+        border: 1px solid #c8d8f4;
+        color: #033899;
+      }
+
+      #guidedTourActions .tour-nav-secondary[disabled] {
+        opacity: 0.48;
+        cursor: not-allowed;
       }
 
       #guidedTourActions .btn-primary {
         background-color: #033899;
         border-color: #033899;
-        padding: 7px 16px;
-        border-radius: 20px;
-        font-weight: 600;
       }
 
       /* Settings modal alignment */
@@ -5355,9 +5376,19 @@
               Skip tour
             </button>
             <span id="guidedTourProgress"></span>
-            <button id="guidedTourNext" type="button" class="btn btn-primary btn-sm">
-              Next
-            </button>
+            <div id="guidedTourNav">
+              <button
+                id="guidedTourPrevious"
+                type="button"
+                class="btn btn-default btn-sm tour-nav-secondary"
+                disabled
+              >
+                Previous
+              </button>
+              <button id="guidedTourNext" type="button" class="btn btn-primary btn-sm">
+                Next
+              </button>
+            </div>
           </div>
         </section>
         <script>
@@ -13128,8 +13159,21 @@
 
           if (values.length < 4) continue;
 
-          var initialStart = values[Math.floor((values.length - 1) * 0.12)];
-          var initialEnd = values[Math.ceil((values.length - 1) * 0.88)];
+          var lastValueIndex = values.length - 1;
+          var initialSpan = Math.max(
+            1,
+            Math.min(lastValueIndex - 1, Math.round(lastValueIndex * 0.78))
+          );
+          var initialStartIndex = Math.max(
+            0,
+            Math.floor((lastValueIndex - initialSpan) / 2)
+          );
+          var initialEndIndex = Math.min(
+            lastValueIndex,
+            initialStartIndex + initialSpan
+          );
+          var initialStart = values[initialStartIndex];
+          var initialEnd = values[initialEndIndex];
           var adjustedStart = values[Math.floor((values.length - 1) * 0.44)];
           var adjustedEnd = values[Math.ceil((values.length - 1) * 0.56)];
 
@@ -13252,12 +13296,32 @@
             title: "Inspect a selected image",
             description: getGuidedTourSelectedImageDescription,
           },
+          {
+            selector: "#IterationData",
+            needsSelectedImage: true,
+            attributesExpanded: true,
+            title: "Numeric attributes",
+            description:
+              "The selected design's numeric input and output values appear here. Use this panel to read the exact values behind the thumbnail.",
+          },
+          {
+            selector: "#inputSliders",
+            needsSelectedImage: true,
+            attributesExpanded: false,
+            isSliderValueDemo: true,
+            title: "Selected values in sliders",
+            description:
+              "The selected design is mirrored in the sliders as well, so you can see its input values immediately and adjust from there.",
+            shouldInclude: function () {
+              return !!getGuidedTourVisibleSlidersRect();
+            },
+          },
         ];
 
         return candidates
           .filter(function (step) {
             if (step.shouldInclude && !step.shouldInclude()) return false;
-            return step.isImageSelectionDemo
+            return step.isImageSelectionDemo || step.needsSelectedImage
               ? !!document.querySelector(step.selector)
               : isTutorialTargetVisible(step.target || step.selector);
           })
@@ -13271,6 +13335,8 @@
               "Scatter plots": 5,
               "Design thumbnails": 6,
               "Inspect a selected image": 7,
+              "Numeric attributes": 8,
+              "Selected values in sliders": 9,
             };
             var aOrder = Object.prototype.hasOwnProperty.call(order, a.title)
               ? order[a.title]
@@ -13313,6 +13379,7 @@
             _userSetting && typeof _userSetting === "object"
               ? _userSetting.showInputOutputBars
               : false,
+          attributesExpanded: isGuidedTourAttributesExpanded(),
           zoomedAreaHeight: d3.select("#zoomedArea").style("height"),
           thumbnailsOnRight: d3.select("#thumbnails-btm_container").classed("onRight"),
           thumbnailDrawerOpen: d3.select("#thumbnails-btm_container").classed("drawer-open"),
@@ -13379,6 +13446,7 @@
           .classed("drawer-pinned", state.thumbnailDrawerPinned);
         activeSelectedData = state.activeSelectedData;
         isAnyItemSelected = state.isAnyItemSelected;
+        setGuidedTourAttributesExpanded(!!state.attributesExpanded);
         guidedTourInitialState = null;
         updateThumbVisibility();
         window.setTimeout(function () {
@@ -13499,6 +13567,31 @@
         return false;
       }
 
+      function retreatGuidedTourDemoSelection() {
+        if (!guidedTourDemoSelectionActive || !guidedTourDemoSelection || !graph) {
+          return false;
+        }
+
+        if (guidedTourDemoSelectionPhase === 2) {
+          var demoExtent = {};
+          demoExtent[guidedTourDemoSelection.dimensionKey] =
+            guidedTourDemoSelection.initialExtent;
+          graph.brushExtents(demoExtent);
+          setGuidedTourStage("A selection range is active");
+          guidedTourDemoSelectionPhase = 1;
+          return true;
+        }
+
+        if (guidedTourDemoSelectionPhase === 1) {
+          graph.brushReset();
+          setGuidedTourStage("All designs are visible");
+          guidedTourDemoSelectionPhase = 0;
+          return true;
+        }
+
+        return false;
+      }
+
       function selectGuidedTourExampleImage() {
         var thumbnail = document.querySelector("#thumbnails-btm img");
         if (!thumbnail || typeof updateLayoutOnSelect !== "function") return;
@@ -13523,6 +13616,26 @@
           "One thumbnail is selected for you. Its larger image and details appear here, so you can inspect one design at a time." +
           multipleImageNote
         );
+      }
+
+      function isGuidedTourAttributesExpanded() {
+        var collapse = document.getElementById("collapse1");
+        return !!(collapse && collapse.classList.contains("in"));
+      }
+
+      function setGuidedTourAttributesExpanded(isExpanded) {
+        var collapse = document.getElementById("collapse1");
+        if (!collapse) return;
+
+        var isOpen = collapse.classList.contains("in");
+        if (isOpen === !!isExpanded) return;
+
+        if (window.jQuery && typeof window.jQuery(collapse).collapse === "function") {
+          window.jQuery(collapse).collapse(isExpanded ? "show" : "hide");
+          return;
+        }
+
+        collapse.classList.toggle("in", !!isExpanded);
       }
 
       function getGuidedTourVisibleSlidersRect() {
@@ -13558,9 +13671,25 @@
         return combined;
       }
 
-      function updateGuidedTourNextButton(step) {
+      function updateGuidedTourNavigation(step) {
+        var previousButton = document.getElementById("guidedTourPrevious");
         var nextButton = document.getElementById("guidedTourNext");
-        nextButton.textContent = "Next";
+        var canStepBackWithinDemo =
+          step && step.isSelectionDemo && guidedTourDemoSelectionPhase > 0;
+        var canGoPrevious = guidedTourStepIndex > 0 || canStepBackWithinDemo;
+        var isLastStep =
+          guidedTourStepIndex === guidedTourSteps.length - 1 &&
+          !(step && step.isSelectionDemo && guidedTourDemoSelectionPhase < 2);
+
+        if (previousButton) {
+          previousButton.disabled = !canGoPrevious;
+          previousButton.setAttribute(
+            "aria-disabled",
+            canGoPrevious ? "false" : "true"
+          );
+        }
+
+        nextButton.textContent = isLastStep ? "Finish" : "Next";
       }
 
       function moveGuidedTourLayersToBody() {
@@ -13628,7 +13757,12 @@
         if (step.isInputOutputDemo) {
           showGuidedTourInputOutputBars(step.inputOutputFocus);
         }
-        if (step.isImageSelectionDemo) selectGuidedTourExampleImage();
+        if (step.isImageSelectionDemo || step.needsSelectedImage) {
+          selectGuidedTourExampleImage();
+        }
+        if (step.attributesExpanded !== undefined) {
+          setGuidedTourAttributesExpanded(step.attributesExpanded);
+        }
 
         var target = step.target || document.querySelector(step.selector);
         if (step.isInputOutputDemo) {
@@ -13657,14 +13791,15 @@
             return;
           }
 
-          var rect = target.getBoundingClientRect();
+          var rect = step.isSliderValueDemo
+            ? getGuidedTourVisibleSlidersRect() || target.getBoundingClientRect()
+            : target.getBoundingClientRect();
           var padding = 6;
           var highlight = document.getElementById("guidedTourHighlight");
           var secondaryHighlight = document.getElementById(
             "guidedTourSecondaryHighlight"
           );
           var card = document.getElementById("guidedTourCard");
-          var nextButton = document.getElementById("guidedTourNext");
 
           if (step.isInputOutputDemo) {
             var graphRect = document.getElementById("graph").getBoundingClientRect();
@@ -13694,13 +13829,13 @@
               : step.description;
           document.getElementById("guidedTourProgress").textContent =
             guidedTourStepIndex + 1 + " of " + guidedTourSteps.length;
-          updateGuidedTourNextButton(step);
+          updateGuidedTourNavigation(step);
 
           // The card stays in a predictable place while the spotlight moves.
           card.style.left = "";
           card.style.top = "";
           card.style.display = "block";
-        }, 260);
+        }, step.attributesExpanded === true ? 420 : 260);
       }
 
       function startGuidedTour() {
@@ -13739,10 +13874,26 @@
               currentStep.isSelectionDemo &&
               advanceGuidedTourDemoSelection()
             ) {
-              updateGuidedTourNextButton(currentStep);
+              updateGuidedTourNavigation(currentStep);
               return;
             }
             guidedTourStepIndex += 1;
+            renderGuidedTourStep();
+          });
+        document
+          .getElementById("guidedTourPrevious")
+          .addEventListener("click", function () {
+            var currentStep = guidedTourSteps[guidedTourStepIndex];
+            if (
+              currentStep &&
+              currentStep.isSelectionDemo &&
+              retreatGuidedTourDemoSelection()
+            ) {
+              updateGuidedTourNavigation(currentStep);
+              return;
+            }
+            if (guidedTourStepIndex === 0) return;
+            guidedTourStepIndex -= 1;
             renderGuidedTourStep();
           });
         document
