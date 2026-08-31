@@ -13298,6 +13298,7 @@
           },
           {
             selector: "#IterationData",
+            focusSelector: "#IterationData .attr-compare-table",
             needsSelectedImage: true,
             attributesExpanded: true,
             title: "Numeric attributes",
@@ -13782,7 +13783,10 @@
           setGuidedTourAttributesExpanded(step.attributesExpanded);
         }
 
-        var target = step.target || document.querySelector(step.selector);
+        var target =
+          (step.focusSelector && document.querySelector(step.focusSelector)) ||
+          step.target ||
+          document.querySelector(step.selector);
         if (step.isInputOutputDemo) {
           var focusSelector =
             "#pcDimensionGroupBars .pc-dimension-group-bar-" +
