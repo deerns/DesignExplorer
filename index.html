@@ -14527,13 +14527,52 @@
         return cleanUrl.length > 0 ? cleanUrl : getLeafPlaceholderUrl();
       }
 
+      function syncZoomedAreaToViewerImage() {
+        var zoomedArea = document.getElementById("zoomedArea");
+        var bottomContent = document.getElementById("bottomContentLayout");
+        var viewer = document.getElementById("viewer2d");
+        var image = document.getElementById("viewer2d-mainimg");
+        if (!zoomedArea || !bottomContent || !viewer || !image) return;
+
+        var bottomRect = bottomContent.getBoundingClientRect();
+        var viewerRect = viewer.getBoundingClientRect();
+        var imageRect = image.getBoundingClientRect();
+        if (imageRect.height <= 0 || imageRect.bottom <= bottomRect.top) return;
+
+        // Reserve the entire rendered image height before the table begins.
+        var viewerOffset = Math.max(viewerRect.top - bottomRect.top, 0);
+        var requiredHeight = Math.ceil(imageRect.bottom - bottomRect.top) + 24;
+        var currentHeight = Math.ceil(bottomRect.height);
+        requiredHeight = Math.max(requiredHeight, currentHeight);
+
+        bottomContent.style.height = requiredHeight + "px";
+        zoomedArea.style.height = requiredHeight + "px";
+        viewer.style.height = Math.max(requiredHeight - viewerOffset - 24, 1) + "px";
+      }
+
       function setViewerImage(selector, url, title) {
         var finalUrl = resolveViewerImageUrl(url);
         var isPlaceholder = isLeafPlaceholderUrl(finalUrl);
-        d3.select(selector)
+        var imageSelection = d3.select(selector);
+        var imageNode = imageSelection.node();
+        var isMainViewerImage =
+          imageNode && imageNode.id === "viewer2d-mainimg";
+
+        if (isMainViewerImage) {
+          imageSelection.on("load.zoomedAreaHeight", function () {
+            syncZoomedAreaToViewerImage();
+          });
+        }
+
+        imageSelection
           .attr("src", finalUrl)
           .attr("title", title || "")
           .classed("no-image-placeholder", isPlaceholder);
+
+        if (isMainViewerImage && imageNode.complete) {
+          setTimeout(syncZoomedAreaToViewerImage, 0);
+        }
+
         return {
           src: finalUrl,
           isPlaceholder: isPlaceholder,
