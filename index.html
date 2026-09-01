@@ -355,6 +355,18 @@
         color: #ffffff !important;
       }
 
+      .file-upload.primary-data-action {
+        border: none !important;
+        background: #033899 !important;
+        color: #ffffff !important;
+      }
+
+      .file-upload.primary-data-action:hover,
+      .file-upload.primary-data-action:focus {
+        background: #0a48b8 !important;
+        color: #ffffff !important;
+      }
+
       #selectionToolbar > .btn-group {
         margin-left: auto;
         border-radius: 6px;
@@ -5311,12 +5323,7 @@
               <!--<button id="loadData" onclick="MP_getGoogleIDandLoad()" class="file-upload" style="background-color: #033899;color: #ffffff;border-radius:0 20px 20px 0;">Load Data</button>-->
               <button
                 id="loadData"
-                class="file-upload"
-                style="
-                  background-color: #033899;
-                  color: #ffffff;
-                  border-radius: 0 20px 20px 0;
-                "
+                class="file-upload primary-data-action"
               >
                 Load Data
               </button>
