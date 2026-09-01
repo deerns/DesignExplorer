@@ -317,6 +317,10 @@ body.is-chart-horizontal-resizing * {
     bottom: 1%;
 }
 
+#bottomContentLayout.has-zoomed-image #viewer2d {
+    height: calc(100% - 16px) !important;
+}
+
 #bottomContentLayout.has-zoomed-image #viewer2d-mainimg {
     display: block;
     width: auto !important;
