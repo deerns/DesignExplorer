@@ -298,7 +298,7 @@ body.is-chart-horizontal-resizing * {
 
 #bottomContentLayout.has-zoomed-image,
 #bottomContentLayout.has-zoomed-image #zoomedArea {
-    min-height: 360px;
+    min-height: 520px;
 }
 
 #bottomContentLayout.has-zoomed-image #zoomedArea {
