@@ -9878,23 +9878,16 @@
         setStarValue(selectedImage.data()[0].Rating);
 
         // show zoomed area
-        var bottomContentHeight = parseFloat(
-          d3.select("#bottomContentLayout").style("height")
-        );
-        var thumbnailsHeight = parseFloat(
-          d3.select("#thumbnails-btm_container").style("height")
-        );
         var configuredZoomedHeight = parseFloat(zoomedHeight);
         var viewerHeight = Math.max(
-          isFinite(bottomContentHeight) ? bottomContentHeight : 0,
-          isFinite(thumbnailsHeight) ? thumbnailsHeight : 0,
           isFinite(configuredZoomedHeight) ? configuredZoomedHeight : 0,
-          520
+          1
         );
         d3.select("#bottomContentLayout")
           .classed("has-zoomed-image", true)
           .style("height", viewerHeight + "px");
         d3.select("#zoomedArea").style("height", viewerHeight + "px");
+        d3.select("#viewer2d").style("height", null);
 
         // move btm thumbnail to right
         d3.select("#thumbnails-btm_container")
@@ -14527,55 +14520,15 @@
         return cleanUrl.length > 0 ? cleanUrl : getLeafPlaceholderUrl();
       }
 
-      function syncZoomedAreaToViewerImage() {
-        var zoomedArea = document.getElementById("zoomedArea");
-        var bottomContent = document.getElementById("bottomContentLayout");
-        var viewer = document.getElementById("viewer2d");
-        var image = document.getElementById("viewer2d-mainimg");
-        if (!zoomedArea || !bottomContent || !viewer || !image) return;
-
-        var bottomRect = bottomContent.getBoundingClientRect();
-        var viewerRect = viewer.getBoundingClientRect();
-        var imageRect = image.getBoundingClientRect();
-        if (imageRect.height <= 0 || imageRect.bottom <= bottomRect.top) return;
-
-        // Keep the full image inside the visible viewport and place the table below it.
-        var viewerOffset = Math.max(viewerRect.top - bottomRect.top, 0);
-        var viewportHeight =
-          window.innerHeight || document.documentElement.clientHeight || 0;
-        var viewerHeight = Math.max(
-          Math.floor(viewportHeight - viewerRect.top - 32),
-          1
-        );
-        var requiredHeight = viewerOffset + viewerHeight + 24;
-
-        bottomContent.style.height = requiredHeight + "px";
-        zoomedArea.style.height = requiredHeight + "px";
-        viewer.style.height = viewerHeight + "px";
-      }
-
       function setViewerImage(selector, url, title) {
         var finalUrl = resolveViewerImageUrl(url);
         var isPlaceholder = isLeafPlaceholderUrl(finalUrl);
         var imageSelection = d3.select(selector);
-        var imageNode = imageSelection.node();
-        var isMainViewerImage =
-          imageNode && imageNode.id === "viewer2d-mainimg";
-
-        if (isMainViewerImage) {
-          imageSelection.on("load.zoomedAreaHeight", function () {
-            syncZoomedAreaToViewerImage();
-          });
-        }
 
         imageSelection
           .attr("src", finalUrl)
           .attr("title", title || "")
           .classed("no-image-placeholder", isPlaceholder);
-
-        if (isMainViewerImage && imageNode.complete) {
-          setTimeout(syncZoomedAreaToViewerImage, 0);
-        }
 
         return {
           src: finalUrl,

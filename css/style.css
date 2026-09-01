@@ -297,7 +297,24 @@ body.is-chart-horizontal-resizing * {
 }
 
 #bottomContentLayout.has-zoomed-image #zoomedArea {
+    position: relative;
     overflow: hidden;
+}
+
+#bottomContentLayout.has-zoomed-image #vis,
+#bottomContentLayout.has-zoomed-image #IterationData {
+    position: absolute;
+    z-index: 3;
+}
+
+#bottomContentLayout.has-zoomed-image #vis {
+    top: 0;
+    right: 0;
+}
+
+#bottomContentLayout.has-zoomed-image #IterationData {
+    left: 0;
+    bottom: 1%;
 }
 
 #bottomContentLayout.has-zoomed-image #viewer2d-mainimg {
