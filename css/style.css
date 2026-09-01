@@ -301,6 +301,10 @@ body.is-chart-horizontal-resizing * {
     overflow: hidden;
 }
 
+#bottomContentLayout.has-zoomed-image {
+    z-index: 1103;
+}
+
 #bottomContentLayout.has-zoomed-image #vis,
 #bottomContentLayout.has-zoomed-image #IterationData {
     position: absolute;
