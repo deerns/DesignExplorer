@@ -292,6 +292,14 @@ body.is-chart-horizontal-resizing * {
     z-index: 1;
 }
 
+#bottomContentLayout {
+    display: flow-root;
+}
+
+#zoomedArea > #viewer2d {
+    height: 100%;
+}
+
 #mainVerticalResizeGrip:focus {
     outline: 2px solid rgba(3, 56, 153, 0.35);
     outline-offset: 2px;

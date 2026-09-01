@@ -9878,11 +9878,22 @@
         setStarValue(selectedImage.data()[0].Rating);
 
         // show zoomed area
-        var thumbnailsHeight = d3
-          .select("#thumbnails-btm_container")
-          .style("height")
-          .replace("px", "");
-        d3.select("#zoomedArea").style("height", thumbnailsHeight + "px");
+        var bottomContentHeight = parseFloat(
+          d3.select("#bottomContentLayout").style("height")
+        );
+        var thumbnailsHeight = parseFloat(
+          d3.select("#thumbnails-btm_container").style("height")
+        );
+        var viewerHeight = Math.max(
+          isFinite(bottomContentHeight) ? bottomContentHeight : 0,
+          isFinite(thumbnailsHeight) ? thumbnailsHeight : 0,
+          1
+        );
+        d3.select("#bottomContentLayout").style(
+          "height",
+          viewerHeight + "px"
+        );
+        d3.select("#zoomedArea").style("height", viewerHeight + "px");
 
         // move btm thumbnail to right
         d3.select("#thumbnails-btm_container")
