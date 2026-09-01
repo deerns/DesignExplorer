@@ -14539,15 +14539,19 @@
         var imageRect = image.getBoundingClientRect();
         if (imageRect.height <= 0 || imageRect.bottom <= bottomRect.top) return;
 
-        // Reserve the entire rendered image height before the table begins.
+        // Keep the full image inside the visible viewport and place the table below it.
         var viewerOffset = Math.max(viewerRect.top - bottomRect.top, 0);
-        var requiredHeight = Math.ceil(imageRect.bottom - bottomRect.top) + 24;
-        var currentHeight = Math.ceil(bottomRect.height);
-        requiredHeight = Math.max(requiredHeight, currentHeight);
+        var viewportHeight =
+          window.innerHeight || document.documentElement.clientHeight || 0;
+        var viewerHeight = Math.max(
+          Math.floor(viewportHeight - viewerRect.top - 32),
+          1
+        );
+        var requiredHeight = viewerOffset + viewerHeight + 24;
 
         bottomContent.style.height = requiredHeight + "px";
         zoomedArea.style.height = requiredHeight + "px";
-        viewer.style.height = Math.max(requiredHeight - viewerOffset - 24, 1) + "px";
+        viewer.style.height = viewerHeight + "px";
       }
 
       function setViewerImage(selector, url, title) {
