@@ -9884,15 +9884,16 @@
         var thumbnailsHeight = parseFloat(
           d3.select("#thumbnails-btm_container").style("height")
         );
+        var configuredZoomedHeight = parseFloat(zoomedHeight);
         var viewerHeight = Math.max(
           isFinite(bottomContentHeight) ? bottomContentHeight : 0,
           isFinite(thumbnailsHeight) ? thumbnailsHeight : 0,
-          1
+          isFinite(configuredZoomedHeight) ? configuredZoomedHeight : 0,
+          360
         );
-        d3.select("#bottomContentLayout").style(
-          "height",
-          viewerHeight + "px"
-        );
+        d3.select("#bottomContentLayout")
+          .classed("has-zoomed-image", true)
+          .style("height", viewerHeight + "px");
         d3.select("#zoomedArea").style("height", viewerHeight + "px");
 
         // move btm thumbnail to right
@@ -9990,6 +9991,7 @@
           .transition()
           .duration(300)
           .style("height", "0px");
+        d3.select("#bottomContentLayout").classed("has-zoomed-image", false);
 
         // show btm thumbnail
         d3.select("#thumbnails-btm_container")

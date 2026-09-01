@@ -296,6 +296,11 @@ body.is-chart-horizontal-resizing * {
     display: flow-root;
 }
 
+#bottomContentLayout.has-zoomed-image,
+#bottomContentLayout.has-zoomed-image #zoomedArea {
+    min-height: 360px;
+}
+
 #zoomedArea > #viewer2d {
     height: 100%;
 }
