@@ -292,6 +292,53 @@ body.is-chart-horizontal-resizing * {
     z-index: 1;
 }
 
+#bottomContentLayout {
+    display: flow-root;
+}
+
+#bottomContentLayout.has-zoomed-image #zoomedArea {
+    position: relative;
+    overflow: visible;
+}
+
+#bottomContentLayout.has-zoomed-image {
+    z-index: 2147483000;
+}
+
+#bottomContentLayout.has-zoomed-image #vis,
+#bottomContentLayout.has-zoomed-image #IterationData {
+    position: absolute;
+    z-index: 3;
+}
+
+#bottomContentLayout.has-zoomed-image #vis {
+    top: 0;
+    right: 0;
+}
+
+#bottomContentLayout.has-zoomed-image #IterationData {
+    left: 0;
+    bottom: 1%;
+}
+
+#bottomContentLayout.has-zoomed-image #viewer2d {
+    height: calc(100% - 16px) !important;
+}
+
+#bottomContentLayout.has-zoomed-image #viewer2d-mainimg {
+    display: block;
+    width: auto !important;
+    height: 100% !important;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    object-fit: contain;
+}
+
+#zoomedArea > #viewer2d {
+    height: 100%;
+}
+
 #mainVerticalResizeGrip:focus {
     outline: 2px solid rgba(3, 56, 153, 0.35);
     outline-offset: 2px;
@@ -1223,6 +1270,8 @@ g.cell text {
 
 
 #tbContainer {
+    clear: both;
+    margin-top: 32px;
     padding-left: 24px;
     --tb-col-width: 140px;
     --tb-first-col-width: 220px;

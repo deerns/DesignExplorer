@@ -5172,9 +5172,9 @@
               <div class="col-lg-12" id="thumbnails-btm"></div>
             </div>
 
+            </div>
             <!--Here starts the thumbnails-btm_tbContainer-->
             <div id="tbContainer" class="col-lg-12"></div>
-            </div>
           </div>
         </div>
         <!-- /#Welcome content -->
@@ -9878,11 +9878,16 @@
         setStarValue(selectedImage.data()[0].Rating);
 
         // show zoomed area
-        var thumbnailsHeight = d3
-          .select("#thumbnails-btm_container")
-          .style("height")
-          .replace("px", "");
-        d3.select("#zoomedArea").style("height", thumbnailsHeight + "px");
+        var configuredZoomedHeight = parseFloat(zoomedHeight);
+        var viewerHeight = Math.max(
+          isFinite(configuredZoomedHeight) ? configuredZoomedHeight : 0,
+          1
+        );
+        d3.select("#bottomContentLayout")
+          .classed("has-zoomed-image", true)
+          .style("height", viewerHeight + "px");
+        d3.select("#zoomedArea").style("height", viewerHeight + "px");
+        d3.select("#viewer2d").style("height", null);
 
         // move btm thumbnail to right
         d3.select("#thumbnails-btm_container")
@@ -9979,6 +9984,7 @@
           .transition()
           .duration(300)
           .style("height", "0px");
+        d3.select("#bottomContentLayout").classed("has-zoomed-image", false);
 
         // show btm thumbnail
         d3.select("#thumbnails-btm_container")
@@ -14517,10 +14523,13 @@
       function setViewerImage(selector, url, title) {
         var finalUrl = resolveViewerImageUrl(url);
         var isPlaceholder = isLeafPlaceholderUrl(finalUrl);
-        d3.select(selector)
+        var imageSelection = d3.select(selector);
+
+        imageSelection
           .attr("src", finalUrl)
           .attr("title", title || "")
           .classed("no-image-placeholder", isPlaceholder);
+
         return {
           src: finalUrl,
           isPlaceholder: isPlaceholder,
