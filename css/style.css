@@ -301,25 +301,17 @@ body.is-chart-horizontal-resizing * {
     min-height: 360px;
 }
 
-#bottomContentLayout.has-zoomed-image {
-    height: auto !important;
-}
-
 #bottomContentLayout.has-zoomed-image #zoomedArea {
-    height: auto !important;
-    overflow: visible;
-}
-
-#bottomContentLayout.has-zoomed-image #viewer2d,
-#bottomContentLayout.has-zoomed-image #viewer2d .viewer2d-main {
-    height: auto !important;
+    overflow: hidden;
 }
 
 #bottomContentLayout.has-zoomed-image #viewer2d-mainimg {
     display: block;
-    width: 100% !important;
-    height: auto !important;
+    width: auto !important;
+    height: 100% !important;
     max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
     object-fit: contain;
 }
 
