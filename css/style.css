@@ -1232,6 +1232,7 @@ g.cell text {
 
 #tbContainer {
     clear: both;
+    margin-top: 32px;
     padding-left: 24px;
     --tb-col-width: 140px;
     --tb-first-col-width: 220px;
