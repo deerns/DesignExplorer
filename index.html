@@ -13321,7 +13321,6 @@
             selector: "#inputSliders",
             needsSelectedImage: true,
             attributesExpanded: false,
-            isSliderValueDemo: true,
             title: "Selected values in sliders",
             description:
               "The sliders show the exact input values of the selected design. You can adjust the values from here.",
@@ -13691,17 +13690,6 @@
         return combined;
       }
 
-      function getGuidedTourFirstSliderTrack() {
-        var tracks = document.querySelectorAll(
-          "#inputSliders .inputSlider .irs"
-        );
-        for (var i = 0; i < tracks.length; i++) {
-          var rect = tracks[i].getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) return tracks[i];
-        }
-        return null;
-      }
-
       function updateGuidedTourNavigation(step) {
         var previousButton = document.getElementById("guidedTourPrevious");
         var nextButton = document.getElementById("guidedTourNext");
@@ -13809,16 +13797,6 @@
         }
 
         var targetRect = target.getBoundingClientRect();
-        var sliderTrack = step.isSliderValueDemo
-          ? getGuidedTourFirstSliderTrack()
-          : null;
-        if (sliderTrack && !isTutorialTargetVisible(sliderTrack)) {
-          sliderTrack.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-            inline: "nearest",
-          });
-        }
         var isOutsideViewport =
           targetRect.bottom < 0 ||
           targetRect.top > window.innerHeight ||
@@ -13832,9 +13810,7 @@
             return;
           }
 
-          var rect = step.isSliderValueDemo
-            ? getGuidedTourVisibleSlidersRect() || target.getBoundingClientRect()
-            : target.getBoundingClientRect();
+          var rect = target.getBoundingClientRect();
           var padding = 6;
           var highlight = document.getElementById("guidedTourHighlight");
           var secondaryHighlight = document.getElementById(
