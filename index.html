@@ -13311,7 +13311,6 @@
           },
           {
             selector: "#IterationData",
-            target: document.querySelector("#graph"),
             needsSelectedImage: true,
             attributesExpanded: true,
             title: "Numeric attributes",
@@ -13653,12 +13652,12 @@
       }
 
       function getGuidedTourVisibleSlidersRect() {
-        // Highlight the slider tracks themselves, not the surrounding sidebar panel.
-        var sliderTracks = document.querySelectorAll(
-          "#inputSliders .inputSlider .irs-line"
+        // Highlight the rendered slider widgets so the current value tags stay inside the spotlight.
+        var sliderWidgets = document.querySelectorAll(
+          "#inputSliders .inputSlider .irs"
         );
-        var sliderNodes = sliderTracks.length
-          ? sliderTracks
+        var sliderNodes = sliderWidgets.length
+          ? sliderWidgets
           : document.querySelectorAll("#inputSliders .inputSlider");
         var visibleRects = Array.prototype.filter
           .call(sliderNodes, function (node) {
@@ -13694,7 +13693,7 @@
 
       function getGuidedTourFirstSliderTrack() {
         var tracks = document.querySelectorAll(
-          "#inputSliders .inputSlider .irs-line"
+          "#inputSliders .inputSlider .irs"
         );
         for (var i = 0; i < tracks.length; i++) {
           var rect = tracks[i].getBoundingClientRect();
