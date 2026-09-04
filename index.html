@@ -257,6 +257,10 @@
         gap: 8px;
         margin-right: 8px;
       }
+      #imageTypeControls {
+        display: inline-flex;
+        align-items: center;
+      }
       #threeDLabel {
         display: inline-flex;
         align-items: center;
@@ -5005,6 +5009,7 @@
               </div>
               <div class="pull-right" id="vis">
                 <form>
+                  <span id="imageTypeControls">
                   <label id="IMG1Label" class="hidden"
                     ><input
                       type="checkbox"
@@ -5080,6 +5085,7 @@
                     />
                     3D</label
                   >
+                  </span>
 
                   <button
                     type="button"
@@ -13310,7 +13316,7 @@
             description: getGuidedTourSelectedImageDescription,
           },
           {
-            selector: "#vis",
+            selector: "#imageTypeControls",
             needsSelectedImage: true,
             title: "Image type",
             description: getGuidedTourImageTypeDescription,
