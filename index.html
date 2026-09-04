@@ -13310,6 +13310,20 @@
             description: getGuidedTourSelectedImageDescription,
           },
           {
+            selector: "#vis",
+            needsSelectedImage: true,
+            title: "Image type",
+            description: getGuidedTourImageTypeDescription,
+            shouldInclude: function () {
+              return Array.prototype.some.call(
+                document.querySelectorAll("#vis .toggleView"),
+                function (control) {
+                  return isTutorialTargetVisible(control);
+                }
+              );
+            },
+          },
+          {
             selector: "#IterationData",
             needsSelectedImage: true,
             attributesExpanded: true,
@@ -13344,8 +13358,9 @@
               "Scatter plots": 5,
               "Design thumbnails": 6,
               "Inspect a selected image": 7,
-              "Numeric attributes": 8,
-              "Selected design": 9,
+              "Image type": 8,
+              "Numeric attributes": 9,
+              "Selected design": 10,
             };
             var aOrder = Object.prototype.hasOwnProperty.call(order, a.title)
               ? order[a.title]
@@ -13624,6 +13639,24 @@
         return (
           "A thumbnail is selected for you. Its larger image and details appear here, allowing you to inspect the design." +
           multipleImageNote
+        );
+      }
+
+      function getGuidedTourImageTypeDescription() {
+        var imageCount =
+          typeof getAvailableImageCount === "function" ? getAvailableImageCount() : 1;
+        var has3d = isTutorialTargetVisible("#threeDLabel");
+        var imageViewText =
+          imageCount > 1
+            ? "This study has " +
+              imageCount +
+              " 2D image views; select one or more to compare them."
+            : "Select 2D to display the available image view.";
+
+        return (
+          "Choose which view of the selected design to display. " +
+          imageViewText +
+          (has3d ? " Select 3D to open the 3D model." : "")
         );
       }
 
