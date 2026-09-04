@@ -13321,6 +13321,7 @@
             selector: "#inputSliders",
             needsSelectedImage: true,
             attributesExpanded: false,
+            highlightRect: getGuidedTourVisibleSlidersRect,
             title: "Selected values in sliders",
             description:
               "The sliders show the exact input values of the selected design. You can adjust the values from here.",
@@ -13651,19 +13652,41 @@
       }
 
       function getGuidedTourVisibleSlidersRect() {
-        // Highlight the rendered slider widgets so the current value tags stay inside the spotlight.
-        var sliderWidgets = document.querySelectorAll(
-          "#inputSliders .inputSlider .irs"
+        // Include each full slider row, including its selected-value line, but only within the scrollable panel.
+        var sliderContainer = document.getElementById("inputSliders");
+        if (!sliderContainer) return null;
+
+        var containerRect = sliderContainer.getBoundingClientRect();
+        var bounds = {
+          left: Math.max(0, containerRect.left),
+          top: Math.max(0, containerRect.top),
+          right: Math.min(window.innerWidth, containerRect.right),
+          bottom: Math.min(window.innerHeight, containerRect.bottom),
+        };
+        var sliderNodes = document.querySelectorAll(
+          "#inputSliders .inputSlider"
         );
-        var sliderNodes = sliderWidgets.length
-          ? sliderWidgets
-          : document.querySelectorAll("#inputSliders .inputSlider");
         var visibleRects = Array.prototype.filter
           .call(sliderNodes, function (node) {
-            return isTutorialTargetVisible(node);
+            var rect = node.getBoundingClientRect();
+            return (
+              isTutorialTargetVisible(node) &&
+              rect.right > bounds.left &&
+              rect.left < bounds.right &&
+              rect.bottom > bounds.top &&
+              rect.top < bounds.bottom
+            );
           })
           .map(function (node) {
-            return node.getBoundingClientRect();
+            var rect = node.getBoundingClientRect();
+            return {
+              left: Math.max(bounds.left, rect.left),
+              top: Math.max(bounds.top, rect.top),
+              right: Math.min(bounds.right, rect.right),
+              bottom: Math.min(bounds.bottom, rect.bottom),
+              width: 0,
+              height: 0,
+            };
           });
 
         if (visibleRects.length === 0) return null;
@@ -13810,7 +13833,10 @@
             return;
           }
 
-          var rect = target.getBoundingClientRect();
+          var rect =
+            typeof step.highlightRect === "function"
+              ? step.highlightRect() || target.getBoundingClientRect()
+              : target.getBoundingClientRect();
           var padding = 6;
           var highlight = document.getElementById("guidedTourHighlight");
           var secondaryHighlight = document.getElementById(
