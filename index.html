@@ -257,6 +257,10 @@
         gap: 8px;
         margin-right: 8px;
       }
+      #imageTypeControls {
+        display: inline-flex;
+        align-items: center;
+      }
       #threeDLabel {
         display: inline-flex;
         align-items: center;
@@ -5005,6 +5009,7 @@
               </div>
               <div class="pull-right" id="vis">
                 <form>
+                  <span id="imageTypeControls">
                   <label id="IMG1Label" class="hidden"
                     ><input
                       type="checkbox"
@@ -5080,6 +5085,7 @@
                     />
                     3D</label
                   >
+                  </span>
 
                   <button
                     type="button"
@@ -13310,8 +13316,21 @@
             description: getGuidedTourSelectedImageDescription,
           },
           {
+            selector: "#imageTypeControls",
+            needsSelectedImage: true,
+            title: "Image type",
+            description: getGuidedTourImageTypeDescription,
+            shouldInclude: function () {
+              return Array.prototype.some.call(
+                document.querySelectorAll("#vis .toggleView"),
+                function (control) {
+                  return isTutorialTargetVisible(control);
+                }
+              );
+            },
+          },
+          {
             selector: "#IterationData",
-            target: document.querySelector("#graph"),
             needsSelectedImage: true,
             attributesExpanded: true,
             title: "Numeric attributes",
@@ -13319,16 +13338,12 @@
               "This panel shows the exact input and output values for the selected design.",
           },
           {
-            selector: "#inputSliders",
+            selector: "#graph",
             needsSelectedImage: true,
             attributesExpanded: false,
-            isSliderValueDemo: true,
-            title: "Selected values in sliders",
+            title: "Selected design",
             description:
-              "The sliders show the exact input values of the selected design. You can adjust the values from here.",
-            shouldInclude: function () {
-              return !!getGuidedTourVisibleSlidersRect();
-            },
+              "The darker line shows the exact input values of the selected design across all sliders. You can adjust the values from the slider panel.",
           },
         ];
 
@@ -13349,8 +13364,9 @@
               "Scatter plots": 5,
               "Design thumbnails": 6,
               "Inspect a selected image": 7,
-              "Numeric attributes": 8,
-              "Selected values in sliders": 9,
+              "Image type": 8,
+              "Numeric attributes": 9,
+              "Selected design": 10,
             };
             var aOrder = Object.prototype.hasOwnProperty.call(order, a.title)
               ? order[a.title]
@@ -13632,6 +13648,24 @@
         );
       }
 
+      function getGuidedTourImageTypeDescription() {
+        var imageCount =
+          typeof getAvailableImageCount === "function" ? getAvailableImageCount() : 1;
+        var has3d = isTutorialTargetVisible("#threeDLabel");
+        var imageViewText =
+          imageCount > 1
+            ? "This study has " +
+              imageCount +
+              " 2D image views; select one or more to compare them."
+            : "Select 2D to display the available image view.";
+
+        return (
+          "Choose which view of the selected design to display. " +
+          imageViewText +
+          (has3d ? " Select 3D to open the 3D model." : "")
+        );
+      }
+
       function isGuidedTourAttributesExpanded() {
         var collapse = document.getElementById("collapse1");
         return !!(collapse && collapse.classList.contains("in"));
@@ -13650,57 +13684,6 @@
         }
 
         collapse.classList.toggle("in", !!isExpanded);
-      }
-
-      function getGuidedTourVisibleSlidersRect() {
-        // Highlight the slider tracks themselves, not the surrounding sidebar panel.
-        var sliderTracks = document.querySelectorAll(
-          "#inputSliders .inputSlider .irs-line"
-        );
-        var sliderNodes = sliderTracks.length
-          ? sliderTracks
-          : document.querySelectorAll("#inputSliders .inputSlider");
-        var visibleRects = Array.prototype.filter
-          .call(sliderNodes, function (node) {
-            return isTutorialTargetVisible(node);
-          })
-          .map(function (node) {
-            return node.getBoundingClientRect();
-          });
-
-        if (visibleRects.length === 0) return null;
-
-        var combined = visibleRects.reduce(function (combined, rect) {
-          return {
-            left: Math.min(combined.left, rect.left),
-            top: Math.min(combined.top, rect.top),
-            right: Math.max(combined.right, rect.right),
-            bottom: Math.max(combined.bottom, rect.bottom),
-            width: 0,
-            height: 0,
-          };
-        }, {
-          left: visibleRects[0].left,
-          top: visibleRects[0].top,
-          right: visibleRects[0].right,
-          bottom: visibleRects[0].bottom,
-          width: 0,
-          height: 0,
-        });
-        combined.width = combined.right - combined.left;
-        combined.height = combined.bottom - combined.top;
-        return combined;
-      }
-
-      function getGuidedTourFirstSliderTrack() {
-        var tracks = document.querySelectorAll(
-          "#inputSliders .inputSlider .irs-line"
-        );
-        for (var i = 0; i < tracks.length; i++) {
-          var rect = tracks[i].getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) return tracks[i];
-        }
-        return null;
       }
 
       function updateGuidedTourNavigation(step) {
@@ -13810,16 +13793,6 @@
         }
 
         var targetRect = target.getBoundingClientRect();
-        var sliderTrack = step.isSliderValueDemo
-          ? getGuidedTourFirstSliderTrack()
-          : null;
-        if (sliderTrack && !isTutorialTargetVisible(sliderTrack)) {
-          sliderTrack.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-            inline: "nearest",
-          });
-        }
         var isOutsideViewport =
           targetRect.bottom < 0 ||
           targetRect.top > window.innerHeight ||
@@ -13833,9 +13806,7 @@
             return;
           }
 
-          var rect = step.isSliderValueDemo
-            ? getGuidedTourVisibleSlidersRect() || target.getBoundingClientRect()
-            : target.getBoundingClientRect();
+          var rect = target.getBoundingClientRect();
           var padding = 6;
           var highlight = document.getElementById("guidedTourHighlight");
           var secondaryHighlight = document.getElementById(
