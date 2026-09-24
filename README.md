@@ -13,6 +13,17 @@ Design Explore is a web application to make exploring multi-dimensional design s
 ### [Spectacles](https://github.com/tt-acm/Spectacles.WebViewer) - 3D viewer
 ### [Scatter-matrix Chart](https://github.com/benjiec/scatter-matrix)
 
+## Page loading indicator
+
+The welcome-screen loader reuses the cyan Deerns mark from Solar Shading. Its
+fill grows radially from the left tip as Pace's page-load percentage increases;
+the filled area follows the percentage. The same value is shown below the logo
+and exposed to assistive technology. Reduced-motion preferences disable the
+fill transition. Pace's existing progress estimation and completion lifecycle
+remain in use; this is page-load progress, not individual image byte progress.
+
+The styling and progress binding are in `pace/pace.css` and `pace/pace-logo.js`.
+
 ## Image loading
 
 Study thumbnails load near the visible area. Thumbnails and 2D viewers share a
