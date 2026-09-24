@@ -22,6 +22,10 @@ new images start before retries. Duplicate URLs share downloads and cached resul
 When scrolling fills the queue, visible images take over slots from downloads
 that are no longer on screen. Interrupted images resume when visible again;
 scrolling does not count as a failed attempt or consume their retry budget.
+The thumbnail grid also checks image positions against its scroll container and
+the page viewport on scroll and resize. Scroll events are batched over 16 ms
+and recover visibility even if IntersectionObserver notifications are
+missing or out of date. Listeners are removed when the grid is released.
 
 Failed images retry independently after about three seconds, with increasing
 delays and at most five retries. Other images continue loading during that wait.

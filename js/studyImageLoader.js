@@ -23,14 +23,23 @@
   var jobs = new Map();
   var origins = new Map();
   var states = new Map();
+  var roots = new Map();
   var active = 0;
   var timer = null;
+  var visibilityTimer = null;
+  var visibilityDirty = false;
   var observer = env.IntersectionObserver ? new env.IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       var state = states.get(entry.target);
       if (!state) return;
-      state.visible = entry.isIntersecting;
-      if (state.visible && !state.job) subscribe(state);
+      if (state.root) {
+        // Observer entries can describe a position from before the last scroll.
+        // For a scroll container, check the actual layout before choosing work.
+        visibilityDirty = true;
+      } else {
+        state.visible = entry.isIntersecting;
+        if (state.visible && !state.job) subscribe(state);
+      }
     });
     schedule();
   }, { rootMargin: "100px" }) : null;
@@ -39,6 +48,69 @@
 
   function live(state) {
     return states.get(state.element) === state && state.element.isConnected;
+  }
+
+  function scheduleVisibility() {
+    visibilityDirty = true;
+    // Throttle instead of debounce, so continuous scrolling still updates.
+    if (visibilityTimer !== null) return;
+    visibilityTimer = env.setTimeout(function () {
+      visibilityTimer = null;
+      schedule();
+    }, 16);
+  }
+
+  function watchRoot(state) {
+    var root = state.root;
+    var watch = roots.get(root);
+    if (!watch) {
+      watch = { states: new Set(), changed: function () { scheduleVisibility(); } };
+      root.addEventListener("scroll", watch.changed, { passive: true });
+      if (env.addEventListener) {
+        env.addEventListener("scroll", watch.changed, { capture: true, passive: true });
+        env.addEventListener("resize", watch.changed);
+      }
+      if (env.ResizeObserver) {
+        watch.resize = new env.ResizeObserver(watch.changed);
+        watch.resize.observe(root);
+      }
+      roots.set(root, watch);
+    }
+    watch.states.add(state);
+    visibilityDirty = true;
+  }
+
+  function unwatchRoot(state) {
+    var watch = roots.get(state.root);
+    if (!watch) return;
+    watch.states.delete(state);
+    if (watch.states.size) return;
+    state.root.removeEventListener("scroll", watch.changed);
+    if (env.removeEventListener) {
+      env.removeEventListener("scroll", watch.changed, true);
+      env.removeEventListener("resize", watch.changed);
+    }
+    if (watch.resize) watch.resize.disconnect();
+    roots.delete(state.root);
+  }
+
+  function refreshVisibility() {
+    if (!visibilityDirty) return;
+    visibilityDirty = false;
+    roots.forEach(function (watch, root) {
+      var bounds = root.getBoundingClientRect();
+      var left = Math.max(0, bounds.left), top = Math.max(0, bounds.top);
+      var right = Math.min(env.innerWidth || Infinity, bounds.right);
+      var bottom = Math.min(env.innerHeight || Infinity, bounds.bottom);
+      watch.states.forEach(function (state) {
+        if (!live(state)) { clear(state.element); return; }
+        if (state.job && state.job.status === "loaded") return;
+        var rect = state.element.getBoundingClientRect();
+        state.visible = right > left && bottom > top && rect.width > 0 && rect.height > 0 &&
+          rect.right > left && rect.left < right && rect.bottom > top && rect.top < bottom;
+        if (state.visible && !state.job) subscribe(state);
+      });
+    });
   }
 
   function display(state, status) {
@@ -126,6 +198,7 @@
 
   function pump() {
     timer = null;
+    refreshVisibility();
     prune();
     var candidates = [];
     var offscreen = [];
@@ -267,6 +340,7 @@
   function clear(element) {
     var state = states.get(element);
     if (!state) return;
+    if (state.root) unwatchRoot(state);
     if (observer) observer.unobserve(element);
     if (state.job) state.job.subscribers.delete(state);
     if (state.job && !state.job.subscribers.size && jobs.get(state.url) !== state.job) {
@@ -284,8 +358,9 @@
     if (!element) return;
     settings = settings || {};
     url = String(url || "").trim();
+    var scrollRoot = settings.lazy && settings.root || null;
     var previous = states.get(element);
-    if (previous && previous.url === url) {
+    if (previous && previous.url === url && previous.root === scrollRoot) {
       if (element.title !== previous.displayTitle) previous.title = element.title;
       display(previous, previous.job ? previous.job.status : "queued");
       return;
@@ -294,8 +369,8 @@
     var title = element.title;
     clear(element);
     if (!url) return;
-    var state = { element: element, url: url, title: title, job: null,
-      visible: !settings.lazy || !observer, priority: settings.lazy ? 0 : 1 };
+    var state = { element: element, url: url, title: title, job: null, root: scrollRoot,
+      visible: !settings.lazy || (!observer && !scrollRoot), priority: settings.lazy ? 0 : 1 };
     state.onClick = function (event) {
       if (!state.job || state.job.status !== "error") return;
       // A failed viewer image should retry instead of cycling to another view.
@@ -307,12 +382,13 @@
       retry(state);
     };
     states.set(element, state);
+    if (scrollRoot) watchRoot(state);
     element.addEventListener("click", state.onClick, true);
     element.setAttribute("decoding", "async");
     element.src = placeholder;
     display(state, "queued");
     if (state.visible) subscribe(state);
-    else observer.observe(element);
+    else if (observer) observer.observe(element);
     schedule();
   }
 
@@ -336,7 +412,10 @@
     // Keep host cooldowns when switching studies; server limits still apply.
     origins.forEach(function (origin) { origin.active = 0; });
     if (timer !== null) env.clearTimeout(timer);
+    if (visibilityTimer !== null) env.clearTimeout(visibilityTimer);
     timer = null;
+    visibilityTimer = null;
+    visibilityDirty = false;
   }
 
   return { set: set, clear: clear, release: release, reset: reset };

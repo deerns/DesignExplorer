@@ -5,6 +5,7 @@ const createLoader = require('../js/studyImageLoader.js');
 function harness(options = {}, supportsObserver = true) {
   let time = 0, nextTimer = 0, observer;
   const timers = new Map(), requests = [], fetches = [], revoked = [];
+  const windowListeners = new Map(), resizeObservers = new Set();
   class Element {
     constructor() { this.isConnected = true; this.title = 'Design'; this.attributes = {}; this.listeners = {}; }
     setAttribute(key, value) { this.attributes[key] = value; }
@@ -12,6 +13,7 @@ function harness(options = {}, supportsObserver = true) {
     addEventListener(key, listener) { this.listeners[key] = listener; }
     removeEventListener(key) { delete this.listeners[key]; }
     contains(element) { return this === element; }
+    getBoundingClientRect() { return this.rect || { left: 0, top: 0, right: 100, bottom: 100, width: 100, height: 100 }; }
     get status() { return this.attributes['data-image-state']; }
   }
   class Image {
@@ -28,9 +30,20 @@ function harness(options = {}, supportsObserver = true) {
     Image, URL: ImageURL, AbortController,
     Date: { now: () => time, parse: Date.parse }, Math: { random: () => 0 },
     document: { baseURI: 'https://explorer.test/' },
+    innerWidth: 800, innerHeight: 600,
+    addEventListener(type, listener) {
+      if (!windowListeners.has(type)) windowListeners.set(type, new Set());
+      windowListeners.get(type).add(listener);
+    },
+    removeEventListener(type, listener) { windowListeners.get(type)?.delete(listener); },
     setTimeout(fn, delay) { const id = ++nextTimer; timers.set(id, { fn, at: time + delay }); return id; },
     clearTimeout(id) { timers.delete(id); },
     fetch(url, options) { return new Promise((resolve, reject) => fetches.push({ url, options, resolve, reject, time })); },
+  };
+  env.ResizeObserver = class {
+    constructor(callback) { this.callback = callback; resizeObservers.add(this); }
+    observe(element) { this.element = element; }
+    disconnect() { resizeObservers.delete(this); }
   };
   if (supportsObserver) env.IntersectionObserver = class {
     constructor(callback) { this.callback = callback; this.elements = new Set(); observer = this; }
@@ -57,7 +70,10 @@ function harness(options = {}, supportsObserver = true) {
   }
   return { loader: createLoader(env, options), requests, fetches, revoked, Element, tick, respond,
     visible(elements, visible = true) { observer.callback(elements.map(target => ({ target, isIntersecting: visible }))); },
-    image(url, lazy = false) { const el = new Element(); this.loader.set(el, url, { lazy }); return el; },
+    resize(element) { resizeObservers.forEach(observer => { if (observer.element === element) observer.callback([]); }); },
+    windowEvent(type) { windowListeners.get(type)?.forEach(listener => listener()); },
+    listenerCount() { return [...windowListeners.values()].reduce((sum, listeners) => sum + listeners.size, 0); },
+    image(url, lazy = false, root) { const el = new Element(); this.loader.set(el, url, { lazy, root }); return el; },
   };
 }
 
@@ -411,4 +427,70 @@ test('scrolling only cancels offscreen work when a ready image needs its slot', 
   h.requests[0].image.succeed(); h.requests[1].image.succeed(); h.tick();
   h.visible([old]); h.tick();
   assert.equal(h.requests.length, 2, 'returning to a completed image reuses its result');
+});
+
+function rect(top, bottom, left = 100, right = 300) {
+  return { top, bottom, left, right, width: right - left, height: bottom - top };
+}
+
+test('visible thumbnails load from scroll-container geometry even when observer events are missing', () => {
+  const h = harness({ perOrigin: 1 });
+  const root = new h.Element(); root.rect = rect(100, 300);
+  const first = h.image('https://images.test/first', true, root); first.rect = rect(120, 180);
+  const second = h.image('https://images.test/second', true, root); second.rect = rect(350, 410);
+  h.tick();
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.requests[0].url, 'https://images.test/first');
+  first.rect = rect(0, 60); second.rect = rect(120, 180);
+  root.listeners.scroll(); h.tick(16);
+  assert.equal(h.requests.length, 2, 'scrolling starts newly visible images without an observer notification');
+  assert.equal(h.requests[0].image.url, '');
+  assert.equal(h.requests[1].url, 'https://images.test/second');
+  h.visible([first], true); h.visible([second], false); h.tick();
+  assert.equal(h.requests.length, 2, 'outdated observer events cannot override current geometry');
+  h.requests[1].image.succeed(); h.tick();
+  assert.equal(second.status, 'loaded');
+});
+
+test('container resize and page scroll refresh visibility without loading clipped images', () => {
+  const h = harness();
+  const root = new h.Element(); root.rect = rect(100, 200);
+  const below = h.image('https://images.test/below', true, root); below.rect = rect(250, 310);
+  h.tick(); assert.equal(h.requests.length, 0, 'inside the page viewport but outside the scroll container');
+  root.rect = rect(100, 400); h.resize(root); h.tick(16);
+  assert.equal(h.requests[0].url, 'https://images.test/below');
+  h.requests[0].image.succeed(); h.tick();
+  root.rect = rect(700, 1000);
+  const offPage = h.image('https://images.test/off-page', true, root); offPage.rect = rect(750, 810);
+  h.tick(); assert.equal(h.requests.length, 1, 'the scroll container itself is outside the page viewport');
+  root.rect = rect(100, 400); offPage.rect = rect(150, 210);
+  h.windowEvent('scroll'); h.tick(16);
+  assert.equal(h.requests[1].url, 'https://images.test/off-page');
+});
+
+test('root visibility refresh works without IntersectionObserver and cleans up event listeners', () => {
+  const h = harness({}, false);
+  const root = new h.Element(); root.rect = rect(100, 300);
+  const visible = h.image('https://images.test/visible', true, root); visible.rect = rect(120, 180);
+  const clipped = h.image('https://images.test/clipped', true, root); clipped.rect = rect(350, 410);
+  h.tick(); assert.equal(h.requests.length, 1);
+  assert.ok(h.listenerCount() > 0);
+  h.loader.clear(visible); h.loader.clear(clipped);
+  assert.equal(root.listeners.scroll, undefined);
+  assert.equal(h.listenerCount(), 0);
+  h.loader.reset(); h.tick(100000);
+  assert.equal(h.requests.length, 1);
+});
+
+test('reset removes scheduled visibility refreshes before a new study is shown', () => {
+  const h = harness();
+  const root = new h.Element(); root.rect = rect(100, 300);
+  const old = h.image('https://images.test/old', true, root); old.rect = rect(350, 410);
+  h.tick();
+  old.rect = rect(120, 180); root.listeners.scroll();
+  h.loader.reset(); h.tick(100000);
+  assert.equal(h.requests.length, 0);
+  assert.equal(h.listenerCount(), 0);
+  const current = h.image('https://images.test/current', true, root); current.rect = rect(120, 180);
+  h.tick(); assert.equal(h.requests[0].url, 'https://images.test/current');
 });

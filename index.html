@@ -1507,7 +1507,7 @@
 
     <script src="./js/divgrid.js"></script>
     <!-- Design Explorer Scripts -->
-    <script src="./js/studyImageLoader.js?v=20260924-3"></script>
+    <script src="./js/studyImageLoader.js?v=20260924-4"></script>
     <script
       src="./js/designExplorer.js?v=20260916-1"
       type="text/javascript"
@@ -12818,7 +12818,8 @@
           return makeUrl(d[theFirstImg], "img");
         };
 
-        d3.select("#thumbnails-btm")
+        var thumbnailRoot = document.querySelector("div#thumbnails-btm");
+        d3.select(thumbnailRoot)
           //.style("height", "100%") //20px for credit line -
           .selectAll("div")
           .data(data)
@@ -12834,7 +12835,7 @@
             return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
           })
           .each(function (d) {
-            studyImageLoader.set(this, imgLink(d), { lazy: true });
+            studyImageLoader.set(this, imgLink(d), { lazy: true, root: thumbnailRoot });
           });
       }
 
