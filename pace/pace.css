@@ -1,51 +1,70 @@
-    .pace {
-      -webkit-pointer-events: none;
-      pointer-events: none;
+.pace {
+  pointer-events: none;
+  user-select: none;
+  position: fixed;
+  z-index: 2000;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 168px;
+  padding: 24px 20px 20px;
+  border: 1px solid #dce7f1;
+  border-radius: 12px;
+  background: #f3f7fcf5;
+  box-shadow: 0 8px 30px #00308714;
+}
 
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      user-select: none;
+.pace .pace-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  /* Pace normally translates a horizontal bar. The logo stays in place. */
+  transform: none !important;
+  -webkit-transform: none !important;
+}
 
-      z-index: 2000;
-      position: fixed;
-      margin: auto;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 5px;
-      width: 200px;
-      background: #fff;
-      border: 1px solid #c0c0c0;
+.pace .pace-progress-inner {
+  position: relative;
+  width: 72px;
+  height: 104px;
+  overflow: hidden;
+  background: #00b2e332;
+  /* Same Deerns mark and radial origin as Solar Shading's loading animation. */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29.1772 42'%3E%3Cpath d='M20.6318 .5L0 21L20.6318 41.5C25.9103 36.2552 29.1772 29.005 29.1772 21C29.1772 12.995 25.9103 5.7448 20.6318 .5Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29.1772 42'%3E%3Cpath d='M20.6318 .5L0 21L20.6318 41.5C25.9103 36.2552 29.1772 29.005 29.1772 21C29.1772 12.995 25.9103 5.7448 20.6318 .5Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  transform: translateZ(0);
+}
 
-      overflow: hidden;
-    }
+.pace .pace-progress-inner::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 144px;
+  height: 144px;
+  border-radius: 50%;
+  background: #00b2e3;
+  transform: translate(-50%, -50%) scale(var(--pace-fill, 0));
+  transition: transform 160ms linear;
+}
 
-    .pace .pace-progress {
-      -webkit-box-sizing: border-box;
-      -moz-box-sizing: border-box;
-      -ms-box-sizing: border-box;
-      -o-box-sizing: border-box;
-      box-sizing: border-box;
+.pace .pace-progress::after {
+  content: "Loading " attr(data-progress-text);
+  color: #003087;
+  font: 500 13px/1.4 Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .15px;
+  white-space: nowrap;
+}
 
-      -webkit-transform: translate3d(0, 0, 0);
-      -moz-transform: translate3d(0, 0, 0);
-      -ms-transform: translate3d(0, 0, 0);
-      -o-transform: translate3d(0, 0, 0);
-      transform: translate3d(0, 0, 0);
+.pace .pace-activity,
+.pace.pace-inactive {
+  display: none;
+}
 
-      max-width: 200px;
-      position: fixed;
-      z-index: 2000;
-      display: block;
-      position: absolute;
-      top: 0;
-      right: 100%;
-      height: 100%;
-      width: 100%;
-      background: #c0c0c0;
-    }
-
-    .pace.pace-inactive {
-      display: none;
-    }
+@media (prefers-reduced-motion: reduce) {
+  .pace .pace-progress-inner::before {
+    transition: none;
+  }
+}

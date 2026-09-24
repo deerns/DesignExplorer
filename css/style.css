@@ -412,6 +412,124 @@ body.is-main-vertical-resizing * {
     overflow: visible;
 }
 
+#scatterSelectionActionRow {
+    display: none;
+    padding: 8px 0 0;
+}
+
+#scatterSelectionActionRow .scatter-selection-actions {
+    float: none;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid #b9cfea;
+    border-left: 4px solid #033899;
+    border-radius: 10px;
+    background: #edf4ff;
+    box-shadow: 0 3px 12px rgba(3, 56, 153, .09);
+}
+
+#scatterSelectionActionRow .scatter-selection-message {
+    display: flex;
+    align-items: center;
+    flex: 1 1 170px;
+    min-width: 0;
+    gap: 10px;
+    color: #17345f;
+    line-height: 1.4;
+}
+
+#scatterSelectionActionRow .scatter-selection-message > .glyphicon {
+    flex: 0 0 auto;
+    color: #033899;
+    font-size: 20px;
+}
+
+#scatterSelectionStatus {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+#scatterSelectionHint {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+}
+
+#scatterSelectionActionRow .scatter-selection-buttons {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+}
+
+#scatterSelectionActionRow .scatter-selection-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 8px 14px;
+    border: 1px solid;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+#scatterSelectionActionRow .scatter-selection-action-btn.hidden {
+    display: none !important;
+}
+
+/* These actions must stand out from the global white toolbar button theme. */
+#scatterSelectionActionRow #scatterSelectionApply {
+    background: #033899 !important;
+    color: #fff !important;
+    border-color: #033899;
+    box-shadow: 0 3px 8px rgba(3, 56, 153, .2);
+}
+
+#scatterSelectionActionRow #scatterSelectionApply:hover,
+#scatterSelectionActionRow #scatterSelectionApply:focus {
+    background: #002970 !important;
+    border-color: #002970;
+}
+
+#scatterSelectionActionRow #scatterSelectionReset {
+    background: #fff !important;
+    color: #033899 !important;
+    border-color: #91add3;
+}
+
+#scatterSelectionActionRow #scatterSelectionReset:hover,
+#scatterSelectionActionRow #scatterSelectionReset:focus {
+    background: #dceaff !important;
+    border-color: #033899;
+}
+
+#scatterSelectionActionRow .scatter-selection-action-btn:focus-visible {
+    outline: 3px solid #0077c8;
+    outline-offset: 3px;
+}
+
+#scatterSelectionActionRow.is-pending #scatterSelectionApply {
+    animation: scatter-selection-nudge 900ms ease-out 2;
+}
+
+@keyframes scatter-selection-nudge {
+    0%, 100% { box-shadow: 0 3px 8px rgba(3, 56, 153, .2); }
+    50% { box-shadow: 0 0 0 5px rgba(0, 119, 200, .25), 0 3px 8px rgba(3, 56, 153, .2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #scatterSelectionActionRow.is-pending #scatterSelectionApply {
+        animation: none;
+    }
+}
+
 #ScChartWrapper:not(.rightChartFullScreenToggled) > .row-fluid,
 #ScChartWrapper:not(.rightChartFullScreenToggled) > #scatterSelectionActionRow {
     flex: 0 0 auto;
@@ -1069,16 +1187,11 @@ a#copyRightButton {
     top: 54px;
     z-index: 5;
     width: auto;
+    max-width: calc(100% - 28px);
     padding: 0;
 }
 
 #ScChartWrapper.rightChartFullScreenToggled #scatterSelectionActionRow .scatter-selection-actions {
-    justify-content: flex-end;
-    gap: 6px;
-    padding: 8px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.94);
-    border: 1px solid #d9dee8;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
 }
 

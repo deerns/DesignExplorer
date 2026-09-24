@@ -75,7 +75,7 @@ ScatterMatrix.prototype.render = function () {
   this.onData(function () {
     var data = self.__data; //// NOTE: passing raw data to local data
     if (
-      (!Array.isArray(data) || data.length === 0) &&
+      !Array.isArray(data) &&
       typeof graph !== "undefined" &&
       graph &&
       typeof graph.data === "function"
@@ -83,7 +83,7 @@ ScatterMatrix.prototype.render = function () {
       data = (graph.data() || []).slice();
     }
     if (
-      (!Array.isArray(data) || data.length === 0) &&
+      !Array.isArray(data) &&
       typeof cleanedData !== "undefined" &&
       Array.isArray(cleanedData)
     ) {
@@ -1007,15 +1007,17 @@ ScatterMatrix.prototype.__draw = function (
     // Highlight selected circles
     function brush(p) {
       var e = brush.extent();
-      var sourceData = [];
+      var sourceData = Array.isArray(p.__data_to_draw) ? p.__data_to_draw : data;
       if (
         typeof window !== "undefined" &&
         typeof window.getCurrentScatterBrushSourceData === "function"
       ) {
-        sourceData = window.getCurrentScatterBrushSourceData() || [];
-      }
-      if (!sourceData.length) {
-        sourceData = Array.isArray(p.__data_to_draw) ? p.__data_to_draw : data;
+        var currentData = window.getCurrentScatterBrushSourceData();
+        if (Array.isArray(currentData)) {
+          var currentLookup = {};
+          currentData.forEach(function (d) { currentLookup[d.scid] = true; });
+          sourceData = sourceData.filter(function (d) { return currentLookup[d.scid]; });
+        }
       }
 
       var selectedData = sourceData.filter(function (d) {

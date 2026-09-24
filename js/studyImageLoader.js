@@ -1,0 +1,422 @@
+/* Shared, parallel image requests for thumbnails and the 2D viewers. */
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory;
+  } else {
+    root.studyImageLoader = factory(root);
+  }
+})(typeof window !== "undefined" ? window : this, function (env, options) {
+  "use strict";
+
+  var config = Object.assign({
+    concurrency: 24,
+    perOrigin: 16,
+    interval: 0,
+    retries: 5,
+    retryDelay: 3000,
+    maxRetryDelay: 60000,
+    timeout: 30000,
+    cacheSize: 128,
+    cacheBytes: 32 * 1024 * 1024,
+  }, options);
+  var placeholder = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+  var jobs = new Map();
+  var origins = new Map();
+  var states = new Map();
+  var roots = new Map();
+  var active = 0;
+  var timer = null;
+  var visibilityTimer = null;
+  var visibilityDirty = false;
+  var observer = env.IntersectionObserver ? new env.IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      var state = states.get(entry.target);
+      if (!state) return;
+      if (state.root) {
+        // Observer entries can describe a position from before the last scroll.
+        // For a scroll container, check the actual layout before choosing work.
+        visibilityDirty = true;
+      } else {
+        state.visible = entry.isIntersecting;
+        if (state.visible && !state.job) subscribe(state);
+      }
+    });
+    schedule();
+  }, { rootMargin: "100px" }) : null;
+
+  function now() { return env.Date.now(); }
+
+  function live(state) {
+    return states.get(state.element) === state && state.element.isConnected;
+  }
+
+  function scheduleVisibility() {
+    visibilityDirty = true;
+    // Throttle instead of debounce, so continuous scrolling still updates.
+    if (visibilityTimer !== null) return;
+    visibilityTimer = env.setTimeout(function () {
+      visibilityTimer = null;
+      schedule();
+    }, 16);
+  }
+
+  function watchRoot(state) {
+    var root = state.root;
+    var watch = roots.get(root);
+    if (!watch) {
+      watch = { states: new Set(), changed: function () { scheduleVisibility(); } };
+      root.addEventListener("scroll", watch.changed, { passive: true });
+      if (env.addEventListener) {
+        env.addEventListener("scroll", watch.changed, { capture: true, passive: true });
+        env.addEventListener("resize", watch.changed);
+      }
+      if (env.ResizeObserver) {
+        watch.resize = new env.ResizeObserver(watch.changed);
+        watch.resize.observe(root);
+      }
+      roots.set(root, watch);
+    }
+    watch.states.add(state);
+    visibilityDirty = true;
+  }
+
+  function unwatchRoot(state) {
+    var watch = roots.get(state.root);
+    if (!watch) return;
+    watch.states.delete(state);
+    if (watch.states.size) return;
+    state.root.removeEventListener("scroll", watch.changed);
+    if (env.removeEventListener) {
+      env.removeEventListener("scroll", watch.changed, true);
+      env.removeEventListener("resize", watch.changed);
+    }
+    if (watch.resize) watch.resize.disconnect();
+    roots.delete(state.root);
+  }
+
+  function refreshVisibility() {
+    if (!visibilityDirty) return;
+    visibilityDirty = false;
+    roots.forEach(function (watch, root) {
+      var bounds = root.getBoundingClientRect();
+      var left = Math.max(0, bounds.left), top = Math.max(0, bounds.top);
+      var right = Math.min(env.innerWidth || Infinity, bounds.right);
+      var bottom = Math.min(env.innerHeight || Infinity, bounds.bottom);
+      watch.states.forEach(function (state) {
+        if (!live(state)) { clear(state.element); return; }
+        if (state.job && state.job.status === "loaded") return;
+        var rect = state.element.getBoundingClientRect();
+        state.visible = right > left && bottom > top && rect.width > 0 && rect.height > 0 &&
+          rect.right > left && rect.left < right && rect.bottom > top && rect.top < bottom;
+        if (state.visible && !state.job) subscribe(state);
+      });
+    });
+  }
+
+  function display(state, status) {
+    if (!live(state)) return;
+    state.element.setAttribute("data-image-state", status);
+    state.element.setAttribute("aria-busy", String(status !== "loaded" && status !== "error"));
+    state.element.title = state.title + (status === "error"
+      ? "\nImage could not be loaded. Click to retry."
+      : status === "retrying" ? "\nImage temporarily unavailable. Retrying automatically..." : "");
+    state.displayTitle = state.element.title;
+    if (status === "loaded") {
+      var source = state.job.displayUrl || state.url;
+      if (state.renderedUrl !== source) state.element.src = source;
+      state.renderedUrl = source;
+      if (observer) observer.unobserve(state.element);
+    }
+  }
+
+  function schedule(delay) {
+    if (timer !== null) env.clearTimeout(timer);
+    timer = env.setTimeout(pump, delay || 0);
+  }
+
+  function subscribe(state) {
+    var job = jobs.get(state.url);
+    if (!job) {
+      var parsed = new env.URL(state.url, env.document.baseURI);
+      var origin = parsed.origin;
+      if (!origins.has(origin)) origins.set(origin, { active: 0, next: 0, pause: 0 });
+      job = { url: state.url, origin: origins.get(origin), status: "queued", attempts: 0,
+        ready: 0, subscribers: new Set(), image: null, timeout: null, bytes: 0,
+        // Also recognize Supabase Storage behind a custom domain.
+        useFetch: /^\/storage\/v1\/(object|render\/image)\//.test(parsed.pathname) &&
+          !!(env.fetch && env.AbortController && env.URL.createObjectURL) };
+      jobs.set(state.url, job);
+    }
+    // Keep recently reused results at the end of the bounded cache.
+    jobs.delete(state.url);
+    jobs.set(state.url, job);
+    state.job = job;
+    job.subscribers.add(state);
+    display(state, job.status);
+  }
+
+  function prune() {
+    var bytes = 0;
+    jobs.forEach(function (job, url) {
+      job.subscribers.forEach(function (state) {
+        if (!live(state)) clear(state.element);
+      });
+      if (!job.subscribers.size && job.status === "queued") jobs.delete(url);
+      bytes += job.bytes;
+    });
+    // Subscribers keep their result even if its cache entry is evicted.
+    jobs.forEach(function (job, url) {
+      if ((jobs.size > config.cacheSize || bytes > config.cacheBytes) &&
+          (job.status === "loaded" || job.status === "error" ||
+            (job.status === "retrying" && !job.subscribers.size))) {
+        jobs.delete(url);
+        bytes -= job.bytes;
+        if (!job.subscribers.size) dispose(job);
+      }
+    });
+  }
+
+  function dispose(job) {
+    if (job.displayUrl) env.URL.revokeObjectURL(job.displayUrl);
+    job.displayUrl = null;
+    job.bytes = 0;
+  }
+
+  function retryAfter(value) {
+    if (!value) return 0;
+    if (/^\d+(\.\d+)?$/.test(value.trim())) return Number(value) * 1000;
+    return Math.max(0, env.Date.parse(value) - now()) || 0;
+  }
+
+  function visiblePriority(job) {
+    var priority = -1;
+    job.subscribers.forEach(function (state) {
+      if (live(state) && state.visible) priority = Math.max(priority, state.priority);
+    });
+    return priority;
+  }
+
+  function pump() {
+    timer = null;
+    refreshVisibility();
+    prune();
+    var candidates = [];
+    var offscreen = [];
+    jobs.forEach(function (job) {
+      var priority = visiblePriority(job);
+      if (job.status === "loading" && priority < 0) offscreen.push(job);
+      if (job.status !== "queued" && job.status !== "retrying") return;
+      if (priority >= 0) candidates.push({ job: job, priority: priority });
+    });
+    candidates.sort(function (a, b) {
+      // Keep viewers first, then give new images a turn before due retries.
+      return b.priority - a.priority || a.job.attempts - b.job.attempts;
+    });
+    var next = Infinity;
+    candidates.forEach(function (candidate) {
+      var job = candidate.job;
+      var ready = Math.max(job.ready, job.origin.next, job.origin.pause);
+      if (ready > now()) {
+        next = Math.min(next, ready - now());
+      } else {
+        // On scroll, let visible images reclaim occupied slots. Keep other
+        // downloads running if there is room, or any visible viewer needs them.
+        if (active >= config.concurrency || job.origin.active >= config.perOrigin) {
+          var index = offscreen.findIndex(function (other) {
+            return job.origin.active < config.perOrigin || other.origin === job.origin;
+          });
+          if (index >= 0) offscreen.splice(index, 1)[0].cancel();
+        }
+        if (active < config.concurrency && job.origin.active < config.perOrigin) start(job);
+      }
+    });
+    if (next < Infinity && active < config.concurrency) schedule(next);
+  }
+
+  function start(job) {
+    var image = new env.Image();
+    var controller = job.useFetch ? new env.AbortController() : null;
+    job.image = image;
+    job.status = "loading";
+    job.attempts++;
+    active++;
+    job.origin.active++;
+    job.origin.next = now() + config.interval;
+    job.subscribers.forEach(function (state) { display(state, "loading"); });
+    var finished = false;
+    function finish(success, status, serverDelay) {
+      if (finished) return;
+      finished = true;
+      env.clearTimeout(job.timeout);
+      image.onload = image.onerror = null;
+      job.image = null;
+      job.cancel = null;
+      active--;
+      job.origin.active--;
+      if (success) {
+        job.status = "loaded";
+      } else if (status && status < 500 && status !== 408 && status !== 429) {
+        // Missing files and denied access will not improve with more requests.
+        job.status = "error";
+      } else {
+        // A failed image waits independently, leaving slots free for the rest.
+        var exponent = Math.min(5, job.attempts - 1);
+        var delay = Math.min(config.maxRetryDelay, config.retryDelay * Math.pow(2, exponent));
+        delay += Math.floor(env.Math.random() * delay * 0.2);
+        delay = Math.max(delay, serverDelay || 0);
+        job.ready = now() + delay;
+        // Pause the host only for explicit throttling or a server-requested
+        // cooldown. Native image/decode/network errors cannot establish that.
+        if (status === 429 || (status === 503 && serverDelay > 0)) {
+          job.origin.pause = Math.max(job.origin.pause, job.ready);
+        }
+        job.status = job.attempts <= config.retries ? "retrying" : "error";
+      }
+      if (!success) dispose(job);
+      job.subscribers.forEach(function (state) { display(state, job.status); });
+      schedule();
+    }
+    image.onload = function () { finish(true); };
+    image.onerror = function () { finish(false); };
+    job.cancel = function () {
+      if (finished) return;
+      finished = true;
+      env.clearTimeout(job.timeout);
+      image.onload = image.onerror = null;
+      job.image = null;
+      job.cancel = null;
+      active--;
+      job.origin.active--;
+      // Scrolling is not a failed request: preserve the retry budget and delay.
+      job.attempts--;
+      job.status = job.attempts ? "retrying" : "queued";
+      if (controller) controller.abort();
+      image.removeAttribute("src");
+      dispose(job);
+      job.subscribers.forEach(function (state) { display(state, job.status); });
+    };
+    job.timeout = env.setTimeout(function () {
+      finish(false);
+      if (controller) controller.abort();
+      image.removeAttribute("src");
+    }, config.timeout);
+    // Keep the original URL (including signed parameters) and browser cache.
+    if (!controller) {
+      image.src = job.url;
+      return;
+    }
+    env.fetch(job.url, { signal: controller.signal }).then(function (response) {
+      if (finished) return;
+      if (!response.ok) {
+        finish(false, response.status, retryAfter(response.headers.get("Retry-After")));
+        return;
+      }
+      return response.blob().then(function (blob) {
+        if (finished) return;
+        job.displayUrl = env.URL.createObjectURL(blob);
+        job.bytes = blob.size;
+        image.src = job.displayUrl;
+      });
+    }).catch(function () {
+      if (finished) return;
+      // A proxy may deny CORS even though native images work. Use the native
+      // route on the next delayed attempt, without adding an immediate request.
+      job.useFetch = false;
+      finish(false);
+    });
+  }
+
+  function retry(state) {
+    var job = state.job;
+    if (!job || job.status !== "error") return;
+    job.status = "queued";
+    job.attempts = 0;
+    job.ready = 0;
+    jobs.set(job.url, job);
+    job.subscribers.forEach(function (subscriber) { display(subscriber, "queued"); });
+    schedule();
+  }
+
+  function clear(element) {
+    var state = states.get(element);
+    if (!state) return;
+    if (state.root) unwatchRoot(state);
+    if (observer) observer.unobserve(element);
+    if (state.job) state.job.subscribers.delete(state);
+    if (state.job && !state.job.subscribers.size && jobs.get(state.url) !== state.job) {
+      dispose(state.job);
+    }
+    element.removeEventListener("click", state.onClick, true);
+    element.removeAttribute("data-image-state");
+    element.removeAttribute("aria-busy");
+    element.removeAttribute("src");
+    element.title = state.title;
+    states.delete(element);
+  }
+
+  function set(element, url, settings) {
+    if (!element) return;
+    settings = settings || {};
+    url = String(url || "").trim();
+    var scrollRoot = settings.lazy && settings.root || null;
+    var previous = states.get(element);
+    if (previous && previous.url === url && previous.root === scrollRoot) {
+      if (element.title !== previous.displayTitle) previous.title = element.title;
+      display(previous, previous.job ? previous.job.status : "queued");
+      return;
+    }
+    // Callers may already have updated the title for the newly selected design.
+    var title = element.title;
+    clear(element);
+    if (!url) return;
+    var state = { element: element, url: url, title: title, job: null, root: scrollRoot,
+      visible: !settings.lazy || (!observer && !scrollRoot), priority: settings.lazy ? 0 : 1 };
+    state.onClick = function (event) {
+      if (!state.job || state.job.status !== "error") return;
+      // A failed viewer image should retry instead of cycling to another view.
+      // Thumbnail clicks still select the design while retrying its image.
+      if (event && !settings.lazy) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+      retry(state);
+    };
+    states.set(element, state);
+    if (scrollRoot) watchRoot(state);
+    element.addEventListener("click", state.onClick, true);
+    element.setAttribute("decoding", "async");
+    element.src = placeholder;
+    display(state, "queued");
+    if (state.visible) subscribe(state);
+    else if (observer) observer.observe(element);
+    schedule();
+  }
+
+  function release(container) {
+    if (!container) return;
+    states.forEach(function (state, element) {
+      if (container === element || container.contains(element)) clear(element);
+    });
+    schedule();
+  }
+
+  function reset() {
+    states.forEach(function (state, element) { clear(element); });
+    if (observer) observer.disconnect();
+    jobs.forEach(function (job) {
+      if (job.cancel) job.cancel();
+      dispose(job);
+    });
+    jobs.clear();
+    active = 0;
+    // Keep host cooldowns when switching studies; server limits still apply.
+    origins.forEach(function (origin) { origin.active = 0; });
+    if (timer !== null) env.clearTimeout(timer);
+    if (visibilityTimer !== null) env.clearTimeout(visibilityTimer);
+    timer = null;
+    visibilityTimer = null;
+    visibilityDirty = false;
+  }
+
+  return { set: set, clear: clear, release: release, reset: reset };
+});

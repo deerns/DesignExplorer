@@ -114,53 +114,6 @@
         display: none !important;
       }
 
-      #scatterSelectionActionRow {
-        display: none;
-        padding: 8px 15px 0 15px;
-      }
-
-      #scatterSelectionActionRow .scatter-selection-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-      }
-
-      #scatterSelectionActionRow .scatter-selection-action-btn {
-        background-color: #033899;
-        color: #ffffff;
-        border: none;
-        border-radius: 25px;
-        padding: 6px 18px;
-        font-weight: 500;
-        min-width: 84px;
-      }
-
-      #scatterSelectionActionRow
-        .scatter-selection-action-btn.hidden {
-        display: none !important;
-      }
-
-      #scatterSelectionActionRow
-        .scatter-selection-action-btn:hover,
-      #scatterSelectionActionRow
-        .scatter-selection-action-btn:focus {
-        background-color: #0a48b8;
-        color: #ffffff;
-      }
-
-      #scatterSelectionReset {
-        background-color: #e7efff;
-        border: 1px solid #c8d8fb;
-        color: #033899;
-      }
-
-      #scatterSelectionReset:hover,
-      #scatterSelectionReset:focus {
-        background-color: #d9e6ff;
-        border-color: #b7caf5;
-        color: #033899;
-      }
-
       #navbar-studyInfo {
         display: none;
         flex-direction: column;
@@ -1411,7 +1364,7 @@
     <!-- Parallel Coordinates -->
     <script
       type="text/javascript"
-      src="./pc_source_files/d3/d3.parcoords.js?v=20260708-2"
+      src="./pc_source_files/d3/d3.parcoords.js?v=20260924-1"
     ></script>
 
     <!-- D3 Parallel Coordinates CSS -->
@@ -1447,7 +1400,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20260717-4" rel="stylesheet" />
+    <link href="css/style.css?v=20260924-1" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -1489,9 +1442,10 @@
       src="va3c_source_files/js/libs/SPECTACLES.js"
     ></script>
 
-    <!-- Pace for loading bar-->
-    <link rel="stylesheet" type="text/css" href="pace/pace.css" />
+    <!-- Page loading: Deerns logo with radial progress -->
+    <link rel="stylesheet" type="text/css" href="pace/pace.css?v=20260924-1" />
     <script type="text/javascript" src="pace/pace.min.js"></script>
+    <script src="pace/pace-logo.js?v=20260924-1"></script>
 
     <!-- rating system -->
     <script
@@ -1507,8 +1461,9 @@
 
     <script src="./js/divgrid.js"></script>
     <!-- Design Explorer Scripts -->
+    <script src="./js/studyImageLoader.js?v=20260924-4"></script>
     <script
-      src="./js/designExplorer.js?v=20260710-1"
+      src="./js/designExplorer.js?v=20260916-1"
       type="text/javascript"
       language="javascript"
     ></script>
@@ -4929,20 +4884,33 @@
 
                 <div id="scatterSelectionActionRow" class="row-fluid">
                   <div class="col-xs-12 scatter-selection-actions">
-                    <button
-                      id="scatterSelectionApply"
-                      class="btn btn-xs scatter-selection-action-btn hidden"
-                      type="button"
-                    >
-                      Zoom
-                    </button>
-                    <button
-                      id="scatterSelectionReset"
-                      class="btn btn-xs scatter-selection-action-btn hidden"
-                      type="button"
-                    >
-                      Reset
-                    </button>
+                    <div class="scatter-selection-message">
+                      <span class="glyphicon glyphicon-screenshot" aria-hidden="true"></span>
+                      <div>
+                        <strong id="scatterSelectionStatus">Selection ready</strong>
+                        <span id="scatterSelectionHint" role="status" aria-live="polite">Click Zoom selection to apply.</span>
+                      </div>
+                    </div>
+                    <div class="scatter-selection-buttons">
+                      <button
+                        id="scatterSelectionApply"
+                        class="btn scatter-selection-action-btn hidden"
+                        type="button"
+                        aria-describedby="scatterSelectionHint"
+                      >
+                        <span class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span>
+                        Zoom selection
+                      </button>
+                      <button
+                        id="scatterSelectionReset"
+                        class="btn scatter-selection-action-btn hidden"
+                        type="button"
+                        aria-describedby="scatterSelectionHint"
+                      >
+                        <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
+                        Reset
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -5932,15 +5900,6 @@
         return cloned;
       }
 
-      function getCurrentGraphBrushedData() {
-        if (!graph || typeof graph.brushed !== "function") {
-          return [];
-        }
-
-        var brushed = graph.brushed();
-        return Array.isArray(brushed) ? ensureScatterDataIds(brushed.slice()) : [];
-      }
-
       function ensureScatterDataIds(rows) {
         if (!Array.isArray(rows)) {
           return [];
@@ -5974,14 +5933,17 @@
       }
 
       function getCurrentGraphDisplayData() {
-        var brushed = getCurrentGraphBrushedData();
-        if (brushed.length > 0) {
-          return brushed;
+        var brushed = graph && typeof graph.brushed === "function"
+          ? graph.brushed()
+          : false;
+        // An empty array is an active filter with no matches, not a reset.
+        if (Array.isArray(brushed)) {
+          return ensureScatterDataIds(brushed.slice());
         }
 
         if (graph && typeof graph.data === "function") {
           var graphData = graph.data();
-          if (Array.isArray(graphData) && graphData.length > 0) {
+          if (Array.isArray(graphData)) {
             return ensureScatterDataIds(graphData.slice());
           }
         }
@@ -6019,12 +5981,30 @@
         if (row.empty() || applyButton.empty() || resetButton.empty()) return;
 
         var hasUsableSelection = hasUsableScatterSelection();
-        var hasPendingSelection = getActiveScatterSelectionData().length > 0;
-        var showReset = hasPendingSelection || scatterSelectionApplied;
+        var selectionCount = getActiveScatterSelectionData().length;
+        var hasPendingSelection = selectionCount > 0;
+        var hasAppliedSelection = scatterSelectionApplied || (
+          graph && typeof graph.selectionRows === "function" && graph.selectionRows() !== null
+        );
+        var showReset = hasPendingSelection || hasAppliedSelection;
 
-        row.style("display", hasUsableSelection || showReset ? "block" : "none");
+        row
+          .style("display", hasUsableSelection || showReset ? "block" : "none")
+          .classed("is-pending", hasUsableSelection);
         applyButton.classed("hidden", !hasUsableSelection);
         resetButton.classed("hidden", !showReset);
+
+        var status = hasPendingSelection
+          ? selectionCount + (selectionCount === 1 ? " design selected" : " designs selected")
+          : hasAppliedSelection ? "Zoom applied" : "";
+        var hint = hasUsableSelection
+          ? "Click Zoom selection to apply."
+          : hasPendingSelection ? "Select a smaller area to zoom, or reset."
+          : hasAppliedSelection ? "Reset to show all designs." : "";
+        d3.select("#scatterSelectionStatus").text(status);
+        var hintElement = d3.select("#scatterSelectionHint");
+        // Avoid repeated live-region announcements while the brush is dragged.
+        if (hintElement.text() !== hint) hintElement.text(hint);
 
         if (hasUsableSelection) {
           applyButton.attr(
@@ -6078,13 +6058,9 @@
           Array.isArray(meta.extent) &&
           meta.extent.length === 2
         ) {
-          var scatterAxisExtents = {};
-          scatterAxisExtents[meta.x] = [meta.extent[0][0], meta.extent[1][0]];
-          scatterAxisExtents[meta.y] = [meta.extent[0][1], meta.extent[1][1]];
-
-          d3.keys(scatterAxisExtents).forEach(function (dimName) {
+          [meta.x, meta.y].forEach(function (dimName, axisIndex) {
             var dim = currentDims[dimName];
-            var axisExtent = scatterAxisExtents[dimName];
+            var axisExtent = [meta.extent[0][axisIndex], meta.extent[1][axisIndex]];
             if (
               !dim ||
               !Array.isArray(axisExtent) ||
@@ -6104,12 +6080,30 @@
               return;
             }
 
-            extents[dimName] = [start, end].sort(d3.ascending);
+            var axisExtents = {};
+            axisExtents[dimName] = [start, end].sort(d3.ascending);
+            // On the diagonal both axes constrain the same variable.
+            extents = intersectScatterBrushExtents(extents, axisExtents);
           });
 
           if (Object.keys(extents).length > 0) {
-            return extents;
+            d3.keys(extents).forEach(function (dimName) {
+              var dim = currentDims[dimName];
+              if (!dim.yscale || typeof dim.yscale.rangePoints !== "function") return;
+              var bounds = extents[dimName];
+              var positions = dim.yscale.domain().filter(function (value) {
+                return bounds[0] <= value && value <= bounds[1];
+              }).map(function (value) { return dim.yscale(value); });
+              if (positions.length > 0) {
+                // Ordinal parallel-coordinate brushes use pixel coordinates.
+                var pixels = d3.extent(positions);
+                extents[dimName] = [pixels[0] - 0.5, pixels[1] + 0.5];
+              }
+            });
           }
+          // A scatter axis need not be a visible slider. Do not approximate
+          // that selection with ranges on unrelated dimensions.
+          return extents;
         }
 
         var sliderKeys = validDimensionKeys(currentDims, getCurrentSliderNameList());
@@ -6192,6 +6186,19 @@
         return extents;
       }
 
+      function intersectScatterBrushExtents(existing, incoming) {
+        var extents = cloneBrushExtents(existing);
+        d3.keys(incoming).forEach(function (dimName) {
+          var next = incoming[dimName].slice().sort(d3.ascending);
+          var previous = extents[dimName];
+          extents[dimName] = previous
+            ? [previous[0] > next[0] ? previous[0] : next[0],
+               previous[1] < next[1] ? previous[1] : next[1]]
+            : next;
+        });
+        return extents;
+      }
+
       function syncGraphSelectionViews(data) {
         var viewData = Array.isArray(data) ? data : getCurrentGraphDisplayData();
         updateScatterChart();
@@ -6204,7 +6211,8 @@
           !graph ||
           typeof graph.dimensions !== "function" ||
           typeof graph.brushReset !== "function" ||
-          typeof graph.brushExtents !== "function"
+          typeof graph.brushExtents !== "function" ||
+          typeof graph.selectionRows !== "function"
         ) {
           return;
         }
@@ -6220,31 +6228,29 @@
           selectedData,
           activeScatterSelectionMeta
         );
-        if (Object.keys(scatterExtents).length === 0) {
-          alert(
-            "The scatter selection could not be translated to the visible sliders."
-          );
-          return;
-        }
         scatterSelectionApplied = true;
         scatterSelectionPreviousGraphBrushExtents = null;
 
         isApplyingScatterSelectionBrush = true;
         try {
-          graph.brushReset();
-          if (Object.keys(scatterExtents).length > 0) {
-            graph.brushExtents(scatterExtents);
-          }
+          // The selected rows are authoritative; slider bounds alone cannot
+          // represent selections on hidden axes or within filtered cells.
+          graph.selectionRows(selectedData);
+          // Each zoom narrows the current selection, including filters on
+          // dimensions that are not part of the latest scatterplot.
+          graph.brushExtents(intersectScatterBrushExtents(
+            graph.brushExtents(), scatterExtents
+          ));
         } finally {
           isApplyingScatterSelectionBrush = false;
         }
 
         clearScatterSelectionState({ preserveApplied: true });
+        syncGraphSelectionViews();
         updateScatterSelectionActionButtons();
       }
 
       function resetScatterSelectionAction() {
-        clearScatterSelectionState();
         var resetData =
           graph && typeof graph.data === "function"
             ? (graph.data() || []).slice()
@@ -6253,6 +6259,7 @@
         if (graph && typeof graph.brushReset === "function") {
           isApplyingScatterSelectionBrush = true;
           try {
+            if (typeof graph.selectionRows === "function") graph.selectionRows(null);
             graph.brushReset();
           } finally {
             isApplyingScatterSelectionBrush = false;
@@ -6262,6 +6269,7 @@
           syncGraphSelectionViews(resetData);
         }
 
+        clearScatterSelectionState();
         if (scatterChart && typeof scatterChart.clearSelection === "function") {
           scatterChart.clearSelection();
         }
@@ -7146,19 +7154,6 @@
           );
         }
         var selectedData = getCurrentGraphDisplayData();
-        if (
-          (!Array.isArray(selectedData) || selectedData.length === 0) &&
-          graph &&
-          typeof graph.data === "function"
-        ) {
-          selectedData = (graph.data() || []).slice();
-        }
-        if (
-          (!Array.isArray(selectedData) || selectedData.length === 0) &&
-          Array.isArray(cleanedData)
-        ) {
-          selectedData = cleanedData.slice();
-        }
         selectedData = ensureScatterDataIds(selectedData);
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
         sm.__viewportWidth = scatterMatrixWidth;
@@ -7246,13 +7241,6 @@
 
       function updateScatterChart() {
         var data = getCurrentGraphDisplayData();
-        if (
-          (!Array.isArray(data) || data.length === 0) &&
-          scatterChart &&
-          Array.isArray(scatterChart.__data)
-        ) {
-          data = scatterChart.__data.slice();
-        }
         var highlightedData =
           typeof graph !== "undefined" &&
           graph &&
@@ -7260,51 +7248,14 @@
             ? graph.highlighted()
             : [];
         var circles = d3.selectAll(".cell circle");
-        var scatterBaseData =
-          scatterChart && Array.isArray(scatterChart.__data)
-            ? ensureScatterDataIds(scatterChart.__data.slice())
-            : [];
-
-        if (!Array.isArray(data) || data.length === 0) {
-          circles.classed("faded", false).attr("visibility", "visible");
-          drawScatterHighlightMarkers(highlightedData);
-          updatePinnedScatterDot();
-          return;
-        }
-
-        data = ensureScatterDataIds(data);
-
-        circles
-          .classed("faded", false)
-          .attr("visibility", "visible");
-
-        if (
-          scatterBaseData.length > 0 &&
-          data.length > 0 &&
-          data.length < scatterBaseData.length
-        ) {
-          var visibleLookup = {};
-          data.forEach(function (d) {
-            var circleId = getCircleID(d);
-            if (!circleId) return;
-            visibleLookup[circleId] = true;
-          });
-
-          var visibleCount = 0;
-          circles.each(function (d) {
-            var circle = d3.select(this);
-            var circleId = getCircleID(d) || circle.attr("id");
-            var isVisible = !!visibleLookup[circleId];
-            if (isVisible) {
-              visibleCount += 1;
-            }
-            circle.attr("visibility", isVisible ? "visible" : "hidden");
-          });
-
-          if (visibleCount === 0) {
-            circles.attr("visibility", "visible");
-          }
-        }
+        var visibleLookup = {};
+        data.forEach(function (d) {
+          var circleId = getCircleID(d);
+          if (circleId) visibleLookup[circleId] = true;
+        });
+        circles.classed("faded", false).attr("visibility", function (d) {
+          return visibleLookup[getCircleID(d)] ? "visible" : "hidden";
+        });
 
         drawScatterHighlightMarkers(highlightedData);
         updatePinnedScatterDot();
@@ -12794,6 +12745,7 @@
 
         // remove all the current divs
         // I think eventually I will change this to a filter function
+        studyImageLoader.release(document.querySelector("div#thumbnails-btm"));
         d3.select("#thumbnails-btm").selectAll("div").remove();
         //d3.select("#thumbnails-side").selectAll("div").remove();
 
@@ -12816,7 +12768,8 @@
           return makeUrl(d[theFirstImg], "img");
         };
 
-        d3.select("#thumbnails-btm")
+        var thumbnailRoot = document.querySelector("div#thumbnails-btm");
+        d3.select(thumbnailRoot)
           //.style("height", "100%") //20px for credit line -
           .selectAll("div")
           .data(data)
@@ -12826,11 +12779,13 @@
           .style("cursor", "pointer")
           .append("img")
           .attr("id", "thumbnails-btm")
-          .attr("src", imgLink)
           .on("click", updateLayoutOnSelect)
           .attr("title", getTitle)
           .style("border-color", function (d) {
             return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
+          })
+          .each(function (d) {
+            studyImageLoader.set(this, imgLink(d), { lazy: true, root: thumbnailRoot });
           });
       }
 
@@ -12840,7 +12795,6 @@
         // d3.select("#zoomed")
         //     .style("height", zoomedHeight)
         //     .append("img");
-        //.attr("src", "https://raw.githubusercontent.com/tt-acm/DesignExplorer/gh-pages/design_explorer_data/img/placeholder/placeholder.png?token=ACx89Xl7jGRusi88wWHKH97INGjRifH5ks5Vy6YGwA%3D%3D");
       }
     </script>
 
@@ -12882,8 +12836,8 @@
         graph.on("brush", function (d) {
           //rc.updateData(graph.brushed());   //-----TODO:here needs a switch for different charts-------
           if (isApplyingScatterSelectionBrush) {
-            clearScatterSelectionState({ preserveApplied: true });
-            syncGraphSelectionViews(d);
+            // Applying multiple axes emits intermediate selections. Publish
+            // the final intersection once all scatter constraints are set.
             return;
           }
 
@@ -13030,6 +12984,7 @@
 
       function loadDataToDesignExplorer(data, options) {
         options = options || {};
+        studyImageLoader.reset();
         var deferScatterInit = !!options.deferScatterInit;
         deferScatterLayoutUntilReady = deferScatterInit;
         isPcGraphCollapsed = false;
@@ -13103,21 +13058,6 @@
         setupEvents();
         updateViewer2dCompareState(null);
         syncMainVerticalResizeHandleState();
-
-        //lazy load
-        // $(function() {
-        //     $('.lazy').Lazy({
-        //         // your configuration goes here
-        //         scrollDirection: 'vertical',
-        //         effect: 'fadeIn',
-        //         visibleOnly: true,
-        //         onError: function(element) {
-        //             console.log('error loading ' + element.data('src'));
-        //         },
-        //         appendScroll: $('div#thumbnails-btm')
-
-        //     });
-        // });
       }
 
       var guidedTourSteps = [];
@@ -14497,9 +14437,9 @@
         var imageSelection = d3.select(selector);
 
         imageSelection
-          .attr("src", finalUrl)
           .attr("title", title || "")
           .classed("no-image-placeholder", isPlaceholder);
+        studyImageLoader.set(imageSelection.node(), finalUrl);
 
         return {
           src: finalUrl,
@@ -14536,6 +14476,7 @@
 
         currentPane.classed("multi-active", shouldShow);
         if (!shouldShow) {
+          studyImageLoader.release(gallery.node());
           gallery.selectAll("*").remove();
           return {
             hasNonPlaceholder: false,
@@ -14553,7 +14494,9 @@
             return d;
           });
 
-        items.exit().remove();
+        items.exit().each(function () {
+          studyImageLoader.release(this);
+        }).remove();
 
         var entered = items
           .enter()
@@ -14639,7 +14582,8 @@
             getTitle(pinnedComparisonData)
           );
         } else {
-          d3.select("#viewer2d-pinnedimg").attr("src", "").attr("title", "");
+          studyImageLoader.clear(document.getElementById("viewer2d-pinnedimg"));
+          d3.select("#viewer2d-pinnedimg").attr("title", "");
         }
 
         d3.select(".viewer2d-main").classed(
