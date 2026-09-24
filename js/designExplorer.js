@@ -22,6 +22,7 @@ function ensureInitialGlobalDataState() {
 ensureInitialGlobalDataState();
 
 function unloadPageContent() {
+  studyImageLoader.reset();
   /*
     	// This function removes current contents from the page
     	// Only base HTML objects will remain in the page afterwards

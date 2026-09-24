@@ -1507,8 +1507,9 @@
 
     <script src="./js/divgrid.js"></script>
     <!-- Design Explorer Scripts -->
+    <script src="./js/studyImageLoader.js?v=20260916-1"></script>
     <script
-      src="./js/designExplorer.js?v=20260710-1"
+      src="./js/designExplorer.js?v=20260916-1"
       type="text/javascript"
       language="javascript"
     ></script>
@@ -12794,6 +12795,7 @@
 
         // remove all the current divs
         // I think eventually I will change this to a filter function
+        studyImageLoader.release(document.querySelector("div#thumbnails-btm"));
         d3.select("#thumbnails-btm").selectAll("div").remove();
         //d3.select("#thumbnails-side").selectAll("div").remove();
 
@@ -12826,11 +12828,13 @@
           .style("cursor", "pointer")
           .append("img")
           .attr("id", "thumbnails-btm")
-          .attr("src", imgLink)
           .on("click", updateLayoutOnSelect)
           .attr("title", getTitle)
           .style("border-color", function (d) {
             return color(valueToNumber(d[pcIsColoredBy], pcIsColoredBy));
+          })
+          .each(function (d) {
+            studyImageLoader.set(this, imgLink(d), { lazy: true });
           });
       }
 
@@ -12840,7 +12844,6 @@
         // d3.select("#zoomed")
         //     .style("height", zoomedHeight)
         //     .append("img");
-        //.attr("src", "https://raw.githubusercontent.com/tt-acm/DesignExplorer/gh-pages/design_explorer_data/img/placeholder/placeholder.png?token=ACx89Xl7jGRusi88wWHKH97INGjRifH5ks5Vy6YGwA%3D%3D");
       }
     </script>
 
@@ -13030,6 +13033,7 @@
 
       function loadDataToDesignExplorer(data, options) {
         options = options || {};
+        studyImageLoader.reset();
         var deferScatterInit = !!options.deferScatterInit;
         deferScatterLayoutUntilReady = deferScatterInit;
         isPcGraphCollapsed = false;
@@ -13103,21 +13107,6 @@
         setupEvents();
         updateViewer2dCompareState(null);
         syncMainVerticalResizeHandleState();
-
-        //lazy load
-        // $(function() {
-        //     $('.lazy').Lazy({
-        //         // your configuration goes here
-        //         scrollDirection: 'vertical',
-        //         effect: 'fadeIn',
-        //         visibleOnly: true,
-        //         onError: function(element) {
-        //             console.log('error loading ' + element.data('src'));
-        //         },
-        //         appendScroll: $('div#thumbnails-btm')
-
-        //     });
-        // });
       }
 
       var guidedTourSteps = [];
@@ -14497,9 +14486,9 @@
         var imageSelection = d3.select(selector);
 
         imageSelection
-          .attr("src", finalUrl)
           .attr("title", title || "")
           .classed("no-image-placeholder", isPlaceholder);
+        studyImageLoader.set(imageSelection.node(), finalUrl);
 
         return {
           src: finalUrl,
@@ -14536,6 +14525,7 @@
 
         currentPane.classed("multi-active", shouldShow);
         if (!shouldShow) {
+          studyImageLoader.release(gallery.node());
           gallery.selectAll("*").remove();
           return {
             hasNonPlaceholder: false,
@@ -14553,7 +14543,9 @@
             return d;
           });
 
-        items.exit().remove();
+        items.exit().each(function () {
+          studyImageLoader.release(this);
+        }).remove();
 
         var entered = items
           .enter()
@@ -14639,7 +14631,8 @@
             getTitle(pinnedComparisonData)
           );
         } else {
-          d3.select("#viewer2d-pinnedimg").attr("src", "").attr("title", "");
+          studyImageLoader.clear(document.getElementById("viewer2d-pinnedimg"));
+          d3.select("#viewer2d-pinnedimg").attr("title", "");
         }
 
         d3.select(".viewer2d-main").classed(
