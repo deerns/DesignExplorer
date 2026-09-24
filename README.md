@@ -16,16 +16,19 @@ Design Explore is a web application to make exploring multi-dimensional design s
 ## Image loading
 
 Study thumbnails load near the visible area. Thumbnails and 2D viewers share a
-queue with at most four downloads overall, two per server, and 200 ms between
-starts on the same server. Duplicate URLs share downloads and cached results.
+queue with at most twelve downloads overall and eight per server, with no
+artificial delay between starts. Viewers have priority; within each priority,
+new images start before retries. Duplicate URLs share downloads and cached results.
 
-Supabase Storage URLs use fetch so HTTP 429/503 responses can pause the server's
-queue. Retries use increasing delays, respect `Retry-After` when exposed to the
-browser, and stop after five retries. HTTP 4xx errors other than 408/429 stop
+Failed images retry independently after about three seconds, with increasing
+delays and at most five retries. Other images continue loading during that wait.
+Supabase Storage URLs use fetch so HTTP 429 responses, or HTTP 503 responses with
+`Retry-After`, can pause the server's queue when necessary. Retries respect
+`Retry-After` when exposed to the browser. HTTP 4xx errors other than 408/429 stop
 immediately. Click a failed image to try again. URLs and signed query parameters
 are preserved. Other image hosts (or a proxy blocking CORS) use native image
-loading with bounded retries; HTTP status and response headers are unavailable
-on that route. Switching studies cancels outstanding work.
+loading with independent, bounded retries; HTTP status and response headers are
+unavailable on that route. Switching studies cancels outstanding work.
 
 The loader is in `js/studyImageLoader.js`. Run its regression tests with Node.js:
 

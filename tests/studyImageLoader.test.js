@@ -63,38 +63,38 @@ function harness(options = {}, supportsObserver = true) {
 
 const storage = 'https://project.supabase.co/storage/v1/object/public/study/';
 
-test('a study with 1000 thumbnails requests only visible images, with paced concurrency', () => {
+test('a study with 1000 thumbnails starts visible images in parallel without a startup delay', () => {
   const h = harness();
   const images = Array.from({ length: 1000 }, (_, i) => h.image('https://images.test/' + i, true));
   h.tick(1000);
   assert.equal(h.requests.length, 0);
   h.visible(images.slice(0, 12)); h.tick();
-  assert.equal(h.requests.length, 1);
-  h.tick(199); assert.equal(h.requests.length, 1);
-  h.tick(1); assert.equal(h.requests.length, 2);
-  h.tick(1000); assert.equal(h.requests.length, 2);
+  assert.equal(h.requests.length, 8);
+  assert.ok(h.requests.every(request => request.time === 1000));
+  h.tick(1000); assert.equal(h.requests.length, 8);
   h.requests[0].image.succeed(); h.tick();
-  assert.equal(h.requests.length, 3);
+  assert.equal(h.requests.length, 9);
+  assert.equal(h.requests[8].time, 2000, 'a freed slot is immediately reused');
   assert.equal(images[50].status, 'queued');
 });
 
 test('scrolling away drops queued thumbnails and the viewer has priority', () => {
-  const h = harness();
+  const h = harness({ perOrigin: 1 });
   const thumbs = [1, 2, 3].map(i => h.image('https://images.test/' + i, true));
   h.visible(thumbs); h.tick();
   h.visible([thumbs[1]], false);
   h.image('https://images.test/viewer');
-  h.tick(200);
+  h.requests[0].image.succeed(); h.tick();
   assert.equal(h.requests[1].url, 'https://images.test/viewer');
-  h.requests[0].image.succeed(); h.requests[1].image.succeed(); h.tick(200);
+  h.requests[1].image.succeed(); h.tick();
   assert.equal(h.requests[2].url, 'https://images.test/3');
 });
 
 test('global concurrency is bounded across different hosts', () => {
   const h = harness();
-  for (let i = 0; i < 10; i++) h.image('https://host' + i + '.test/image');
-  h.tick(); assert.equal(h.requests.length, 4);
-  h.requests[0].image.succeed(); h.tick(); assert.equal(h.requests.length, 5);
+  for (let i = 0; i < 20; i++) h.image('https://host' + i + '.test/image');
+  h.tick(); assert.equal(h.requests.length, 12);
+  h.requests[0].image.succeed(); h.tick(); assert.equal(h.requests.length, 13);
 });
 
 test('duplicate URLs share in-flight requests and loaded results after redraw', () => {
@@ -111,18 +111,22 @@ test('duplicate URLs share in-flight requests and loaded results after redraw', 
   assert.equal(first.status, undefined);
 });
 
-for (const header of ['10', 'Thu, 01 Jan 1970 00:00:10 GMT']) {
-  test('Supabase 429 pauses its host until Retry-After: ' + header, async () => {
-    const h = harness();
+for (const [status, header] of [[429, '10'], [429, 'Thu, 01 Jan 1970 00:00:10 GMT'], [503, '10']]) {
+  test('Supabase ' + status + ' pauses its host until Retry-After: ' + header, async () => {
+    const h = harness({ perOrigin: 1 });
     const image = h.image(storage + 'one.png');
     h.image(storage + 'two.png'); h.tick();
-    await h.respond(0, 429, header);
+    await h.respond(0, status, header);
     assert.equal(image.status, 'retrying');
     h.image('https://other.test/image'); h.tick();
     assert.equal(h.requests.length, 1, 'another host remains available');
     h.tick(9999); assert.equal(h.fetches.length, 1);
     h.tick(1); assert.equal(h.fetches.length, 2);
+    assert.equal(h.fetches[1].url, storage + 'two.png', 'new images get a turn before retries');
     await h.respond(1, 200);
+    h.requests.at(-1).image.succeed(); h.tick();
+    assert.equal(h.fetches[2].url, storage + 'one.png');
+    await h.respond(2, 200);
     h.requests.at(-1).image.succeed(); h.tick();
     assert.equal(image.status, 'loaded');
     assert.match(image.src, /^blob:/);
@@ -179,23 +183,25 @@ test('clearing a study cancels fetches and ignores late completions', async () =
   assert.equal(h.requests.length, 0); assert.equal(image.status, undefined);
 });
 
-test('a stalled image times out and frees a slot', () => {
+test('a stalled image times out and frees a slot for another image on the same host', () => {
   const h = harness({ timeout: 1000, concurrency: 1 });
-  const stalled = h.image('https://first.test/image'); h.image('https://second.test/image'); h.tick(1000);
+  const stalled = h.image('https://images.test/stalled'); h.image('https://images.test/next'); h.tick(1000);
   assert.equal(stalled.status, 'retrying'); assert.equal(h.requests.length, 2);
-  assert.equal(h.requests[1].url, 'https://second.test/image');
+  assert.equal(h.requests[1].url, 'https://images.test/next');
 });
 
-test('without IntersectionObserver image loading remains paced', () => {
+test('without IntersectionObserver image loading remains bounded and parallel', () => {
   const h = harness({}, false);
   for (let i = 0; i < 100; i++) h.image('https://images.test/' + i, true);
-  h.tick(500); assert.equal(h.requests.length, 2);
+  h.tick(); assert.equal(h.requests.length, 8);
 });
 
-test('CORS failure uses a paced native fallback', async () => {
+test('CORS failure uses a delayed native fallback without blocking other images', async () => {
   const h = harness(); const image = h.image(storage + 'image.png'); h.tick();
   h.fetches[0].reject(new TypeError('CORS'));
   for (let i = 0; i < 6; i++) await Promise.resolve();
+  h.image(storage + 'good.png'); h.tick();
+  assert.equal(h.fetches.length, 2);
   h.tick(2999); assert.equal(h.requests.length, 0);
   h.tick(1); assert.equal(h.requests[0].url, storage + 'image.png');
   h.requests[0].image.succeed(); h.tick(); assert.equal(image.status, 'loaded');
@@ -216,16 +222,17 @@ test('failed viewer clicks retry without cycling, while thumbnail clicks still s
   let stopped = false;
   viewer.listeners.click({ preventDefault() {}, stopImmediatePropagation() { stopped = true; } });
   assert.equal(stopped, true);
+  h.tick(); h.requests[1].image.succeed(); h.tick();
   const thumbnail = h.image('https://other.test/thumbnail', true);
   h.visible([thumbnail]); h.tick();
-  h.requests[1].image.fail();
+  h.requests[2].image.fail();
   stopped = false;
   thumbnail.listeners.click({ preventDefault() {}, stopImmediatePropagation() { stopped = true; } });
   assert.equal(stopped, false);
 });
 
 test('releasing a grid removes queued work and disconnects observation', () => {
-  const h = harness();
+  const h = harness({ perOrigin: 1 });
   const first = h.image('https://images.test/first', true);
   const queued = h.image('https://images.test/queued', true);
   h.visible([first, queued]); h.tick();
@@ -233,4 +240,78 @@ test('releasing a grid removes queued work and disconnects observation', () => {
   h.requests[0].image.succeed(); h.tick(100000);
   assert.equal(h.requests.length, 1);
   assert.equal(queued.status, undefined);
+});
+
+test('failed native images retry independently while the rest of the same host keeps loading', () => {
+  const h = harness({ perOrigin: 2 });
+  const images = Array.from({ length: 5 }, (_, i) => h.image('https://images.test/' + i));
+  h.tick(); assert.equal(h.requests.length, 2);
+  h.requests[0].image.fail(); h.requests[1].image.fail(); h.tick();
+  assert.equal(h.requests.length, 4, 'failures immediately free their slots');
+  assert.equal(images[0].status, 'retrying'); assert.equal(images[1].status, 'retrying');
+  h.requests[2].image.succeed(); h.requests[3].image.succeed(); h.tick();
+  h.requests[4].image.succeed(); h.tick();
+  assert.ok(h.requests.every(request => request.time === 0), 'healthy images need no delay');
+  h.tick(2999); assert.equal(h.requests.length, 5);
+  h.tick(1); assert.equal(h.requests.length, 7, 'both failures use their own first retry delay');
+  assert.deepEqual(h.requests.slice(5).map(request => request.url), ['https://images.test/0', 'https://images.test/1']);
+  h.requests[5].image.succeed(); h.requests[6].image.succeed(); h.tick(100000);
+  assert.equal(h.requests.length, 7, 'successful images are never retried');
+  assert.ok(images.every(image => image.status === 'loaded'));
+});
+
+test('new images have priority over due retries when a slot opens', () => {
+  const h = harness({ concurrency: 1 });
+  h.image('https://images.test/failing'); h.tick();
+  h.requests[0].image.fail();
+  h.image('https://images.test/slow'); h.tick(3000);
+  h.image('https://images.test/new');
+  h.requests[1].image.succeed(); h.tick();
+  assert.equal(h.requests[2].url, 'https://images.test/new');
+  h.requests[2].image.succeed(); h.tick();
+  assert.equal(h.requests[3].url, 'https://images.test/failing');
+});
+
+for (const status of [408, 500, 503]) {
+  test('Supabase ' + status + ' without Retry-After delays only the failed image', async () => {
+    const h = harness({ perOrigin: 1 });
+    const failed = h.image(storage + 'failed.png');
+    const good = h.image(storage + 'good.png'); h.tick();
+    await h.respond(0, status);
+    assert.equal(failed.status, 'retrying');
+    assert.equal(h.fetches.length, 2);
+    assert.equal(h.fetches[1].time, 0);
+    assert.equal(h.fetches[1].url, storage + 'good.png');
+    await h.respond(1, 200); h.requests[0].image.succeed(); h.tick();
+    h.tick(2999); assert.equal(h.fetches.length, 2);
+    h.tick(1); assert.equal(h.fetches[2].url, storage + 'failed.png');
+    await h.respond(2, 200); h.requests[1].image.succeed(); h.tick(100000);
+    assert.equal(h.fetches.length, 3);
+    assert.equal(good.status, 'loaded'); assert.equal(failed.status, 'loaded');
+  });
+}
+
+test('a corrupt downloaded image retries later and releases its blob without holding the queue', async () => {
+  const h = harness({ perOrigin: 1 });
+  const corrupt = h.image(storage + 'corrupt.png');
+  h.image(storage + 'good.png'); h.tick();
+  await h.respond(0, 200); h.requests[0].image.fail(); h.tick();
+  assert.equal(corrupt.status, 'retrying');
+  assert.deepEqual(h.revoked, [h.requests[0].url]);
+  assert.equal(h.fetches[1].url, storage + 'good.png');
+  await h.respond(1, 200); h.requests[1].image.succeed(); h.tick(2999);
+  assert.equal(h.fetches.length, 2);
+  h.tick(1); assert.equal(h.fetches[2].url, storage + 'corrupt.png');
+});
+
+test('reset cancels delayed retries so a new study can load immediately', () => {
+  const h = harness();
+  h.image('https://images.test/old'); h.tick();
+  h.requests[0].image.fail(); h.tick();
+  h.loader.reset();
+  const current = h.image('https://images.test/new'); h.tick();
+  assert.equal(h.requests[1].url, 'https://images.test/new');
+  assert.equal(h.requests[1].time, 0);
+  h.requests[1].image.succeed(); h.tick(100000);
+  assert.equal(h.requests.length, 2); assert.equal(current.status, 'loaded');
 });

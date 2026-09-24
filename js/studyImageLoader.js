@@ -1,4 +1,4 @@
-/* Shared, paced image requests for thumbnails and the 2D viewers. */
+/* Shared, parallel image requests for thumbnails and the 2D viewers. */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     module.exports = factory;
@@ -9,9 +9,9 @@
   "use strict";
 
   var config = Object.assign({
-    concurrency: 4,
-    perOrigin: 2,
-    interval: 200,
+    concurrency: 12,
+    perOrigin: 8,
+    interval: 0,
     retries: 5,
     retryDelay: 3000,
     maxRetryDelay: 60000,
@@ -67,7 +67,7 @@
     if (!job) {
       var parsed = new env.URL(state.url, env.document.baseURI);
       var origin = parsed.origin;
-      if (!origins.has(origin)) origins.set(origin, { active: 0, next: 0, pause: 0, failures: 0 });
+      if (!origins.has(origin)) origins.set(origin, { active: 0, next: 0, pause: 0 });
       job = { url: state.url, origin: origins.get(origin), status: "queued", attempts: 0,
         ready: 0, subscribers: new Set(), image: null, timeout: null, bytes: 0,
         // Also recognize Supabase Storage behind a custom domain.
@@ -129,7 +129,10 @@
       });
       if (priority >= 0) candidates.push({ job: job, priority: priority });
     });
-    candidates.sort(function (a, b) { return b.priority - a.priority; });
+    candidates.sort(function (a, b) {
+      // Keep viewers first, then give new images a turn before due retries.
+      return b.priority - a.priority || a.job.attempts - b.job.attempts;
+    });
     var next = Infinity;
     candidates.forEach(function (candidate) {
       var job = candidate.job;
@@ -166,21 +169,21 @@
       job.origin.active--;
       if (success) {
         job.status = "loaded";
-        job.origin.failures = 0;
       } else if (status && status < 500 && status !== 408 && status !== 429) {
         // Missing files and denied access will not improve with more requests.
         job.status = "error";
       } else {
-        // Native images work with hosts that do not permit CORS. Their error
-        // event exposes neither HTTP status nor Retry-After, so conservatively
-        // back off the entire origin for any load failure (including 429).
-        job.origin.failures++;
-        var exponent = Math.min(5, Math.max(job.attempts - 1, job.origin.failures - 1));
+        // A failed image waits independently, leaving slots free for the rest.
+        var exponent = Math.min(5, job.attempts - 1);
         var delay = Math.min(config.maxRetryDelay, config.retryDelay * Math.pow(2, exponent));
         delay += Math.floor(env.Math.random() * delay * 0.2);
         delay = Math.max(delay, serverDelay || 0);
-        job.origin.pause = Math.max(job.origin.pause, now() + delay);
-        job.ready = job.origin.pause;
+        job.ready = now() + delay;
+        // Pause the host only for explicit throttling or a server-requested
+        // cooldown. Native image/decode/network errors cannot establish that.
+        if (status === 429 || (status === 503 && serverDelay > 0)) {
+          job.origin.pause = Math.max(job.origin.pause, job.ready);
+        }
         job.status = job.attempts <= config.retries ? "retrying" : "error";
       }
       if (!success) dispose(job);
@@ -222,7 +225,7 @@
     }).catch(function () {
       if (finished) return;
       // A proxy may deny CORS even though native images work. Use the native
-      // route on the next paced attempt, without adding an immediate request.
+      // route on the next delayed attempt, without adding an immediate request.
       job.useFetch = false;
       finish(false);
     });
