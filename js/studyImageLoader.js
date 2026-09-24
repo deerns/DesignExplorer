@@ -9,8 +9,8 @@
   "use strict";
 
   var config = Object.assign({
-    concurrency: 12,
-    perOrigin: 8,
+    concurrency: 24,
+    perOrigin: 16,
     interval: 0,
     retries: 5,
     retryDelay: 3000,

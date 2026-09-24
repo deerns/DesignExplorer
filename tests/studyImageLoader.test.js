@@ -68,13 +68,13 @@ test('a study with 1000 thumbnails starts visible images in parallel without a s
   const images = Array.from({ length: 1000 }, (_, i) => h.image('https://images.test/' + i, true));
   h.tick(1000);
   assert.equal(h.requests.length, 0);
-  h.visible(images.slice(0, 12)); h.tick();
-  assert.equal(h.requests.length, 8);
+  h.visible(images.slice(0, 24)); h.tick();
+  assert.equal(h.requests.length, 16);
   assert.ok(h.requests.every(request => request.time === 1000));
-  h.tick(1000); assert.equal(h.requests.length, 8);
+  h.tick(1000); assert.equal(h.requests.length, 16);
   h.requests[0].image.succeed(); h.tick();
-  assert.equal(h.requests.length, 9);
-  assert.equal(h.requests[8].time, 2000, 'a freed slot is immediately reused');
+  assert.equal(h.requests.length, 17);
+  assert.equal(h.requests[16].time, 2000, 'a freed slot is immediately reused');
   assert.equal(images[50].status, 'queued');
 });
 
@@ -92,9 +92,9 @@ test('scrolling away drops queued thumbnails and the viewer has priority', () =>
 
 test('global concurrency is bounded across different hosts', () => {
   const h = harness();
-  for (let i = 0; i < 20; i++) h.image('https://host' + i + '.test/image');
-  h.tick(); assert.equal(h.requests.length, 12);
-  h.requests[0].image.succeed(); h.tick(); assert.equal(h.requests.length, 13);
+  for (let i = 0; i < 40; i++) h.image('https://host' + i + '.test/image');
+  h.tick(); assert.equal(h.requests.length, 24);
+  h.requests[0].image.succeed(); h.tick(); assert.equal(h.requests.length, 25);
 });
 
 test('duplicate URLs share in-flight requests and loaded results after redraw', () => {
@@ -193,7 +193,7 @@ test('a stalled image times out and frees a slot for another image on the same h
 test('without IntersectionObserver image loading remains bounded and parallel', () => {
   const h = harness({}, false);
   for (let i = 0; i < 100; i++) h.image('https://images.test/' + i, true);
-  h.tick(); assert.equal(h.requests.length, 8);
+  h.tick(); assert.equal(h.requests.length, 16);
 });
 
 test('CORS failure uses a delayed native fallback without blocking other images', async () => {

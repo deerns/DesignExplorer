@@ -16,7 +16,7 @@ Design Explore is a web application to make exploring multi-dimensional design s
 ## Image loading
 
 Study thumbnails load near the visible area. Thumbnails and 2D viewers share a
-queue with at most twelve downloads overall and eight per server, with no
+queue with at most twenty-four downloads overall and sixteen per server, with no
 artificial delay between starts. Viewers have priority; within each priority,
 new images start before retries. Duplicate URLs share downloads and cached results.
 
