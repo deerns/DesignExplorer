@@ -114,53 +114,6 @@
         display: none !important;
       }
 
-      #scatterSelectionActionRow {
-        display: none;
-        padding: 8px 15px 0 15px;
-      }
-
-      #scatterSelectionActionRow .scatter-selection-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-      }
-
-      #scatterSelectionActionRow .scatter-selection-action-btn {
-        background-color: #033899;
-        color: #ffffff;
-        border: none;
-        border-radius: 25px;
-        padding: 6px 18px;
-        font-weight: 500;
-        min-width: 84px;
-      }
-
-      #scatterSelectionActionRow
-        .scatter-selection-action-btn.hidden {
-        display: none !important;
-      }
-
-      #scatterSelectionActionRow
-        .scatter-selection-action-btn:hover,
-      #scatterSelectionActionRow
-        .scatter-selection-action-btn:focus {
-        background-color: #0a48b8;
-        color: #ffffff;
-      }
-
-      #scatterSelectionReset {
-        background-color: #e7efff;
-        border: 1px solid #c8d8fb;
-        color: #033899;
-      }
-
-      #scatterSelectionReset:hover,
-      #scatterSelectionReset:focus {
-        background-color: #d9e6ff;
-        border-color: #b7caf5;
-        color: #033899;
-      }
-
       #navbar-studyInfo {
         display: none;
         flex-direction: column;
@@ -1447,7 +1400,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20260717-4" rel="stylesheet" />
+    <link href="css/style.css?v=20260924-1" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -4931,20 +4884,33 @@
 
                 <div id="scatterSelectionActionRow" class="row-fluid">
                   <div class="col-xs-12 scatter-selection-actions">
-                    <button
-                      id="scatterSelectionApply"
-                      class="btn btn-xs scatter-selection-action-btn hidden"
-                      type="button"
-                    >
-                      Zoom
-                    </button>
-                    <button
-                      id="scatterSelectionReset"
-                      class="btn btn-xs scatter-selection-action-btn hidden"
-                      type="button"
-                    >
-                      Reset
-                    </button>
+                    <div class="scatter-selection-message">
+                      <span class="glyphicon glyphicon-screenshot" aria-hidden="true"></span>
+                      <div>
+                        <strong id="scatterSelectionStatus">Selection ready</strong>
+                        <span id="scatterSelectionHint" role="status" aria-live="polite">Click Zoom selection to apply.</span>
+                      </div>
+                    </div>
+                    <div class="scatter-selection-buttons">
+                      <button
+                        id="scatterSelectionApply"
+                        class="btn scatter-selection-action-btn hidden"
+                        type="button"
+                        aria-describedby="scatterSelectionHint"
+                      >
+                        <span class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span>
+                        Zoom selection
+                      </button>
+                      <button
+                        id="scatterSelectionReset"
+                        class="btn scatter-selection-action-btn hidden"
+                        type="button"
+                        aria-describedby="scatterSelectionHint"
+                      >
+                        <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
+                        Reset
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -6021,12 +5987,27 @@
         if (row.empty() || applyButton.empty() || resetButton.empty()) return;
 
         var hasUsableSelection = hasUsableScatterSelection();
-        var hasPendingSelection = getActiveScatterSelectionData().length > 0;
+        var selectionCount = getActiveScatterSelectionData().length;
+        var hasPendingSelection = selectionCount > 0;
         var showReset = hasPendingSelection || scatterSelectionApplied;
 
-        row.style("display", hasUsableSelection || showReset ? "block" : "none");
+        row
+          .style("display", hasUsableSelection || showReset ? "block" : "none")
+          .classed("is-pending", hasUsableSelection);
         applyButton.classed("hidden", !hasUsableSelection);
         resetButton.classed("hidden", !showReset);
+
+        var status = hasPendingSelection
+          ? selectionCount + (selectionCount === 1 ? " design selected" : " designs selected")
+          : scatterSelectionApplied ? "Zoom applied" : "";
+        var hint = hasUsableSelection
+          ? "Click Zoom selection to apply."
+          : hasPendingSelection ? "Select a smaller area to zoom, or reset."
+          : scatterSelectionApplied ? "Reset to show all designs." : "";
+        d3.select("#scatterSelectionStatus").text(status);
+        var hintElement = d3.select("#scatterSelectionHint");
+        // Avoid repeated live-region announcements while the brush is dragged.
+        if (hintElement.text() !== hint) hintElement.text(hint);
 
         if (hasUsableSelection) {
           applyButton.attr(
