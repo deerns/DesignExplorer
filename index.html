@@ -1364,7 +1364,7 @@
     <!-- Parallel Coordinates -->
     <script
       type="text/javascript"
-      src="./pc_source_files/d3/d3.parcoords.js?v=20260708-2"
+      src="./pc_source_files/d3/d3.parcoords.js?v=20260924-1"
     ></script>
 
     <!-- D3 Parallel Coordinates CSS -->
@@ -5983,7 +5983,10 @@
         var hasUsableSelection = hasUsableScatterSelection();
         var selectionCount = getActiveScatterSelectionData().length;
         var hasPendingSelection = selectionCount > 0;
-        var showReset = hasPendingSelection || scatterSelectionApplied;
+        var hasAppliedSelection = scatterSelectionApplied || (
+          graph && typeof graph.selectionRows === "function" && graph.selectionRows() !== null
+        );
+        var showReset = hasPendingSelection || hasAppliedSelection;
 
         row
           .style("display", hasUsableSelection || showReset ? "block" : "none")
@@ -5993,11 +5996,11 @@
 
         var status = hasPendingSelection
           ? selectionCount + (selectionCount === 1 ? " design selected" : " designs selected")
-          : scatterSelectionApplied ? "Zoom applied" : "";
+          : hasAppliedSelection ? "Zoom applied" : "";
         var hint = hasUsableSelection
           ? "Click Zoom selection to apply."
           : hasPendingSelection ? "Select a smaller area to zoom, or reset."
-          : scatterSelectionApplied ? "Reset to show all designs." : "";
+          : hasAppliedSelection ? "Reset to show all designs." : "";
         d3.select("#scatterSelectionStatus").text(status);
         var hintElement = d3.select("#scatterSelectionHint");
         // Avoid repeated live-region announcements while the brush is dragged.
@@ -6097,8 +6100,10 @@
                 extents[dimName] = [pixels[0] - 0.5, pixels[1] + 0.5];
               }
             });
-            return extents;
           }
+          // A scatter axis need not be a visible slider. Do not approximate
+          // that selection with ranges on unrelated dimensions.
+          return extents;
         }
 
         var sliderKeys = validDimensionKeys(currentDims, getCurrentSliderNameList());
@@ -6206,7 +6211,8 @@
           !graph ||
           typeof graph.dimensions !== "function" ||
           typeof graph.brushReset !== "function" ||
-          typeof graph.brushExtents !== "function"
+          typeof graph.brushExtents !== "function" ||
+          typeof graph.selectionRows !== "function"
         ) {
           return;
         }
@@ -6222,17 +6228,14 @@
           selectedData,
           activeScatterSelectionMeta
         );
-        if (Object.keys(scatterExtents).length === 0) {
-          alert(
-            "The scatter selection could not be translated to the visible sliders."
-          );
-          return;
-        }
         scatterSelectionApplied = true;
         scatterSelectionPreviousGraphBrushExtents = null;
 
         isApplyingScatterSelectionBrush = true;
         try {
+          // The selected rows are authoritative; slider bounds alone cannot
+          // represent selections on hidden axes or within filtered cells.
+          graph.selectionRows(selectedData);
           // Each zoom narrows the current selection, including filters on
           // dimensions that are not part of the latest scatterplot.
           graph.brushExtents(intersectScatterBrushExtents(
@@ -6248,7 +6251,6 @@
       }
 
       function resetScatterSelectionAction() {
-        clearScatterSelectionState();
         var resetData =
           graph && typeof graph.data === "function"
             ? (graph.data() || []).slice()
@@ -6257,6 +6259,7 @@
         if (graph && typeof graph.brushReset === "function") {
           isApplyingScatterSelectionBrush = true;
           try {
+            if (typeof graph.selectionRows === "function") graph.selectionRows(null);
             graph.brushReset();
           } finally {
             isApplyingScatterSelectionBrush = false;
@@ -6266,6 +6269,7 @@
           syncGraphSelectionViews(resetData);
         }
 
+        clearScatterSelectionState();
         if (scatterChart && typeof scatterChart.clearSelection === "function") {
           scatterChart.clearSelection();
         }

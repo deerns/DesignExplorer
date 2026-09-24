@@ -99,10 +99,18 @@ d3.parcoords = function (config) {
         g, // groups for axes, brushes
         ctx = {},
         canvas = {},
-        clusterCentroids = [];
+        clusterCentroids = [],
+        selectionRowSet = null;
 
     // side effects for setters
     var side_effects = d3.dispatch.apply(this, d3.keys(__))
+        .on("data", function () {
+            // A replacement dataset starts a new selection scope.
+            if (selectionRowSet !== null) {
+                selectionRowSet = null;
+                __.brushed = false;
+            }
+        })
         .on("composite", function (d) {
             ctx.foreground.globalCompositeOperation = d.value;
             ctx.brushed.globalCompositeOperation = d.value;
@@ -547,6 +555,7 @@ d3.parcoords = function (config) {
     };
 
     function isBrushed() {
+        if (selectionRowSet !== null) return true;
         if (__.brushed && __.brushed.length !== __.data.length)
             return true;
 
@@ -1191,6 +1200,25 @@ d3.parcoords = function (config) {
         }
     };
 
+    function filterSelectionRows(data) {
+        return selectionRowSet === null ? data : data.filter(function (row) {
+            return selectionRowSet.has(row);
+        });
+    }
+
+    // Keep exact scatter selections even when their axes are hidden, or
+    // visible slider ranges also contain rows outside the chosen points.
+    pc.selectionRows = function (rows) {
+        if (!arguments.length) {
+            return selectionRowSet === null ? null : Array.from(selectionRowSet);
+        }
+        selectionRowSet = rows === null ? null : new Set(rows);
+        brushUpdated(brush.mode === "None"
+            ? filterSelectionRows(__.data)
+            : brush.currentMode().selected());
+        return pc;
+    };
+
     // This function can be used for 'live' updates of brushes. That is, during the
     // specification of a brush, this method can be called to update the view.
     //
@@ -1269,6 +1297,7 @@ d3.parcoords = function (config) {
 
         // data within extents
         function selected() {
+            var data = filterSelectionRows(__.data);
             var actives = d3.keys(__.dimensions).filter(is_brushed),
                 extents = actives.map(function (p) {
                     return brushes[p].extent();
@@ -1280,7 +1309,7 @@ d3.parcoords = function (config) {
             //if (actives.length === 0) return false;
 
             // Resolves broken examples for now. They expect to get the full dataset back from empty brushes
-            if (actives.length === 0) return __.data;
+            if (actives.length === 0) return data;
 
             // test if within range
             var within = {
@@ -1303,7 +1332,7 @@ d3.parcoords = function (config) {
                 }
             };
 
-            return __.data
+            return data
                 .filter(function (d) {
                     switch (brush.predicate) {
                         case "AND":
@@ -1394,7 +1423,9 @@ d3.parcoords = function (config) {
 
         function brushReset(dimension) {
             if (dimension === undefined) {
-                __.brushed = false;
+                // Rebuilding axes resets their brushes, but retains the
+                // exact row selection until the user explicitly resets it.
+                __.brushed = selectionRowSet === null ? false : filterSelectionRows(__.data);
                 if (g) {
                     g.selectAll('.brush')
                         .each(function (d) {
@@ -1521,6 +1552,7 @@ d3.parcoords = function (config) {
     };
 
     pc.reset = function(){
+        selectionRowSet = null;
         d3.keys(__.yscaleDomains).forEach(function (k) {
             if(__.dimensions[k] === undefined){
                 return;
