@@ -315,3 +315,100 @@ test('reset cancels delayed retries so a new study can load immediately', () => 
   h.requests[1].image.succeed(); h.tick(100000);
   assert.equal(h.requests.length, 2); assert.equal(current.status, 'loaded');
 });
+
+test('scrolling replaces offscreen downloads with currently visible thumbnails', () => {
+  const h = harness({ perOrigin: 2 });
+  const images = [0, 1, 2, 3].map(i => h.image('https://images.test/' + i, true));
+  h.visible(images.slice(0, 2)); h.tick();
+  assert.equal(h.requests.length, 2);
+  h.visible(images.slice(0, 2), false);
+  h.visible(images.slice(2)); h.tick();
+  assert.equal(h.requests.length, 4, 'newly visible images start without waiting for old downloads');
+  assert.equal(h.requests[0].image.url, '');
+  assert.equal(h.requests[1].image.url, '');
+  h.requests[2].image.succeed(); h.requests[3].image.succeed(); h.tick();
+  assert.equal(images[2].status, 'loaded'); assert.equal(images[3].status, 'loaded');
+  h.visible(images.slice(0, 2)); h.tick();
+  assert.equal(h.requests.length, 6, 'scrolling back restarts the interrupted images');
+  h.requests[4].image.succeed(); h.requests[5].image.succeed(); h.tick();
+  assert.ok(images.every(image => image.status === 'loaded'));
+});
+
+test('offscreen downloads on another host release global slots for visible images', () => {
+  const h = harness({ concurrency: 1 });
+  const old = h.image('https://first.test/old', true);
+  const current = h.image('https://second.test/current', true);
+  h.visible([old]); h.tick();
+  h.visible([old], false); h.visible([current]); h.tick();
+  assert.equal(h.requests.length, 2);
+  assert.equal(h.requests[1].url, 'https://second.test/current');
+});
+
+test('scrolling does not interrupt a download also used by the viewer', () => {
+  const h = harness({ concurrency: 1 });
+  const old = h.image('https://images.test/shared', true);
+  const current = h.image('https://images.test/current', true);
+  h.visible([old]); h.tick();
+  const viewer = h.image('https://images.test/shared');
+  h.visible([old], false); h.visible([current]); h.tick();
+  assert.equal(h.requests.length, 1);
+  assert.equal(h.requests[0].image.url, 'https://images.test/shared');
+  h.requests[0].image.succeed(); h.tick();
+  assert.equal(viewer.status, 'loaded');
+  assert.equal(h.requests[1].url, 'https://images.test/current');
+});
+
+test('aborted fetches ignore late responses and scrolling does not use up error retries', async () => {
+  const h = harness({ perOrigin: 1, retries: 1 });
+  const first = h.image(storage + 'first.png', true);
+  const second = h.image(storage + 'second.png', true);
+  h.visible([first]); h.tick();
+  h.visible([first], false); h.visible([second]); h.tick();
+  assert.equal(h.fetches[0].options.signal.aborted, true);
+  await h.respond(0, 200);
+  assert.equal(h.requests.length, 0, 'an aborted fetch cannot display a late result');
+  h.visible([second], false); h.visible([first]); h.tick();
+  assert.equal(h.fetches[1].options.signal.aborted, true);
+  assert.equal(h.fetches[2].url, storage + 'first.png');
+  await h.respond(2, 500);
+  assert.equal(first.status, 'retrying', 'scrolling did not consume the one allowed retry');
+  h.tick(2999); assert.equal(h.fetches.length, 3);
+  h.tick(1); assert.equal(h.fetches.length, 4);
+  await h.respond(3, 200); h.requests[0].image.succeed(); h.tick();
+  assert.equal(first.status, 'loaded');
+});
+
+test('repeated scrolling with all default slots occupied never strands visible placeholders', () => {
+  const h = harness({ retries: 1 });
+  const images = Array.from({ length: 1000 }, (_, i) => h.image('https://images.test/' + i, true));
+  let visible = [];
+  for (const start of [0, 200, 400, 200, 800, 0]) {
+    h.visible(visible, false);
+    visible = images.slice(start, start + 20);
+    h.visible(visible); h.tick();
+    assert.equal(visible.filter(image => image.status === 'loading').length, 16);
+    assert.equal(visible.filter(image => image.status === 'queued').length, 4);
+    const active = h.requests.filter(request => request.image.onload);
+    assert.equal(active.length, 16, 'cancelled downloads release their slots exactly once');
+    assert.ok(active.every(request => Number(request.url.split('/').at(-1)) >= start &&
+      Number(request.url.split('/').at(-1)) < start + 20));
+  }
+  h.requests.filter(request => request.image.onload).forEach(request => request.image.succeed());
+  h.tick();
+  h.requests.filter(request => request.image.onload).forEach(request => request.image.succeed());
+  h.tick();
+  assert.ok(visible.every(image => image.status === 'loaded'));
+});
+
+test('scrolling only cancels offscreen work when a ready image needs its slot', () => {
+  const h = harness({ perOrigin: 2 });
+  const old = h.image('https://images.test/old', true);
+  const current = h.image('https://images.test/current', true);
+  h.visible([old]); h.tick();
+  h.visible([old], false); h.visible([current]); h.tick();
+  assert.equal(h.requests.length, 2);
+  assert.equal(h.requests[0].image.url, 'https://images.test/old', 'unused slots allow old downloads to finish');
+  h.requests[0].image.succeed(); h.requests[1].image.succeed(); h.tick();
+  h.visible([old]); h.tick();
+  assert.equal(h.requests.length, 2, 'returning to a completed image reuses its result');
+});

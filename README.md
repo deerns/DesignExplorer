@@ -19,6 +19,9 @@ Study thumbnails load near the visible area. Thumbnails and 2D viewers share a
 queue with at most twenty-four downloads overall and sixteen per server, with no
 artificial delay between starts. Viewers have priority; within each priority,
 new images start before retries. Duplicate URLs share downloads and cached results.
+When scrolling fills the queue, visible images take over slots from downloads
+that are no longer on screen. Interrupted images resume when visible again;
+scrolling does not count as a failed attempt or consume their retry budget.
 
 Failed images retry independently after about three seconds, with increasing
 delays and at most five retries. Other images continue loading during that wait.

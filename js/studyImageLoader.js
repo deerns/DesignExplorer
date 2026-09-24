@@ -116,17 +116,23 @@
     return Math.max(0, env.Date.parse(value) - now()) || 0;
   }
 
+  function visiblePriority(job) {
+    var priority = -1;
+    job.subscribers.forEach(function (state) {
+      if (live(state) && state.visible) priority = Math.max(priority, state.priority);
+    });
+    return priority;
+  }
+
   function pump() {
     timer = null;
     prune();
-    if (active >= config.concurrency) return;
     var candidates = [];
+    var offscreen = [];
     jobs.forEach(function (job) {
+      var priority = visiblePriority(job);
+      if (job.status === "loading" && priority < 0) offscreen.push(job);
       if (job.status !== "queued" && job.status !== "retrying") return;
-      var priority = -1;
-      job.subscribers.forEach(function (state) {
-        if (live(state) && state.visible) priority = Math.max(priority, state.priority);
-      });
       if (priority >= 0) candidates.push({ job: job, priority: priority });
     });
     candidates.sort(function (a, b) {
@@ -136,12 +142,19 @@
     var next = Infinity;
     candidates.forEach(function (candidate) {
       var job = candidate.job;
-      if (active >= config.concurrency || job.origin.active >= config.perOrigin) return;
       var ready = Math.max(job.ready, job.origin.next, job.origin.pause);
       if (ready > now()) {
         next = Math.min(next, ready - now());
       } else {
-        start(job);
+        // On scroll, let visible images reclaim occupied slots. Keep other
+        // downloads running if there is room, or any visible viewer needs them.
+        if (active >= config.concurrency || job.origin.active >= config.perOrigin) {
+          var index = offscreen.findIndex(function (other) {
+            return job.origin.active < config.perOrigin || other.origin === job.origin;
+          });
+          if (index >= 0) offscreen.splice(index, 1)[0].cancel();
+        }
+        if (active < config.concurrency && job.origin.active < config.perOrigin) start(job);
       }
     });
     if (next < Infinity && active < config.concurrency) schedule(next);
@@ -193,12 +206,21 @@
     image.onload = function () { finish(true); };
     image.onerror = function () { finish(false); };
     job.cancel = function () {
+      if (finished) return;
       finished = true;
       env.clearTimeout(job.timeout);
       image.onload = image.onerror = null;
+      job.image = null;
+      job.cancel = null;
+      active--;
+      job.origin.active--;
+      // Scrolling is not a failed request: preserve the retry budget and delay.
+      job.attempts--;
+      job.status = job.attempts ? "retrying" : "queued";
       if (controller) controller.abort();
       image.removeAttribute("src");
       dispose(job);
+      job.subscribers.forEach(function (state) { display(state, job.status); });
     };
     job.timeout = env.setTimeout(function () {
       finish(false);
