@@ -15,14 +15,14 @@ Design Explore is a web application to make exploring multi-dimensional design s
 
 ## Page loading indicator
 
-The welcome-screen loader reuses the cyan Deerns mark from Solar Shading. Its
-fill grows radially from the left tip as Pace's page-load percentage increases;
-the filled area follows the percentage. The same value is shown below the logo
-and exposed to assistive technology. Reduced-motion preferences disable the
-fill transition. Pace's existing progress estimation and completion lifecycle
-remain in use; this is page-load progress, not individual image byte progress.
+The welcome-screen loader uses the shared `deerns-loader` component. Cyan waves
+spread from the Deerns mark's left tip while Pace's page-load percentage is
+shown below the logo and exposed to assistive technology. Reduced-motion
+preferences show a static logo. Pace controls when the loader appears and
+disappears; the percentage estimates page-load progress.
 
-The styling and progress binding are in `pace/pace.css` and `pace/pace-logo.js`.
+The component is in `pace/deerns-loader.js`; the surrounding card styling and
+Pace progress binding are in `pace/pace.css` and `pace/pace-logo.js`.
 
 ## Image loading
 
