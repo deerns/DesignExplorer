@@ -16,55 +16,19 @@
 
 .pace .pace-progress {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
+  justify-content: center;
   /* Pace normally translates a horizontal bar. The logo stays in place. */
   transform: none !important;
   -webkit-transform: none !important;
 }
 
-.pace .pace-progress-inner {
-  position: relative;
-  width: 72px;
-  height: 104px;
-  overflow: hidden;
-  background: #00b2e332;
-  /* Same Deerns mark and radial origin as Solar Shading's loading animation. */
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29.1772 42'%3E%3Cpath d='M20.6318 .5L0 21L20.6318 41.5C25.9103 36.2552 29.1772 29.005 29.1772 21C29.1772 12.995 25.9103 5.7448 20.6318 .5Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 29.1772 42'%3E%3Cpath d='M20.6318 .5L0 21L20.6318 41.5C25.9103 36.2552 29.1772 29.005 29.1772 21C29.1772 12.995 25.9103 5.7448 20.6318 .5Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-  transform: translateZ(0);
-}
-
-.pace .pace-progress-inner::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 144px;
-  height: 144px;
-  border-radius: 50%;
-  background: #00b2e3;
-  transform: translate(-50%, -50%) scale(var(--pace-fill, 0));
-  transition: transform 160ms linear;
-}
-
-.pace .pace-progress::after {
-  content: "Loading " attr(data-progress-text);
-  color: #003087;
-  font: 500 13px/1.4 Arial, sans-serif;
+.pace deerns-loader {
   font-variant-numeric: tabular-nums;
-  letter-spacing: .15px;
   white-space: nowrap;
 }
 
+.pace .pace-progress-inner,
 .pace .pace-activity,
 .pace.pace-inactive {
   display: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pace .pace-progress-inner::before {
-    transition: none;
-  }
 }
