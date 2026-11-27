@@ -1067,6 +1067,11 @@ a#copyRightButton {
     isolation: isolate;
 }
 
+:root {
+    --explorer-loading-backdrop-blur: 16px;
+    --explorer-loading-fade-duration: 300ms;
+}
+
 #welcome {
     padding: 16px;
     background-color: rgba(23, 39, 63, .40);
@@ -1086,8 +1091,8 @@ a#copyRightButton {
 
     #welcome[inert] {
         background-color: rgba(23, 39, 63, .34);
-        -webkit-backdrop-filter: blur(7px);
-        backdrop-filter: blur(7px);
+        -webkit-backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
+        backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
     }
 }
 
@@ -1112,11 +1117,30 @@ a#copyRightButton {
 
 #welcome[inert] > .col-centered {
     background-color: rgba(228, 234, 242, .80);
-    filter: blur(3px);
+    filter: blur(7px);
 }
 
 #welcome[inert] > .col-centered > * {
     opacity: .46;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    #welcome:not([inert]) {
+        transition:
+            background-color var(--explorer-loading-fade-duration) ease-out,
+            -webkit-backdrop-filter var(--explorer-loading-fade-duration) ease-out,
+            backdrop-filter var(--explorer-loading-fade-duration) ease-out;
+    }
+
+    #welcome:not([inert]) > .col-centered {
+        transition:
+            background-color var(--explorer-loading-fade-duration) ease-out,
+            filter var(--explorer-loading-fade-duration) ease-out;
+    }
+
+    #welcome:not([inert]) > .col-centered > * {
+        transition: opacity var(--explorer-loading-fade-duration) ease-out;
+    }
 }
 
 #welcome > #welcomeContainer {

@@ -14,8 +14,8 @@
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .pace {
     background-color: rgba(23, 39, 63, .34);
-    -webkit-backdrop-filter: blur(7px);
-    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
+    backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
   }
 }
 
@@ -29,12 +29,6 @@
 .pace .pace-progress {
   display: flex;
   justify-content: center;
-  width: 168px;
-  padding: 24px 20px 20px;
-  border: 1px solid #dce7f1;
-  border-radius: 12px;
-  background: #f3f7fc;
-  box-shadow: 0 12px 36px rgba(23, 39, 63, .24);
   /* Pace normally translates a horizontal bar. The logo stays in place. */
   transform: none !important;
   -webkit-transform: none !important;
@@ -47,6 +41,24 @@
 
 .pace .pace-progress-inner,
 .pace .pace-activity,
-.pace.pace-inactive {
+.pace.pace-inactive .pace-progress {
   display: none;
+}
+
+.pace.pace-inactive {
+  background-color: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pace.pace-inactive {
+    transition:
+      visibility 0s linear var(--explorer-loading-fade-duration),
+      background-color var(--explorer-loading-fade-duration) ease-out,
+      -webkit-backdrop-filter var(--explorer-loading-fade-duration) ease-out,
+      backdrop-filter var(--explorer-loading-fade-duration) ease-out;
+  }
 }
