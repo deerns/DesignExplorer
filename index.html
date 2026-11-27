@@ -1378,12 +1378,12 @@
     <!-- <link rel="stylesheet" type="text/css" href="./radar_source_files/radar-chart.css" /> -->
 
     <!-- Scatter-matrix -->
-    <script src="./scatter_matrix_source_files/scatter-matrix.js"></script>
+    <script src="./scatter_matrix_source_files/scatter-matrix.js?v=20261127-1"></script>
     <!-- Scatter-matrix CSS -->
     <link
       type="text/css"
       rel="stylesheet"
-      href="./scatter_matrix_source_files/scatter-matrix.css?v=20260717-1"
+      href="./scatter_matrix_source_files/scatter-matrix.css?v=20261127-1"
     />
 
     <!-- Bootstrap Core CSS -->
@@ -4855,6 +4855,8 @@
                       class="btn btn-default btn-xs"
                       id="scatter-menu-toggle"
                       title="Show Dimensions"
+                      aria-controls="scatter-dimension-controls"
+                      aria-expanded="false"
                     >
                       <span
                         class="glyphicon glyphicon-triangle-right"
@@ -7149,6 +7151,7 @@
         var selectedData = getCurrentGraphDisplayData();
         selectedData = ensureScatterDataIds(selectedData);
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
+        sm.__controlsHidden = isScatterToggled;
         sm.__viewportWidth = scatterMatrixWidth;
         sm.__viewportHeight = scatterViewportHeight;
         sm.__layout_width = scatterMatrixWidth;
@@ -7520,7 +7523,11 @@
           radarChart.classed("scatter-control-hidden", !!isScatterToggled);
         }
 
-        d3.select(".scatter-matrix-control").classed("toggled", isScatterToggled);
+        d3.select("#scatter-menu-toggle").attr("aria-expanded", String(!isScatterToggled));
+        var control = radarChart.select(".scatter-matrix-control")
+          .attr("id", "scatter-dimension-controls")
+          .classed("toggled", isScatterToggled);
+        if (!control.empty()) control.node().inert = isScatterToggled;
       }
 
       function syncPcGraphToggleUi() {
@@ -9590,9 +9597,20 @@
         delays.forEach(function (delayMs) {
           setTimeout(function () {
             if (!graph || !shouldShowScatterPlots()) return;
-            scheduleDeferredScatterLayoutRefresh();
+            if (!scatterChartMatchesLayout(getScatterChartLayoutMetrics())) {
+              scheduleDeferredScatterLayoutRefresh();
+            }
           }, isFinite(delayMs) && delayMs > 0 ? delayMs : 0);
         });
+      }
+
+      function scatterChartMatchesLayout(metrics) {
+        return (
+          !!scatterChart &&
+          !window.__pendingScatterLayoutState &&
+          Math.abs(scatterChart.__layout_width - metrics.viewportWidth) <= 6 &&
+          Math.abs(scatterChart.__layout_height - metrics.viewportHeight) <= 6
+        );
       }
 
       function syncExistingScatterChartState() {
@@ -9638,12 +9656,7 @@
         var expectedHeight = layoutMetrics.viewportHeight;
         var overflowTolerance = 6;
         var layoutChanged =
-          !isFinite(scatterChart.__layout_width) ||
-          !isFinite(scatterChart.__layout_height) ||
-          Math.abs(scatterChart.__layout_width - expectedWidth) >
-            overflowTolerance ||
-          Math.abs(scatterChart.__layout_height - expectedHeight) >
-            overflowTolerance ||
+          !scatterChartMatchesLayout(layoutMetrics) ||
           (isFinite(currentWrapperWidth) &&
             currentWrapperWidth > expectedWidth + overflowTolerance) ||
           (isFinite(currentSvgWidth) &&
@@ -9810,17 +9823,35 @@
         setScatterPlotsVisibilityFromMainScreen(!shouldShowScatterPlots());
       });
 
+      var scatterControlTransition = null;
+
+      function finishScatterControlLayout(transition) {
+        if (scatterControlTransition !== transition) return;
+        scatterControlTransition = null;
+        if (!graph || !shouldShowChartHorizontalResizeHandle(shouldShowScatterPlots())) return;
+
+        syncChartHorizontalSectionWidths(true);
+        if (Math.abs(graph.width() - getPcChartBaseWidth()) > 1) {
+          reDrawPcChart({ immediate: true });
+        }
+        if (!scatterChartMatchesLayout(getScatterChartLayoutMetrics())) {
+          refreshScatterChartLayout();
+        }
+      }
+
       $("#scatter-menu-toggle").off("click").click(function (e) {
         e.preventDefault();
         e.stopPropagation();
         isScatterToggled = !isScatterToggled;
         syncScatterControlLayoutState();
-        schedulePcLayoutRefresh({
-          immediate: true,
-          refreshSidebar: false,
-          refreshScatter: true,
-          forceScatterRefresh: false,
-        });
+
+        var control = document.getElementById("scatter-dimension-controls");
+        var transition = control?.getAnimations?.()
+          .find(animation => animation.transitionProperty === "clip-path");
+        scatterControlTransition = transition;
+        var finish = () => finishScatterControlLayout(transition);
+        if (transition) transition.finished.then(finish, finish);
+        else finish();
       });
       $("#radarChart")
         .off("click", ".scatter-matrix-control")
