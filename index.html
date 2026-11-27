@@ -1378,7 +1378,7 @@
     <!-- <link rel="stylesheet" type="text/css" href="./radar_source_files/radar-chart.css" /> -->
 
     <!-- Scatter-matrix -->
-    <script src="./scatter_matrix_source_files/scatter-matrix.js?v=20261127-2"></script>
+    <script src="./scatter_matrix_source_files/scatter-matrix.js?v=20261127-3"></script>
     <!-- Scatter-matrix CSS -->
     <link
       type="text/css"
@@ -12831,13 +12831,13 @@
         var activeAscending = getCurrentSortAscendingValue();
 
         // sort data based on dropdown selecion
-        if (activeSortBy && activeAscending) {
+        if (activeSortBy) {
+          var compare = activeAscending ? d3.ascending : d3.descending;
+          var numeric = graph?.dimensions()[activeSortBy]?.type === "number";
           data.sort(function (x, y) {
-            return d3.ascending(x[activeSortBy], y[activeSortBy]);
-          });
-        } else if (activeSortBy) {
-          data.sort(function (x, y) {
-            return d3.descending(x[activeSortBy], y[activeSortBy]);
+            return numeric
+              ? compare(+x[activeSortBy], +y[activeSortBy])
+              : compare(x[activeSortBy], y[activeSortBy]);
           });
         }
 
@@ -16665,7 +16665,7 @@
           .enter()
           .append("option")
           .attr("value", function (d) { return d; })
-          .text(function (d) { return d === "" ? "Auto" : d; });
+          .text(function (d) { return d === "" ? "Study precision" : d; });
         decimalSelect
           .property("value", function (d) {
             return newUserSetting.dimDecimals[d] ?? "";
