@@ -1400,7 +1400,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20261127-2" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-3" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -5210,14 +5210,14 @@
               <svg width="0" height="0" aria-hidden="true" style="position: absolute">
                 <defs>
                   <filter id="welcomeSampleTransparency" color-interpolation-filters="sRGB">
-                    <!-- The alpha row clears white and feathers near-white edges. -->
+                    <!-- The alpha row clears white while keeping light model details. -->
                     <feColorMatrix
                       type="matrix"
                       values="
-                        1  0  0  0   0
-                        0  1  0  0   0
-                        0  0  1  0   0
-                       -6 -6 -6  0  18
+                         1   0   0  0   0
+                         0   1   0  0   0
+                         0   0   1  0   0
+                       -32 -32 -32  0  96
                       "
                     />
                     <feComposite in2="SourceAlpha" operator="in" />

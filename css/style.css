@@ -1140,11 +1140,7 @@ a#copyRightButton {
 
 #welcomeContainer .sampleImage {
     min-width: 0;
-    filter: url("#welcomeSampleTransparency") blur(1px);
-}
-
-#welcome[inert] .sampleImage {
-    filter: url("#welcomeSampleTransparency") blur(2px);
+    filter: url("#welcomeSampleTransparency");
 }
 
 .welcome-actions {
