@@ -1078,7 +1078,7 @@ a#copyRightButton {
     overscroll-behavior: contain;
 }
 
-#welcome[inert] {
+#welcome[inert]:not([hidden]) {
     background-color: rgba(23, 39, 63, .52);
 }
 
@@ -1089,7 +1089,7 @@ a#copyRightButton {
         backdrop-filter: blur(4px);
     }
 
-    #welcome[inert] {
+    #welcome[inert]:not([hidden]) {
         background-color: rgba(23, 39, 63, .34);
         -webkit-backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
         backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
@@ -1099,6 +1099,17 @@ a#copyRightButton {
 #welcome[hidden],
 #welcome > [hidden] {
     display: none;
+}
+
+#welcome[hidden] {
+    pointer-events: none;
+    background-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+#welcome[hidden] > .col-centered {
+    opacity: 0;
 }
 
 #welcome > .col-centered {
@@ -1115,25 +1126,30 @@ a#copyRightButton {
     box-shadow: 0 16px 48px rgba(23, 39, 63, .20);
 }
 
-#welcome[inert] > .col-centered {
+#welcome[inert]:not([hidden]) > .col-centered {
     background-color: rgba(228, 234, 242, .80);
     filter: blur(7px);
 }
 
-#welcome[inert] > .col-centered > * {
+#welcome[inert]:not([hidden]) > .col-centered > * {
     opacity: .46;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    #welcome:not([inert]) {
+    #welcome:not([inert]),
+    #welcome[hidden] {
         transition:
+            display var(--explorer-loading-fade-duration),
             background-color var(--explorer-loading-fade-duration) ease-out,
             -webkit-backdrop-filter var(--explorer-loading-fade-duration) ease-out,
             backdrop-filter var(--explorer-loading-fade-duration) ease-out;
+        transition-behavior: allow-discrete;
     }
 
-    #welcome:not([inert]) > .col-centered {
+    #welcome:not([inert]) > .col-centered,
+    #welcome[hidden] > .col-centered {
         transition:
+            opacity var(--explorer-loading-fade-duration) ease-out,
             background-color var(--explorer-loading-fade-duration) ease-out,
             filter var(--explorer-loading-fade-duration) ease-out;
     }

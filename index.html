@@ -1400,7 +1400,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20261127-4" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-5" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -5813,7 +5813,7 @@
     </div>
     <!-- /#wrapper -->
 
-    <script src="js/explorerOverlays.js"></script>
+    <script src="js/explorerOverlays.js?v=20261127-1"></script>
 
     <!-- Bootstrap Core JavaScript -->
     <script src="bootstrap_side_bar/js/bootstrap.min.js"></script>
@@ -8876,7 +8876,7 @@
         return Array.prototype.some.call(
           document.querySelectorAll(".popupWindow"),
           function (node) {
-            if (!node) return false;
+            if (!node || node.hidden) return false;
 
             var computedStyle = window.getComputedStyle(node);
             if (!computedStyle) return false;
