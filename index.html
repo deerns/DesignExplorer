@@ -1392,7 +1392,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20261127-9" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-10" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -7378,7 +7378,7 @@
       var chartHorizontalLayoutState = {
         scatterRatio: null,
         useAutoRatio: true,
-        minScatterWidth: 240,
+        minScatterWidth: 180,
         minPcWidth: 320,
         handleWidth: 16,
       };
@@ -7513,18 +7513,8 @@
       }
 
       function syncScatterControlLayoutState() {
-        var scatterWrapper = d3.select("#ScChartWrapper");
-        if (!scatterWrapper.empty()) {
-          scatterWrapper.classed("scatter-control-hidden", !!isScatterToggled);
-        }
-
-        var radarChart = d3.select("#radarChart");
-        if (!radarChart.empty()) {
-          radarChart.classed("scatter-control-hidden", !!isScatterToggled);
-        }
-
         d3.select("#scatter-menu-toggle").attr("aria-expanded", String(!isScatterToggled));
-        var control = radarChart.select(".scatter-matrix-control")
+        var control = d3.select("#radarChart .scatter-matrix-control")
           .attr("id", "scatter-dimension-controls")
           .classed("toggled", isScatterToggled);
         if (!control.empty()) control.node().inert = isScatterToggled;
@@ -7984,16 +7974,13 @@
 
       function getHeightDrivenScatterTargetWidth() {
         var scatterBaseHeight = getScatterChartBaseHeight();
-        var minimumWidth = isScatterToggled ? 120 : 150;
+        var minimumWidth = 120;
 
         if (!isFinite(scatterBaseHeight) || scatterBaseHeight <= 0) {
           return minimumWidth;
         }
 
-        var targetWidth = scatterBaseHeight - 10;
-        targetWidth += isScatterToggled ? -8 : 24;
-
-        return Math.max(targetWidth, minimumWidth);
+        return Math.max(scatterBaseHeight - 18, minimumWidth);
       }
 
       function getDefaultChartHorizontalRatio() {
@@ -8010,9 +7997,7 @@
           ratio = 4 / 12;
         }
 
-        if (isScatterToggled) {
-          ratio = Math.max(ratio - 0.04, 0.2);
-        }
+        ratio = Math.max(ratio - 0.04, 0.2);
 
         if (!isRightChartFullScreenToggled) {
           var availableWidth = getAvailableChartHorizontalWidth();
@@ -8167,11 +8152,7 @@
       function getChartHorizontalMinimumScatterWidth(totalWidth) {
         var minimumScatterWidth = chartHorizontalLayoutState.minScatterWidth;
         var heightDrivenWidth = getHeightDrivenScatterTargetWidth();
-        var minimumFloor = isScatterToggled ? 120 : 150;
-
-        if (isScatterToggled) {
-          minimumScatterWidth = Math.max(minimumScatterWidth - 60, minimumFloor);
-        }
+        var minimumFloor = 120;
 
         if (isFinite(heightDrivenWidth) && heightDrivenWidth > 0) {
           minimumScatterWidth = Math.min(minimumScatterWidth, heightDrivenWidth);
@@ -8189,7 +8170,7 @@
           isFinite(totalWidth) && totalWidth > 0
             ? totalWidth
             : getAvailableChartHorizontalWidth();
-        var minScatterFloor = isScatterToggled ? 160 : 180;
+        var minScatterFloor = 160;
         var minPcFloor = getActiveGraphDimensionCount() <= 2 ? 180 : 200;
         var minScatterWidth =
           getChartHorizontalMinimumScatterWidth(resolvedTotalWidth);
@@ -8570,8 +8551,6 @@
       function getScatterChartLayoutMetrics() {
         var scatterBaseHeight = getScatterChartBaseHeight();
         var scatterContainerWidth = getEffectiveScatterContainerWidth();
-        var minimumViewportWidth = isScatterToggled ? 120 : 140;
-        var minimumViewportHeight = isScatterToggled ? 120 : 140;
         var hasMeasuredWidth =
           isFinite(scatterContainerWidth) && scatterContainerWidth >= 160;
 
@@ -8591,11 +8570,8 @@
           baseHeight: scatterBaseHeight,
           containerWidth: scatterContainerWidth,
           hasMeasuredWidth: hasMeasuredWidth,
-          viewportWidth: Math.max(scatterMatrixWidth, minimumViewportWidth),
-          viewportHeight: Math.max(
-            scatterBaseHeight - 30,
-            minimumViewportHeight
-          ),
+          viewportWidth: Math.max(scatterMatrixWidth, 120),
+          viewportHeight: Math.max(scatterBaseHeight - 30, 120),
         };
       }
 
@@ -9823,35 +9799,11 @@
         setScatterPlotsVisibilityFromMainScreen(!shouldShowScatterPlots());
       });
 
-      var scatterControlTransition = null;
-
-      function finishScatterControlLayout(transition) {
-        if (scatterControlTransition !== transition) return;
-        scatterControlTransition = null;
-        if (!graph || !shouldShowChartHorizontalResizeHandle(shouldShowScatterPlots())) return;
-
-        syncChartHorizontalSectionWidths(true);
-        if (Math.abs(graph.width() - getPcChartBaseWidth()) > 1) {
-          reDrawPcChart({ immediate: true });
-        }
-        if (!scatterChartMatchesLayout(getScatterChartLayoutMetrics())) {
-          refreshScatterChartLayout();
-        }
-      }
-
       $("#scatter-menu-toggle").off("click").click(function (e) {
         e.preventDefault();
         e.stopPropagation();
         isScatterToggled = !isScatterToggled;
         syncScatterControlLayoutState();
-
-        var control = document.getElementById("scatter-dimension-controls");
-        var transition = control?.getAnimations?.()
-          .find(animation => animation.transitionProperty === "clip-path");
-        scatterControlTransition = transition;
-        var finish = () => finishScatterControlLayout(transition);
-        if (transition) transition.finished.then(finish, finish);
-        else finish();
       });
       $("#radarChart")
         .off("click", ".scatter-matrix-control")
