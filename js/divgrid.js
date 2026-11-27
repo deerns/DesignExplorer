@@ -4,6 +4,9 @@ d3.divgrid = function(config) {
   var headerFormatter = function (d) {
     return d;
   };
+  var cellFormatter = function (value) {
+    return value;
+  };
 
   var dg = function(selection) {
     if (columns.length == 0) columns = d3.keys(selection.data()[0][0]);
@@ -13,6 +16,7 @@ d3.divgrid = function(config) {
         .data([true])
       .enter().append("div")
         .attr("class", "header")
+        .attr("role", "row")
 
     var header = selection.select(".header")
       .selectAll(".cell")
@@ -20,6 +24,7 @@ d3.divgrid = function(config) {
 
     header.enter().append("div")
       .attr("class", function(d,i) { return "col-" + i; })
+      .attr("role", "columnheader")
       .classed("cell", true)
 
     selection.selectAll(".header .cell")
@@ -33,20 +38,26 @@ d3.divgrid = function(config) {
 
     rows.enter().append("div")
         .attr("class", "row")
+        .attr("role", "row")
 
     rows.exit().remove();
 
     var cells = selection.selectAll(".row").selectAll(".cell")
-        .data(function(d) { return columns.map(function(col){return d[col];}) })
+        .data(function(row) {
+          return columns.map(function(column) {
+            return cellFormatter(row[column], column);
+          });
+        })
 
     // cells
     cells.enter().append("div")
       .attr("class", function(d,i) { return "col-" + i; })
+      .attr("role", "cell")
       .classed("cell", true)
 
     cells.exit().remove();
 
-    selection.selectAll(".cell")
+    selection.selectAll(".row .cell")
       .text(function(d) { return d; });
 
     return dg;
@@ -61,6 +72,11 @@ d3.divgrid = function(config) {
   dg.headerFormatter = function(_) {
     if (!arguments.length) return headerFormatter;
     headerFormatter = _;
+    return this;
+  };
+
+  dg.cellFormatter = function(formatter) {
+    cellFormatter = formatter;
     return this;
   };
 

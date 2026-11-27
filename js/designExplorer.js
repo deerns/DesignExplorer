@@ -29,6 +29,7 @@ function unloadPageContent() {
     	// Use this in case you want to load new data to the page
     */
   overwriteInitialGlobalValues();
+  if (typeof drawTable === "function") drawTable([]);
 
   d3.select("div.legend").selectAll("*").remove(); // remove legend
 
@@ -255,6 +256,7 @@ function overwriteInitialGlobalValues() {
           },
           dimScales: {},
           dimTicks: {},
+          dimDecimals: {},
           dimMark: {},
           dimLabels: {},
           dimLabelsNormalized: {},

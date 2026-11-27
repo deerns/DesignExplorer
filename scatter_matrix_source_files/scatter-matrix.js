@@ -710,13 +710,8 @@ ScatterMatrix.prototype.__draw = function (
     }
 
     variables_to_draw.forEach(function (trait) {
-      // Coerce values to numbers.
-      data.forEach(function (d) {
-        d[trait] = +d[trait];
-      });
-
       var value = function (d) {
-          return d[trait];
+          return +d[trait];
         },
         domain = getConfiguredDomain(trait) || [d3.min(data, value), d3.max(data, value)],
         range_x = [padding / 2, size - padding / 2],
@@ -791,7 +786,11 @@ ScatterMatrix.prototype.__draw = function (
     };
 
     var reshape_axis = function (axis, k) {
+      var numberFormat = typeof getDimensionNumberFormatter === "function"
+        ? getDimensionNumberFormatter(k)
+        : null;
       axis.ticks(5).tickFormat(function (d) {
+        if (numberFormat) return numberFormat(d);
         if (Math.abs(+d) > 10000 || (Math.abs(d) < 0.001 && Math.abs(d) != 0)) {
           return scif(d);
         }
@@ -937,10 +936,10 @@ ScatterMatrix.prototype.__draw = function (
         })
         // .attr("class", "selected")
         .attr("cx", function (d) {
-          return x[p.x](d[p.x]);
+          return x[p.x](+d[p.x]);
         })
         .attr("cy", function (d) {
-          return y[p.y](d[p.y]);
+          return y[p.y](+d[p.y]);
         })
         .attr("r", pointRadius)
         .style("fill", function (d) {

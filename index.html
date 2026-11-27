@@ -1356,7 +1356,7 @@
     <!-- Parallel Coordinates -->
     <script
       type="text/javascript"
-      src="./pc_source_files/d3/d3.parcoords.js?v=20260924-1"
+      src="./pc_source_files/d3/d3.parcoords.js?v=20261127-1"
     ></script>
 
     <!-- D3 Parallel Coordinates CSS -->
@@ -1378,7 +1378,7 @@
     <!-- <link rel="stylesheet" type="text/css" href="./radar_source_files/radar-chart.css" /> -->
 
     <!-- Scatter-matrix -->
-    <script src="./scatter_matrix_source_files/scatter-matrix.js?v=20261127-1"></script>
+    <script src="./scatter_matrix_source_files/scatter-matrix.js?v=20261127-3"></script>
     <!-- Scatter-matrix CSS -->
     <link
       type="text/css"
@@ -1392,7 +1392,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20261127-10" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-11" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -1452,11 +1452,11 @@
       rel="stylesheet"
     />
 
-    <script src="./js/divgrid.js"></script>
+    <script src="./js/divgrid.js?v=20261127-2"></script>
     <!-- Design Explorer Scripts -->
     <script src="./js/studyImageLoader.js?v=20260924-4"></script>
     <script
-      src="./js/designExplorer.js?v=20260916-1"
+      src="./js/designExplorer.js?v=20261127-2"
       type="text/javascript"
       language="javascript"
     ></script>
@@ -1597,6 +1597,49 @@
       return normalized;
     }
 
+    var maxDimensionDecimals = 12;
+    var dimensionNumberFormatters = [];
+
+    function normalizeDecimalPlaces(value) {
+      if (typeof value !== "number" && typeof value !== "string") return null;
+      if (String(value).trim() === "") return null;
+      var decimals = Number(value);
+      return Number.isInteger(decimals) && decimals >= 0 && decimals <= maxDimensionDecimals
+        ? decimals
+        : null;
+    }
+
+    function normalizeDimensionDecimals(map) {
+      var normalized = Object.create(null);
+      if (!map || typeof map !== "object" || Array.isArray(map)) return normalized;
+      Object.keys(map).forEach(function (key) {
+        var decimals = normalizeDecimalPlaces(map[key]);
+        if (decimals !== null) normalized[key] = decimals;
+      });
+      return normalized;
+    }
+
+    function getDimensionNumberFormatter(dimName) {
+      var decimals = _userSetting?.dimDecimals?.[dimName];
+      if (!Number.isInteger(decimals)) return null;
+      if (!dimensionNumberFormatters[decimals]) {
+        dimensionNumberFormatters[decimals] = new Intl.NumberFormat("en-US", {
+          useGrouping: false,
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        }).format;
+      }
+      return dimensionNumberFormatters[decimals];
+    }
+
+    function formatDimensionValue(dimName, value) {
+      var format = getDimensionNumberFormatter(dimName);
+      if (!format || (typeof value !== "number" &&
+        (typeof value !== "string" || value.trim() === ""))) return value;
+      var number = Number(value);
+      return Number.isFinite(number) ? format(number) : value;
+    }
+
     function createDefaultUserSettingState() {
       return {
         studyInfo: {
@@ -1605,6 +1648,7 @@
         },
         dimScales: {},
         dimTicks: {},
+        dimDecimals: {},
         dimMark: {},
         dimLabels: {},
         dimLabelsNormalized: {},
@@ -1763,6 +1807,7 @@
         studyInfo: Object.assign({}, defaults.studyInfo, source.studyInfo || {}),
         dimScales: Object.assign({}, defaults.dimScales, source.dimScales || {}),
         dimTicks: Object.assign({}, defaults.dimTicks, source.dimTicks || {}),
+        dimDecimals: normalizeDimensionDecimals(source.dimDecimals),
         dimMark: Object.assign({}, defaults.dimMark, source.dimMark || {}),
         dimLabels: Object.assign({}, defaults.dimLabels, source.dimLabels || {}),
         dimLabelsNormalized: Object.assign(
@@ -2367,6 +2412,10 @@
       );
       sanitized.dimTicks = filterDimScopedSettingMap(
         source.dimTicks,
+        validDimLookup
+      );
+      sanitized.dimDecimals = filterDimScopedSettingMap(
+        sanitized.dimDecimals,
         validDimLookup
       );
       sanitized.dimMark = filterDimScopedSettingMap(
@@ -5144,8 +5193,22 @@
             </div>
 
             </div>
-            <!--Here starts the thumbnails-btm_tbContainer-->
-            <div id="tbContainer" class="col-lg-12"></div>
+            <div id="tbContainer" class="col-lg-12" hidden>
+              <div class="table-pagination">
+                <span id="tableRange" role="status"></span>
+                <div class="table-page-actions">
+                  <button id="tablePrevious" class="btn btn-default btn-sm" type="button" data-table-page="-1">
+                    Previous
+                  </button>
+                  <button id="tableNext" class="btn btn-default btn-sm" type="button" data-table-page="1">
+                    Next
+                  </button>
+                </div>
+              </div>
+              <div id="tableViewport" tabindex="0" role="region" aria-label="Results table">
+                <div id="tableGrid" role="table" aria-label="Results"></div>
+              </div>
+            </div>
           </div>
         </div>
         <!-- Welcome and Get Data dialog -->
@@ -9252,7 +9315,9 @@
           if (!this.id) return;
           var sliderInstance = $("#" + this.id).data("ionRangeSlider");
           if (sliderInstance && typeof sliderInstance.update === "function") {
-            sliderInstance.update({});
+            sliderInstance.update({
+              prettify: getDimensionNumberFormatter(this.name),
+            });
           }
         });
 
@@ -10573,8 +10638,6 @@
         if (getAvailableImageCount() == 0) {
           hasImgLink = false;
           d3.select("#thumbnails-btm_container").remove();
-
-          drawTable(cleanedData);
         } else {
           hasImgLink = true;
         }
@@ -10592,16 +10655,23 @@
         }
       }
 
+      var tablePageSize = 50;
+      var tableData = [];
+      var tablePage = 0;
+      var tableViewport = document.getElementById("tableViewport");
+
       function drawTable(data) {
-        var tableData = Array.isArray(data) ? data.slice(0, 20) : [];
-        var tableContainer = d3.select("#tbContainer");
-
-        if (tableData.length === 0) {
-          tableContainer.html("");
-          return;
+        var nextData = Array.isArray(data) ? data : [];
+        if (nextData !== tableData) {
+          tablePage = 0;
+          tableViewport.scrollTop = 0;
         }
+        tableData = nextData;
+        renderTablePage();
+      }
 
-        var orderedColumns = getOrderedDisplayDimensionKeys(
+      function renderTablePage() {
+        var orderedColumns = tableData.length ? getOrderedDisplayDimensionKeys(
           d3.keys(tableData[0]),
           _userSetting,
           {
@@ -10609,20 +10679,35 @@
             excludeImageLike: true,
             excludeInternal: true,
           }
-        );
+        ) : [];
+
+        var tableGrid = d3.select("#tableGrid");
+        d3.select("#tbContainer").property("hidden", orderedColumns.length === 0);
         if (orderedColumns.length === 0) {
-          tableContainer.html("");
+          tableGrid.html("");
           return;
         }
+
+        tablePage = Math.min(tablePage, Math.floor((tableData.length - 1) / tablePageSize));
+        var start = tablePage * tablePageSize;
+        var end = Math.min(start + tablePageSize, tableData.length);
+        var summary = (start + 1) + "–" + end + " of " + tableData.length + " rows";
+        var range = d3.select("#tableRange");
+        if (range.text() !== summary) range.text(summary);
+        d3.select("#tablePrevious").property("disabled", tablePage === 0);
+        d3.select("#tableNext").property("disabled", end === tableData.length);
+
         var grid = d3
           .divgrid()
           .columns(orderedColumns)
+          .cellFormatter(function (value, column) {
+            return formatDimensionValue(column, value);
+          })
           .headerFormatter(function (d) {
             return getDimLabel(d);
           });
-        var tableSel = d3
-          .select("#tbContainer")
-          .datum(tableData)
+        tableGrid
+          .datum(tableData.slice(start, end))
           .call(grid)
           .selectAll(".row")
           .on({
@@ -10633,14 +10718,15 @@
               graph.unhighlight();
             },
           });
-
-        // Ensure headers reflect latest custom labels
-        d3.select("#tbContainer .header")
-          .selectAll(".cell")
-          .text(function (d) {
-            return getDimLabel(d);
-          });
       }
+
+      d3.selectAll("#tbContainer [data-table-page]").on("click", function () {
+        var nextPage = tablePage + Number(this.dataset.tablePage);
+        if (nextPage < 0 || nextPage * tablePageSize >= tableData.length) return;
+        tablePage = nextPage;
+        tableViewport.scrollTop = 0;
+        renderTablePage();
+      });
 
       function getCaseId(inputParams) {
         // create the id based on inputs
@@ -12553,7 +12639,7 @@
         var title = [];
 
         d3.keys(graph.dimensions()).forEach(function (key) {
-          var info = getDimLabel(String(key)) + ":" + data[key];
+          var info = getDimLabel(String(key)) + ":" + formatDimensionValue(key, data[key]);
           title.push(info);
         });
 
@@ -12614,12 +12700,14 @@
           return isFinite(parsed) ? parsed : NaN;
         }
 
-        function formatDiffValue(currentVal, pinnedVal) {
+        function formatDiffValue(key, currentVal, pinnedVal) {
           var currentNum = parseNumericValue(currentVal);
           var pinnedNum = parseNumericValue(pinnedVal);
           if (!isFinite(currentNum) || !isFinite(pinnedNum)) return "";
 
           var diff = currentNum - pinnedNum;
+          var format = getDimensionNumberFormatter(key);
+          if (format) return (diff > 0 ? "+" : "") + format(diff);
           if (Math.abs(diff) < 1e-10) return "0";
 
           var formatted =
@@ -12652,7 +12740,9 @@
               !pinnedData || pinnedData[key] === undefined || pinnedData[key] === null
                 ? ""
                 : pinnedData[key];
-            var diffVal = formatDiffValue(currentVal, pinnedVal);
+            var diffVal = formatDiffValue(key, currentVal, pinnedVal);
+            currentVal = formatDimensionValue(key, currentVal);
+            pinnedVal = formatDimensionValue(key, pinnedVal);
             var paramClass = getParamClass(key);
 
             return pinnedData
@@ -12741,13 +12831,13 @@
         var activeAscending = getCurrentSortAscendingValue();
 
         // sort data based on dropdown selecion
-        if (activeSortBy && activeAscending) {
+        if (activeSortBy) {
+          var compare = activeAscending ? d3.ascending : d3.descending;
+          var numeric = graph?.dimensions()[activeSortBy]?.type === "number";
           data.sort(function (x, y) {
-            return d3.ascending(x[activeSortBy], y[activeSortBy]);
-          });
-        } else if (activeSortBy) {
-          data.sort(function (x, y) {
-            return d3.descending(x[activeSortBy], y[activeSortBy]);
+            return numeric
+              ? compare(+x[activeSortBy], +y[activeSortBy])
+              : compare(x[activeSortBy], y[activeSortBy]);
           });
         }
 
@@ -13055,6 +13145,7 @@
 
         // add thumbnails
         updateImageGrid(graph.data(), true); // true will set the size of btm div
+        drawTable(graph.data());
 
         // render 2D image toggles near the viewer if multiple images exist
         renderViewer2dToggles();
@@ -14131,6 +14222,7 @@
         slidersInfo.forEach(function (info, i) {
           $("#" + info.namewithnospace).ionRangeSlider({
             grid: showGrid(info),
+            prettify: getDimensionNumberFormatter(info.name),
             prettify_separator: ",",
             values: info.tickValues,
             disable: true,
@@ -14297,7 +14389,7 @@
         if (ids.indexOf(id) != -1) {
           selectedData = allDataCollector[id].cleanedParams;
           activeSelectedData = selectedData;
-          //console.log(selectedData);
+          setStarValue(selectedData.Rating);
 
           // update chart
           graph.highlight([selectedData]);
@@ -15156,12 +15248,14 @@
       // Rating system
       var firstRating = true;
 
-      // submit the value on change
       $(".star").rating({
-        callback: function (value, link) {
-          // 'value' is the value selected
+        callback: function (value) {
+          var selected = getSelectedDatum();
+          if (!graph || !selected) return;
+
+          selected.Rating = Number(value) || 0;
+
           if (firstRating === true) {
-            //turn on rating rectangle
             d3.selectAll("#legend rect").attr("class", function (d) {
               if (d.name == "Rating") {
                 d.enabled = true;
@@ -15172,28 +15266,21 @@
             });
             updateLegendCheckboxVisuals();
 
-            // add Rating to dimensions
-            graph.dimensions(
-              toDimensionObject(Object.keys(cleanedKeys4pc), graph.dimensions())
-            );
+            var chartDimensions = graph.dimensions();
+            if (!chartDimensions.Rating) {
+              graph.dimensions(
+                toDimensionObject(graph.getOrderedDimensionKeys().concat("Rating"), chartDimensions)
+              );
+            }
             graph.scale("Rating", [0, 5]);
             graph.updateAxes();
             firstRating = false;
           }
 
-          // check if this is the first rating
-
-          // update rating value
-          graph.highlighted()[0].Rating = value;
-
-          // this method is not really optimized. I couldn't find a solution just to change          //I agree
-          // extent of dimensions for just rating axis
-
           graph.update().interactive().reorderable();
-          //if(graph.brushed()) graph.clear("foreground");
-
-          // highlight selected option
-          graph.highlight(graph.highlighted());
+          graph.highlight([selected]);
+          renderTablePage();
+          updateIterationData([selected]);
         },
       });
 
@@ -15362,6 +15449,7 @@
           },
           dimScales: Object.assign({}, _userSetting.dimScales || {}),
           dimTicks: {},
+          dimDecimals: Object.assign({}, _userSetting.dimDecimals),
           dimMark: {},
           dimLabels: Object.assign({}, _userSetting.dimLabels || {}),
           dimHidden: Object.assign({}, _userSetting.dimHidden || {}),
@@ -16556,6 +16644,38 @@
             newUserSetting.dimTicks[d] = value;
           });
 
+        var decimalSetting = panelBodyContent
+          .filter(function (d) {
+            var dimension = baseDimsForSettings[d];
+            return dimension && dimension.type === "number";
+          })
+          .append("li")
+          .attr("class", "list-group-item form-inline");
+
+        decimalSetting.append("span").attr("class", "setting-label").text("Decimal places");
+        var decimalSelect = decimalSetting
+          .append("select")
+          .attr("class", "form-control input-sm dimension-decimals")
+          .attr("aria-label", function (d) {
+            return "Decimal places for " + getDimLabel(d);
+          });
+        decimalSelect
+          .selectAll("option")
+          .data([""].concat(d3.range(maxDimensionDecimals + 1)))
+          .enter()
+          .append("option")
+          .attr("value", function (d) { return d; })
+          .text(function (d) { return d === "" ? "Study precision" : d; });
+        decimalSelect
+          .property("value", function (d) {
+            return newUserSetting.dimDecimals[d] ?? "";
+          })
+          .on("change", function (d) {
+            var decimals = normalizeDecimalPlaces(this.value);
+            if (decimals === null) delete newUserSetting.dimDecimals[d];
+            else newUserSetting.dimDecimals[d] = decimals;
+          });
+
         //scale setting----------------------------------------------------------------------------------------------------------
         var itemScaleSetting = panelBodyContent
           .append("li")
@@ -17366,6 +17486,10 @@
           userDimOrder.length > 0 ||
           userSliderOrder.length > 0;
 
+        var refreshNumberDisplays =
+          Object.keys(userSetting.dimDecimals).length > 0 ||
+          Object.keys(_userSetting.dimDecimals || {}).length > 0;
+        _userSetting.dimDecimals = userSetting.dimDecimals;
         _userSetting.lineGradient = cloneLineGradientSetting(userLineGradient);
         _userSetting.dimSliderTitleSizes = Object.assign(
           {},
@@ -17512,6 +17636,13 @@
         }
 
         refreshColorDrivenViews();
+
+        if (refreshNumberDisplays) {
+          renderTablePage();
+          d3.selectAll("#thumbnails-btm img").attr("title", getTitle);
+          var selected = getSelectedDatum();
+          if (selected) updateIterationData([selected]);
+        }
 
         // always sync image labels so UI picks up values from settings.json
         setImageLabels(userImageLabels);
@@ -17700,7 +17831,7 @@
             .attr("dy", ".32em")
             .attr("text-anchor", "end")
             .style("font-size", markMetrics.fontSize + "px")
-            .text(markPrefix + ": " + markValue);
+            .text(markPrefix + ": " + formatDimensionValue(targetKey, markValue));
         }
       }
 
@@ -17980,7 +18111,7 @@
 
         // Refresh table headers with latest labels
         if (typeof drawTable === "function" && Array.isArray(cleanedData)) {
-          drawTable(cleanedData);
+          drawTable(getCurrentVisibleTableData());
         }
       }
 
@@ -18204,6 +18335,7 @@
         }
 
         var exportJson = Object.assign({}, globalUserSetting);
+        exportJson.dimDecimals = normalizeDimensionDecimals(newUserSetting.dimDecimals);
         delete exportJson.labelSizeBase;
         delete exportJson.sortBy;
         delete exportJson.ascending;
@@ -18299,6 +18431,7 @@
             },
             dimScales: {},
             dimTicks: {},
+            dimDecimals: {},
             dimMark: {},
             dimLabels: {},
             dimLabelsNormalized: {},

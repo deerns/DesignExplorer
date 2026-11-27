@@ -909,7 +909,7 @@ d3.parcoords = function (config) {
             .attr("class", "axis")
             .attr("transform", "translate(0,0)")
             .each(function (d) {
-                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]));
+                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d], d));
             })
             .append("svg:text")
             .attr({
@@ -978,7 +978,7 @@ d3.parcoords = function (config) {
             .attr("class", "axis")
             .attr("transform", "translate(0,0)")
             .each(function (d) {
-                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]))
+                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d], d));
             })
             .append("svg:text")
             .attr({
@@ -998,7 +998,7 @@ d3.parcoords = function (config) {
             .transition()
             .duration(animationTime)
             .each(function (d) {
-                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]));
+                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d], d));
             });
         g_data.select(".label")
             .transition()
@@ -1021,7 +1021,7 @@ d3.parcoords = function (config) {
             .duration(animationTime)
             .each(function (d) {
                 //console.log(pc.applyAxisConfig(axis, __.dimensions[d]));
-                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d]));
+                d3.select(this).call(pc.applyAxisConfig(axis, __.dimensions[d], d));
             });
 
         if (flags.brushable) pc.brushable();
@@ -1034,10 +1034,14 @@ d3.parcoords = function (config) {
         return this;
     };
 
-    pc.applyAxisConfig = function (axis, dimension) {
+    pc.applyAxisConfig = function (axis, dimension, dimensionName) {
         //console.log(dimension.yscale.domain());
         //console.log(dimension.tickValues);
         //console.log(dimension.tickFormat);
+
+        var numberFormat = dimension.type === "number" && typeof getDimensionNumberFormatter === "function"
+            ? getDimensionNumberFormatter(dimensionName)
+            : null;
 
         return axis.scale(dimension.yscale)
             .orient(dimension.orient)
@@ -1046,7 +1050,7 @@ d3.parcoords = function (config) {
             .innerTickSize(dimension.innerTickSize)
             .outerTickSize(dimension.outerTickSize)
             .tickPadding(dimension.tickPadding)
-            .tickFormat(dimension.tickFormat);
+            .tickFormat(numberFormat || dimension.tickFormat);
     };
 
     // Jason Davies, http://bl.ocks.org/1341281
