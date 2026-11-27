@@ -1392,7 +1392,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20261127-10" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-11" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -1452,11 +1452,11 @@
       rel="stylesheet"
     />
 
-    <script src="./js/divgrid.js"></script>
+    <script src="./js/divgrid.js?v=20261127-1"></script>
     <!-- Design Explorer Scripts -->
     <script src="./js/studyImageLoader.js?v=20260924-4"></script>
     <script
-      src="./js/designExplorer.js?v=20260916-1"
+      src="./js/designExplorer.js?v=20261127-1"
       type="text/javascript"
       language="javascript"
     ></script>
@@ -5144,8 +5144,22 @@
             </div>
 
             </div>
-            <!--Here starts the thumbnails-btm_tbContainer-->
-            <div id="tbContainer" class="col-lg-12"></div>
+            <div id="tbContainer" class="col-lg-12" hidden>
+              <div class="table-pagination">
+                <span id="tableRange" role="status"></span>
+                <div class="table-page-actions">
+                  <button id="tablePrevious" class="btn btn-default btn-sm" type="button" data-table-page="-1">
+                    Previous
+                  </button>
+                  <button id="tableNext" class="btn btn-default btn-sm" type="button" data-table-page="1">
+                    Next
+                  </button>
+                </div>
+              </div>
+              <div id="tableViewport" tabindex="0" role="region" aria-label="Results table">
+                <div id="tableGrid" role="table" aria-label="Results"></div>
+              </div>
+            </div>
           </div>
         </div>
         <!-- Welcome and Get Data dialog -->
@@ -10573,8 +10587,6 @@
         if (getAvailableImageCount() == 0) {
           hasImgLink = false;
           d3.select("#thumbnails-btm_container").remove();
-
-          drawTable(cleanedData);
         } else {
           hasImgLink = true;
         }
@@ -10592,16 +10604,23 @@
         }
       }
 
+      var tablePageSize = 50;
+      var tableData = [];
+      var tablePage = 0;
+      var tableViewport = document.getElementById("tableViewport");
+
       function drawTable(data) {
-        var tableData = Array.isArray(data) ? data.slice(0, 20) : [];
-        var tableContainer = d3.select("#tbContainer");
-
-        if (tableData.length === 0) {
-          tableContainer.html("");
-          return;
+        var nextData = Array.isArray(data) ? data : [];
+        if (nextData !== tableData) {
+          tablePage = 0;
+          tableViewport.scrollTop = 0;
         }
+        tableData = nextData;
+        renderTablePage();
+      }
 
-        var orderedColumns = getOrderedDisplayDimensionKeys(
+      function renderTablePage() {
+        var orderedColumns = tableData.length ? getOrderedDisplayDimensionKeys(
           d3.keys(tableData[0]),
           _userSetting,
           {
@@ -10609,20 +10628,32 @@
             excludeImageLike: true,
             excludeInternal: true,
           }
-        );
+        ) : [];
+
+        var tableGrid = d3.select("#tableGrid");
+        d3.select("#tbContainer").property("hidden", orderedColumns.length === 0);
         if (orderedColumns.length === 0) {
-          tableContainer.html("");
+          tableGrid.html("");
           return;
         }
+
+        tablePage = Math.min(tablePage, Math.floor((tableData.length - 1) / tablePageSize));
+        var start = tablePage * tablePageSize;
+        var end = Math.min(start + tablePageSize, tableData.length);
+        var summary = (start + 1) + "–" + end + " of " + tableData.length + " rows";
+        var range = d3.select("#tableRange");
+        if (range.text() !== summary) range.text(summary);
+        d3.select("#tablePrevious").property("disabled", tablePage === 0);
+        d3.select("#tableNext").property("disabled", end === tableData.length);
+
         var grid = d3
           .divgrid()
           .columns(orderedColumns)
           .headerFormatter(function (d) {
             return getDimLabel(d);
           });
-        var tableSel = d3
-          .select("#tbContainer")
-          .datum(tableData)
+        tableGrid
+          .datum(tableData.slice(start, end))
           .call(grid)
           .selectAll(".row")
           .on({
@@ -10633,14 +10664,15 @@
               graph.unhighlight();
             },
           });
-
-        // Ensure headers reflect latest custom labels
-        d3.select("#tbContainer .header")
-          .selectAll(".cell")
-          .text(function (d) {
-            return getDimLabel(d);
-          });
       }
+
+      d3.selectAll("#tbContainer [data-table-page]").on("click", function () {
+        var nextPage = tablePage + Number(this.dataset.tablePage);
+        if (nextPage < 0 || nextPage * tablePageSize >= tableData.length) return;
+        tablePage = nextPage;
+        tableViewport.scrollTop = 0;
+        renderTablePage();
+      });
 
       function getCaseId(inputParams) {
         // create the id based on inputs
@@ -13055,6 +13087,7 @@
 
         // add thumbnails
         updateImageGrid(graph.data(), true); // true will set the size of btm div
+        drawTable(graph.data());
 
         // render 2D image toggles near the viewer if multiple images exist
         renderViewer2dToggles();
@@ -17980,7 +18013,7 @@
 
         // Refresh table headers with latest labels
         if (typeof drawTable === "function" && Array.isArray(cleanedData)) {
-          drawTable(cleanedData);
+          drawTable(getCurrentVisibleTableData());
         }
       }
 

@@ -13,6 +13,7 @@ d3.divgrid = function(config) {
         .data([true])
       .enter().append("div")
         .attr("class", "header")
+        .attr("role", "row")
 
     var header = selection.select(".header")
       .selectAll(".cell")
@@ -20,6 +21,7 @@ d3.divgrid = function(config) {
 
     header.enter().append("div")
       .attr("class", function(d,i) { return "col-" + i; })
+      .attr("role", "columnheader")
       .classed("cell", true)
 
     selection.selectAll(".header .cell")
@@ -33,6 +35,7 @@ d3.divgrid = function(config) {
 
     rows.enter().append("div")
         .attr("class", "row")
+        .attr("role", "row")
 
     rows.exit().remove();
 
@@ -42,11 +45,12 @@ d3.divgrid = function(config) {
     // cells
     cells.enter().append("div")
       .attr("class", function(d,i) { return "col-" + i; })
+      .attr("role", "cell")
       .classed("cell", true)
 
     cells.exit().remove();
 
-    selection.selectAll(".cell")
+    selection.selectAll(".row .cell")
       .text(function(d) { return d; });
 
     return dg;
