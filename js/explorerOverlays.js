@@ -15,7 +15,7 @@ function syncExplorerLayers() {
   document.body.classList.toggle("explorer-welcome-visible", welcomeVisible);
   explorerRegions.forEach(region => { region.inert = explorerLoading || welcomeVisible; });
   loadingOnlyRegions.forEach(region => { region.inert = explorerLoading; });
-  welcomePopup.inert = explorerLoading;
+  welcomePopup.inert = explorerLoading || !welcomeVisible;
 }
 
 function focusWelcomePopup() {
