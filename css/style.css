@@ -1063,6 +1063,102 @@ a#copyRightButton {
     background-color: rgba(0, 0, 0, 0.30);
 }
 
+#mainContentLayout[inert] {
+    isolation: isolate;
+}
+
+#welcome {
+    padding: 16px;
+    background-color: rgba(23, 39, 63, .40);
+    overscroll-behavior: contain;
+}
+
+#welcome[inert] {
+    background-color: rgba(23, 39, 63, .52);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    #welcome {
+        background-color: rgba(23, 39, 63, .23);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+    }
+
+    #welcome[inert] {
+        background-color: rgba(23, 39, 63, .34);
+        -webkit-backdrop-filter: blur(7px);
+        backdrop-filter: blur(7px);
+    }
+}
+
+#welcome[hidden],
+#welcome > [hidden] {
+    display: none;
+}
+
+#welcome > .col-centered {
+    width: min(680px, 100%);
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    max-height: none;
+    margin: auto;
+    padding: clamp(16px, 3vw, 28px);
+    border: 1px solid rgba(255, 255, 255, .85);
+    border-radius: 16px;
+    background-color: rgba(248, 252, 255, .90);
+    box-shadow: 0 16px 48px rgba(23, 39, 63, .20);
+}
+
+#welcome[inert] > .col-centered {
+    background-color: rgba(228, 234, 242, .80);
+    filter: blur(3px);
+}
+
+#welcome[inert] > .col-centered > * {
+    opacity: .46;
+}
+
+#welcome > #welcomeContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+    height: clamp(420px, 75vh, 580px);
+}
+
+#welcomeContainer .popupWindowClose {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+#welcomeTitle {
+    margin-top: 26px;
+    font-size: clamp(24px, 5vw, 36px);
+}
+
+#welcomeContainer .sampleImage {
+    min-width: 0;
+    filter: url("#welcomeSampleTransparency") blur(1px);
+}
+
+#welcome[inert] .sampleImage {
+    filter: url("#welcomeSampleTransparency") blur(2px);
+}
+
+.welcome-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+}
+
+#welcome input#csv-file {
+    max-width: 100%;
+}
+
 #welcomeContainer .col-sm-4 {
     width: 33.33333333%;
     height: 50%;

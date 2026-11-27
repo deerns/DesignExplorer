@@ -1400,7 +1400,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20260924-1" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-2" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -1443,7 +1443,7 @@
     ></script>
 
     <!-- Page loading: shared Deerns wave animation with Pace progress -->
-    <link rel="stylesheet" type="text/css" href="pace/pace.css?v=20261117-1" />
+    <link rel="stylesheet" type="text/css" href="pace/pace.css?v=20261127-1" />
     <script src="pace/deerns-loader.js?v=20261117-1"></script>
     <script type="text/javascript" src="pace/pace.min.js"></script>
     <script src="pace/pace-logo.js?v=20261117-1"></script>
@@ -4599,7 +4599,7 @@
 
       //valid online folder available
       var studyLongUrl = document.location.origin + "?ID=" + studyCaseLink;
-      d3.select("#welcome").style("display", "none");
+      closeWelcomePopup();
 
       makeUrlId(studyLongUrl, function name(UrlId) {
         _folderInfo.DE_PW = UrlId;
@@ -4624,7 +4624,7 @@
 
   <body>
     <!-- Navbar -->
-    <nav class="navbar" style="margin-bottom: 0; background-color: white">
+    <nav id="explorerNavbar" class="navbar" style="margin-bottom: 0; background-color: white">
       <div id="topNavBar">
         <!-- Left group: logo + button -->
         <div id="topNavLeftGroup">
@@ -5152,33 +5152,27 @@
             <div id="tbContainer" class="col-lg-12"></div>
           </div>
         </div>
-        <!-- /#Welcome content -->
+        <!-- Welcome and Get Data dialog -->
         <div
           class="row-fluid col-lg-12 row-centered vertical-center fullscreen popupWindow"
           id="welcome"
-          style="height: 33vh; overflow-y: auto; position: relative"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="welcomeTitle"
         >
-          <div
-            class="col-sm-12 col-centered"
-            id="welcomeContainer"
-            style="
-              height: 100%;
-              display: flex;
-              flex-direction: column;
-              justify-content: space-between;
-            "
-          >
+          <div class="col-sm-12 col-centered" id="welcomeContainer">
             <!-- Close Button -->
             <button
               class="btn btn-default btn-sm popupWindowClose"
-              style="position: absolute; top: 1em; right: 1em; z-index: 1001"
+              type="button"
+              aria-label="Close welcome screen"
             >
               <span class="glyphicon glyphicon-remove"></span>
             </button>
 
             <!-- Header -->
             <div>
-              <h1 class="text-center" style="margin-top: 1em">
+              <h1 id="welcomeTitle" class="text-center">
                 Welcome to Design Explorer!
               </h1>
               <h4 class="text-center">
@@ -5213,6 +5207,23 @@
                 overflow: hidden;
               "
             >
+              <svg width="0" height="0" aria-hidden="true" style="position: absolute">
+                <defs>
+                  <filter id="welcomeSampleTransparency" color-interpolation-filters="sRGB">
+                    <!-- The alpha row clears white and feathers near-white edges. -->
+                    <feColorMatrix
+                      type="matrix"
+                      values="
+                        1  0  0  0   0
+                        0  1  0  0   0
+                        0  0  1  0   0
+                       -6 -6 -6  0  18
+                      "
+                    />
+                    <feComposite in2="SourceAlpha" operator="in" />
+                  </filter>
+                </defs>
+              </svg>
               <img
                 src="img/RedBox.gif"
                 id="sample1"
@@ -5251,33 +5262,32 @@
             </div>
 
             <!-- Footer -->
-            <div class="col-lg-12 text-center" style="padding-top: 1em">
+            <div class="welcome-actions">
               <h5>
                 &copy; Deerns
                 <a href="https://www.deerns.com/" target="_blank">Contact</a>
               </h5>
+              <button id="startWelcomeGuidedTourBottom" type="button" class="btn btn-primary">
+                Start tour
+              </button>
             </div>
-            <button
-              id="startWelcomeGuidedTourBottom"
-              type="button"
-              class="btn btn-primary"
-              style="position: absolute; right: 1.5em; bottom: 1em; z-index: 1001"
-            >
-              Start tour
-            </button>
           </div>
 
           <!--load data div-->
           <div
             class="col-sm-12 col-centered"
             id="loadDataContainer"
-            style="display: none; width: 700px; height: 500px"
+            hidden
           >
-            <button class="btn btn-default btn-sm pull-right popupWindowClose">
+            <button
+              class="btn btn-default btn-sm pull-right popupWindowClose"
+              type="button"
+              aria-label="Close Get Data"
+            >
               <span class="glyphicon glyphicon-remove"></span>
             </button>
 
-            <h4 class="text-center" style="margin: 100px 0 30px 0">
+            <h4 id="loadDataTitle" class="text-center" style="margin: 100px 0 30px 0">
               From the cloud:
             </h4>
             <p class="text-center">
@@ -5803,6 +5813,8 @@
     </div>
     <!-- /#wrapper -->
 
+    <script src="js/explorerOverlays.js"></script>
+
     <!-- Bootstrap Core JavaScript -->
     <script src="bootstrap_side_bar/js/bootstrap.min.js"></script>
 
@@ -5858,7 +5870,7 @@
         // remove the current selection
         unloadPageContent();
 
-        d3.select("div#welcome").style("display", "none");
+        closeWelcomePopup();
         if (typeof syncMainVerticalResizeHandleState === "function") {
           syncMainVerticalResizeHandleState();
         }
@@ -13793,7 +13805,8 @@
       }
 
       function startGuidedTour() {
-        d3.selectAll(".popupWindow").style("display", "none");
+        closeWelcomePopup();
+        d3.select("#showSetting").style("display", "none");
         moveGuidedTourLayersToBody();
         captureGuidedTourInitialState();
         guidedTourDemoSelection = getGuidedTourDemoSelection();
@@ -13874,9 +13887,7 @@
           window.location.href.toUpperCase().search("ID=") > 0
         ) {
           // Shared studies keep the welcome message visible for first-time visitors.
-          d3.select("#welcome").style("display", "flex");
-          d3.select("#welcomeContainer").style("display", "flex");
-          d3.select("#loadDataContainer").style("display", "none");
+          showWelcomePopup();
           syncMainVerticalResizeHandleState();
           MP_getGoogleIDandLoad("URL");
         } else {
@@ -13901,8 +13912,8 @@
         }
 
         //function to close intro window div
-        d3.selectAll(".popupWindowClose").on("click", function () {
-          d3.selectAll(".popupWindow").style("display", "none");
+        d3.selectAll("#welcome .popupWindowClose").on("click", function () {
+          closeWelcomePopup();
           syncMainVerticalResizeHandleState();
         });
 
@@ -13911,41 +13922,31 @@
           var evt = d3.event;
           // only close when clicking the backdrop itself
           if (evt && evt.target === this) {
-            d3.selectAll(".popupWindow").style("display", "none");
+            closeWelcomePopup();
             syncMainVerticalResizeHandleState();
           }
         });
 
         // Close welcome overlay with Esc
         document.addEventListener("keydown", function (e) {
-          if (e.key === "Escape" || e.keyCode === 27) {
-            d3.selectAll(".popupWindow").style("display", "none");
+          if ((e.key === "Escape" || e.keyCode === 27) && !explorerLoading) {
+            closeWelcomePopup();
+            d3.select("#showSetting").style("display", "none");
             syncMainVerticalResizeHandleState();
           }
         });
 
         d3.select("#showLoadData").on("click", function () {
-          d3.select("#welcome").style("display", "flex");
-
-          d3.select("#welcomeContainer").style("display", "none");
-
-          d3.select("#loadDataContainer").style("display", "block");
-
           d3.select("#loadFileLocally").style("display", "block");
           d3.select("#showStaticLink").classed("Show", false);
-          syncMainVerticalResizeHandleState();
 
           //clean previous inputs
           document.getElementById("csv-file").value = "";
           document.getElementById("folderLink").value = "";
           document.getElementById("folderLinkID").value = "";
 
-          // focus and select the server link field for immediate typing
-          var folderLinkInput = document.getElementById("folderLink");
-          if (folderLinkInput) {
-            folderLinkInput.focus();
-            folderLinkInput.select();
-          }
+          showWelcomePopup(true);
+          syncMainVerticalResizeHandleState();
         });
 
         d3.select("#scatterSelectionApply").on("click", function () {
@@ -14018,7 +14019,7 @@
           } else {
             reader.readAsText(file);
           }
-          d3.select("#welcome").style("display", "none");
+          closeWelcomePopup();
           syncMainVerticalResizeHandleState();
         });
       }; // end of window.onload
@@ -15256,8 +15257,7 @@
     <script type="text/javascript">
       function dataSetting(chart) {
         // ensure load-data overlay is dismissed when settings open
-        d3.select("#welcome").style("display", "none");
-        d3.select("#loadDataContainer").style("display", "none");
+        closeWelcomePopup();
 
         d3.select("#showSetting").style("display", "flex");
         if (typeof syncMainVerticalResizeHandleState === "function") {
