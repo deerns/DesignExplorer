@@ -662,13 +662,6 @@
         border-left: 1px solid #dddddd;
         padding-left: 16px;
       }
-      #showSetting {
-        align-items: flex-start;
-        justify-content: center;
-        padding-top: 20px;
-        padding-bottom: 20px;
-        overflow-y: auto;
-      }
       #dataSetting {
         box-sizing: border-box;
         display: flex;
@@ -691,8 +684,7 @@
         position: sticky;
         bottom: 0;
         z-index: 2;
-        background: #ffffff;
-        border-top: 1px solid #dddddd;
+        border-top: 1px solid rgba(23, 39, 63, .15);
       }
       #settingActions .btn {
         min-width: 100px;
@@ -1400,7 +1392,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20261127-5" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-6" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -1443,7 +1435,7 @@
     ></script>
 
     <!-- Page loading: shared Deerns wave animation with Pace progress -->
-    <link rel="stylesheet" type="text/css" href="pace/pace.css?v=20261127-3" />
+    <link rel="stylesheet" type="text/css" href="pace/pace.css?v=20261127-4" />
     <script src="pace/deerns-loader.js?v=20261117-1"></script>
     <script type="text/javascript" src="pace/pace.min.js"></script>
     <script src="pace/pace-logo.js?v=20261117-1"></script>
@@ -4766,7 +4758,7 @@
                       style="width: auto; float: right"
                     >
                       <button
-                        id="dataSetting"
+                        id="showSettingsButton"
                         class="btn btn-default btn-xs"
                         onclick="dataSetting(graph)"
                         title="Setting"
@@ -5458,14 +5450,13 @@
         <div
           class="row-fluid col-lg-12 row-centered vertical-center fullscreen popupWindow"
           id="showSetting"
-          style="display: none"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settingsTitle"
+          hidden
         >
-          <div
-            class="col-sm-12 col-centered"
-            id="dataSetting"
-            style="width: 700px; height: 1080px; max-height: 90vh; overflow-y: auto"
-          >
-            <h1 style="margin: 30px 0 10px 0">Setting</h1>
+          <div class="col-sm-12 col-centered" id="dataSetting">
+            <h1 id="settingsTitle" tabindex="-1" style="margin: 30px 0 10px 0">Setting</h1>
             <h6 style="margin: 0 30px 30px 0">
               All settings will not be effective once this page is reloaded,
               unless save the setting file with data.csv on the cloud.
@@ -5813,7 +5804,7 @@
     </div>
     <!-- /#wrapper -->
 
-    <script src="js/explorerOverlays.js?v=20261127-1"></script>
+    <script src="js/explorerOverlays.js?v=20261127-2"></script>
 
     <!-- Bootstrap Core JavaScript -->
     <script src="bootstrap_side_bar/js/bootstrap.min.js"></script>
@@ -13806,7 +13797,7 @@
 
       function startGuidedTour() {
         closeWelcomePopup();
-        d3.select("#showSetting").style("display", "none");
+        closeSettingsPopup();
         moveGuidedTourLayersToBody();
         captureGuidedTourInitialState();
         guidedTourDemoSelection = getGuidedTourDemoSelection();
@@ -13927,11 +13918,11 @@
           }
         });
 
-        // Close welcome overlay with Esc
+        // Close the active popup with Esc
         document.addEventListener("keydown", function (e) {
           if ((e.key === "Escape" || e.keyCode === 27) && !explorerLoading) {
             closeWelcomePopup();
-            d3.select("#showSetting").style("display", "none");
+            closeSettingsPopup();
             syncMainVerticalResizeHandleState();
           }
         });
@@ -15256,10 +15247,7 @@
     <!--dataSetting-->
     <script type="text/javascript">
       function dataSetting(chart) {
-        // ensure load-data overlay is dismissed when settings open
-        closeWelcomePopup();
-
-        d3.select("#showSetting").style("display", "flex");
+        showSettingsPopup();
         if (typeof syncMainVerticalResizeHandleState === "function") {
           syncMainVerticalResizeHandleState();
         }
@@ -17163,7 +17151,7 @@
             newUserSetting.imageLabels || _userSetting.imageLabels || {}
           );
           syncRadioLabelsFromCurrentInputs();
-          d3.select("#showSetting").style("display", "none");
+          closeSettingsPopup();
           syncMainVerticalResizeHandleState();
           if (typeof window !== "undefined") {
             window.__activeSettingsDraft = null;

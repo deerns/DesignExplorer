@@ -1072,47 +1072,47 @@ a#copyRightButton {
     --explorer-loading-fade-duration: 300ms;
 }
 
-#welcome {
+:is(#welcome, #showSetting) {
     padding: 16px;
     background-color: rgba(23, 39, 63, .40);
     overscroll-behavior: contain;
 }
 
-#welcome[inert]:not([hidden]) {
+:is(#welcome, #showSetting)[inert]:not([hidden]) {
     background-color: rgba(23, 39, 63, .52);
 }
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-    #welcome {
+    :is(#welcome, #showSetting) {
         background-color: rgba(23, 39, 63, .23);
         -webkit-backdrop-filter: blur(4px);
         backdrop-filter: blur(4px);
     }
 
-    #welcome[inert]:not([hidden]) {
+    :is(#welcome, #showSetting)[inert]:not([hidden]) {
         background-color: rgba(23, 39, 63, .34);
         -webkit-backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
         backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
     }
 }
 
-#welcome[hidden],
+:is(#welcome, #showSetting)[hidden],
 #welcome > [hidden] {
     display: none;
 }
 
-#welcome[hidden] {
+:is(#welcome, #showSetting)[hidden] {
     pointer-events: none;
     background-color: transparent;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
 
-#welcome[hidden] > .col-centered {
+:is(#welcome, #showSetting)[hidden] > .col-centered {
     opacity: 0;
 }
 
-#welcome > .col-centered {
+:is(#welcome, #showSetting) > .col-centered {
     width: min(680px, 100%);
     height: auto;
     min-width: 0;
@@ -1126,18 +1126,18 @@ a#copyRightButton {
     box-shadow: 0 16px 48px rgba(23, 39, 63, .20);
 }
 
-#welcome[inert]:not([hidden]) > .col-centered {
+:is(#welcome, #showSetting)[inert]:not([hidden]) > .col-centered {
     background-color: rgba(228, 234, 242, .80);
     filter: blur(7px);
 }
 
-#welcome[inert]:not([hidden]) > .col-centered > * {
+:is(#welcome, #showSetting)[inert]:not([hidden]) > .col-centered > * {
     opacity: .46;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    #welcome:not([inert]),
-    #welcome[hidden] {
+    :is(#welcome, #showSetting):not([inert]),
+    :is(#welcome, #showSetting)[hidden] {
         transition:
             display var(--explorer-loading-fade-duration),
             background-color var(--explorer-loading-fade-duration) ease-out,
@@ -1146,25 +1146,34 @@ a#copyRightButton {
         transition-behavior: allow-discrete;
     }
 
-    #welcome:not([inert]) > .col-centered,
-    #welcome[hidden] > .col-centered {
+    :is(#welcome, #showSetting):not([inert]) > .col-centered,
+    :is(#welcome, #showSetting)[hidden] > .col-centered {
         transition:
             opacity var(--explorer-loading-fade-duration) ease-out,
             background-color var(--explorer-loading-fade-duration) ease-out,
             filter var(--explorer-loading-fade-duration) ease-out;
     }
 
-    #welcome:not([inert]) > .col-centered > * {
+    :is(#welcome, #showSetting):not([inert]) > .col-centered > * {
         transition: opacity var(--explorer-loading-fade-duration) ease-out;
+    }
+
+    .explorer-popup-visible :is(#welcome, #showSetting)[hidden] {
+        transition: none;
     }
 }
 
-#welcome > #welcomeContainer {
+#welcome > #welcomeContainer:not([hidden]) {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: 16px;
     height: clamp(420px, 75vh, 580px);
+}
+
+#showSetting > #dataSetting {
+    width: min(700px, 100%);
+    height: min(1080px, 90vh);
 }
 
 #welcomeContainer .popupWindowClose {

@@ -19,8 +19,8 @@
   }
 }
 
-/* The welcome backdrop already softens the main interface when both layers are open. */
-.explorer-welcome-visible > .pace {
+/* The popup backdrop already softens the main interface when both layers are open. */
+.explorer-popup-visible > .pace {
   background-color: transparent;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;

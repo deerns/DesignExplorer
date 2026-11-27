@@ -2,9 +2,11 @@ const welcomePopup = document.getElementById("welcome");
 const welcomePanel = document.getElementById("welcomeContainer");
 const loadDataPanel = document.getElementById("loadDataContainer");
 const getDataButton = document.getElementById("showLoadData");
+const settingsPopup = document.getElementById("showSetting");
+const settingsTitle = document.getElementById("settingsTitle");
+const settingsButton = document.getElementById("showSettingsButton");
+const sharePopup = document.getElementById("showStillLink");
 const explorerRegions = ["explorerNavbar", "sidebar-wrapper", "mainContentLayout"]
-  .map(id => document.getElementById(id));
-const loadingOnlyRegions = ["showSetting", "showStillLink"]
   .map(id => document.getElementById(id));
 
 let explorerLoading = false;
@@ -12,10 +14,13 @@ let focusBeforeLoading = null;
 
 function syncExplorerLayers() {
   const welcomeVisible = !welcomePopup.hidden;
-  document.body.classList.toggle("explorer-welcome-visible", welcomeVisible);
-  explorerRegions.forEach(region => { region.inert = explorerLoading || welcomeVisible; });
-  loadingOnlyRegions.forEach(region => { region.inert = explorerLoading; });
+  const settingsVisible = !settingsPopup.hidden;
+  const popupVisible = welcomeVisible || settingsVisible;
+  document.body.classList.toggle("explorer-popup-visible", popupVisible);
+  explorerRegions.forEach(region => { region.inert = explorerLoading || popupVisible; });
+  sharePopup.inert = explorerLoading;
   welcomePopup.inert = explorerLoading || !welcomeVisible;
+  settingsPopup.inert = explorerLoading || !settingsVisible;
 }
 
 function focusWelcomePopup() {
@@ -29,6 +34,7 @@ function focusWelcomePopup() {
 }
 
 function showWelcomePopup(showLoadData = false) {
+  closeSettingsPopup();
   welcomePanel.hidden = showLoadData;
   loadDataPanel.hidden = !showLoadData;
   welcomePopup.setAttribute("aria-labelledby", showLoadData ? "loadDataTitle" : "welcomeTitle");
@@ -45,6 +51,20 @@ function closeWelcomePopup() {
   if (restoreFocus) getDataButton.focus({ preventScroll: true });
 }
 
+function showSettingsPopup() {
+  closeWelcomePopup();
+  settingsPopup.hidden = false;
+  syncExplorerLayers();
+  if (!explorerLoading) settingsTitle.focus({ preventScroll: true });
+}
+
+function closeSettingsPopup() {
+  if (settingsPopup.hidden) return;
+  settingsPopup.hidden = true;
+  syncExplorerLayers();
+  if (!explorerLoading) settingsButton.focus({ preventScroll: true });
+}
+
 function setExplorerLoading(loading) {
   if (explorerLoading === loading) return;
   if (loading) focusBeforeLoading = document.activeElement;
@@ -54,7 +74,9 @@ function setExplorerLoading(loading) {
   if (!loading) {
     if (document.activeElement === document.body) {
       focusBeforeLoading?.focus({ preventScroll: true });
-      if (!welcomePopup.hidden && !welcomePopup.contains(document.activeElement)) {
+      if (!settingsPopup.hidden && !settingsPopup.contains(document.activeElement)) {
+        settingsTitle.focus({ preventScroll: true });
+      } else if (!welcomePopup.hidden && !welcomePopup.contains(document.activeElement)) {
         focusWelcomePopup();
       }
     }
@@ -62,20 +84,23 @@ function setExplorerLoading(loading) {
   }
 }
 
-welcomePopup.addEventListener("keydown", event => {
-  if (event.key !== "Tab") return;
+[welcomePopup, settingsPopup].forEach(popup => {
+  popup.addEventListener("keydown", event => {
+    if (event.key !== "Tab") return;
 
-  const focusable = Array.from(welcomePopup.querySelectorAll("button, input, a[href]"))
-    .filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length);
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
-  }
+    const focusable = Array.from(popup.querySelectorAll("button, input, select, textarea, a[href]"))
+      .filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length);
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || active === settingsTitle)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 });
 
 if (window.Pace) {
