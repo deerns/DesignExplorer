@@ -1392,7 +1392,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20261127-6" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-7" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -4702,6 +4702,8 @@
                       class="btn btn-default btn-xs"
                       id="menu-toggle"
                       title="Show sliders"
+                      aria-controls="sidebar-wrapper"
+                      aria-expanded="false"
                     >
                       <span
                         class="glyphicon glyphicon-triangle-left"
@@ -5271,68 +5273,55 @@
             id="loadDataContainer"
             hidden
           >
-            <button
-              class="btn btn-default btn-sm pull-right popupWindowClose"
-              type="button"
-              aria-label="Close Get Data"
-            >
-              <span class="glyphicon glyphicon-remove"></span>
-            </button>
-
-            <h4 id="loadDataTitle" class="text-center" style="margin: 100px 0 30px 0">
-              From the cloud:
-            </h4>
-            <p class="text-center">
-              <input
-                type="text"
-                id="folderLink"
-                class="btn btn-default btn-sm toggled"
-                name="imgfolder"
-                placeholder="Server link"
-              />
-              <input
-                type="text"
-                id="folderLinkID"
-                class="btn btn-default btn-hd"
-                name="imgfolder"
-                placeholder="FolderID"
-              />
-              <!--<button id="loadData" onclick="MP_getGoogleIDandLoad()" class="file-upload" style="background-color: #033899;color: #ffffff;border-radius:0 20px 20px 0;">Load Data</button>-->
+            <div class="load-data-header">
+              <h1 id="loadDataTitle">Get Data</h1>
               <button
-                id="loadData"
-                class="file-upload primary-data-action"
+                class="btn btn-default btn-sm popupWindowClose"
+                type="button"
+                aria-label="Close Get Data"
               >
-                Load Data
+                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
               </button>
-            </p>
-            <h5 class="text-center" style="color: #9d9d9d">
-              Please put data.csv, images, and 3D-json files into the same
-              folder.(<a
-                href="design_explorer_data/example/online/example.zip"
-                target="_blank"
-                >example.zip</a
-              >)
-            </h5>
+            </div>
 
-            <div id="loadFileLocally">
-              <h4 class="text-center" style="margin: 60px 0 60px 0">
-                Or local
-              </h4>
-              <p class="text-center">
+            <div class="load-data-section">
+              <h2>From the cloud</h2>
+              <div class="load-data-cloud-controls">
                 <input
-                  type="file"
-                  id="csv-file"
-                  class="btn btn-default btn-sm"
-                  name="files"
+                  type="text"
+                  id="folderLink"
+                  class="form-control"
+                  name="imgfolder"
+                  inputmode="url"
+                  placeholder="Server link"
+                  aria-label="Server link"
+                  aria-describedby="cloudDataHint"
                 />
+                <input type="hidden" id="folderLinkID" name="imgfolder" />
+                <button id="loadData" type="button" class="file-upload primary-data-action">
+                  Load Data
+                </button>
+              </div>
+              <p class="load-data-hint" id="cloudDataHint">
+                Put data.csv, images, and 3D JSON files in the same folder.
+                <a href="design_explorer_data/example/online/example.zip" target="_blank">Example ZIP</a>
               </p>
-              <h5 class="text-center" style="color: #9d9d9d">
-                Please put valid images and 3D-json files URL. (Example:<a
-                  href="design_explorer_data/example/LocalCSV_example.csv"
-                  target="_blank"
-                  >data.csv</a
-                >)
-              </h5>
+            </div>
+
+            <div id="loadFileLocally" class="load-data-section">
+              <h2>From your computer</h2>
+              <input
+                type="file"
+                id="csv-file"
+                class="form-control"
+                name="files"
+                aria-label="Local data file"
+                aria-describedby="localDataHint"
+              />
+              <p class="load-data-hint" id="localDataHint">
+                Use valid URLs for images and 3D JSON files.
+                <a href="design_explorer_data/example/LocalCSV_example.csv" target="_blank">Example CSV</a>
+              </p>
             </div>
           </div>
         </div>
@@ -9780,6 +9769,7 @@
       $("#menu-toggle").off("click").prop("disabled", false).click(function (e) {
         isToggled = !isToggled;
         d3.select("#wrapper").classed("toggled", isToggled);
+        this.setAttribute("aria-expanded", String(!isToggled));
         refreshSidebarControlLayout(!isToggled);
         schedulePcLayoutRefresh();
       });
@@ -13928,7 +13918,6 @@
         });
 
         d3.select("#showLoadData").on("click", function () {
-          d3.select("#loadFileLocally").style("display", "block");
           d3.select("#showStaticLink").classed("Show", false);
 
           //clean previous inputs
