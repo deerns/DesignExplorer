@@ -4,6 +4,9 @@ d3.divgrid = function(config) {
   var headerFormatter = function (d) {
     return d;
   };
+  var cellFormatter = function (value) {
+    return value;
+  };
 
   var dg = function(selection) {
     if (columns.length == 0) columns = d3.keys(selection.data()[0][0]);
@@ -40,7 +43,11 @@ d3.divgrid = function(config) {
     rows.exit().remove();
 
     var cells = selection.selectAll(".row").selectAll(".cell")
-        .data(function(d) { return columns.map(function(col){return d[col];}) })
+        .data(function(row) {
+          return columns.map(function(column) {
+            return cellFormatter(row[column], column);
+          });
+        })
 
     // cells
     cells.enter().append("div")
@@ -65,6 +72,11 @@ d3.divgrid = function(config) {
   dg.headerFormatter = function(_) {
     if (!arguments.length) return headerFormatter;
     headerFormatter = _;
+    return this;
+  };
+
+  dg.cellFormatter = function(formatter) {
+    cellFormatter = formatter;
     return this;
   };
 

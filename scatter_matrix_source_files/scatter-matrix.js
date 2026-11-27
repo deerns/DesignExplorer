@@ -791,7 +791,11 @@ ScatterMatrix.prototype.__draw = function (
     };
 
     var reshape_axis = function (axis, k) {
+      var numberFormat = typeof getDimensionNumberFormatter === "function"
+        ? getDimensionNumberFormatter(k)
+        : null;
       axis.ticks(5).tickFormat(function (d) {
+        if (numberFormat) return numberFormat(d);
         if (Math.abs(+d) > 10000 || (Math.abs(d) < 0.001 && Math.abs(d) != 0)) {
           return scif(d);
         }

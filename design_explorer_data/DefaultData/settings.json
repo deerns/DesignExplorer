@@ -5,6 +5,21 @@
   },
   "dimScales": {},
   "dimTicks": {},
+  "dimDecimals": {
+    "Depth [ft]": 2,
+    "Height [ft]": 2,
+    "Orientation": 2,
+    "WWR [%]": 2,
+    "SHD": 2,
+    "Cooling[kWh]": 2,
+    "Heating[kWh]": 2,
+    "Lighting[kWh]": 2,
+    "EffDepth[m]": 2,
+    "DA [%]": 2,
+    "UDI [%]": 2,
+    "CDA [%]": 2,
+    "SDA [Area%]": 2
+  },
   "dimMark": {
     "SDA [Area%]": {
       "value": "55",

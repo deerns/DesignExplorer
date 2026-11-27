@@ -256,6 +256,7 @@ function overwriteInitialGlobalValues() {
           },
           dimScales: {},
           dimTicks: {},
+          dimDecimals: {},
           dimMark: {},
           dimLabels: {},
           dimLabelsNormalized: {},
