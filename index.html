@@ -1122,7 +1122,7 @@
       }
 
       #viewer2d .viewer2d-main .compare-pane-pinned .compare-badge {
-        color: #ffa300;
+        color: var(--pinned-option-color);
       }
 
       #viewer2d-mainimg,
@@ -1328,7 +1328,7 @@
       }
 
       .scatter-matrix-container circle.pinned {
-        fill: #ffa300 !important;
+        fill: var(--pinned-option-color) !important;
         fill-opacity: 1 !important;
         stroke: #d98600;
         stroke-width: 1.5px;
@@ -1392,7 +1392,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20261127-7" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-9" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -8251,7 +8251,7 @@
         return resolvedScatterWidth;
       }
 
-      function syncChartHorizontalSectionWidths(showScatterWrapper) {
+      function syncChartHorizontalSectionWidths(showScatterWrapper, options = {}) {
         var pcWrapper = d3.select("#PcChartWrapper");
         var scWrapper = d3.select("#ScChartWrapper");
         var resizeBar = d3.select("#chartHorizontalResizeBar");
@@ -8284,12 +8284,12 @@
         }
 
         var availableWidth = getAvailableChartHorizontalWidth();
-        var scatterWidth = setChartHorizontalLayoutScatterWidth(
-          getCurrentChartHorizontalScatterWidth(),
-          {
+        var scatterWidth = getCurrentChartHorizontalScatterWidth();
+        if (!options.preview) {
+          scatterWidth = setChartHorizontalLayoutScatterWidth(scatterWidth, {
             preserveAuto: chartHorizontalLayoutState.useAutoRatio,
-          }
-        );
+          });
+        }
         var pcWidth = Math.max(availableWidth - scatterWidth, 0);
 
         pcWrapper
@@ -9765,13 +9765,44 @@
         }, 220);
       }
 
+      var sidebarLayoutFrame = null;
+      var sidebarLayoutWrapper = d3.select("#wrapper");
+      var sidebarPreviewGraph = d3.select("#graph");
+
+      function refreshSidebarToggleLayout(transition) {
+        if (transition && transition.playState === "running") {
+          syncChartHorizontalSectionWidths(shouldShowScatterPlots(), { preview: true });
+          if (graph && !isPcGraphCollapsed) {
+            // Scale the current drawing while the sidebar moves. Redraw the axes at the final width.
+            sidebarPreviewGraph.style("--sidebar-chart-scale", getPcChartBaseWidth() / graph.width());
+          }
+          sidebarLayoutFrame = window.requestAnimationFrame(function () {
+            refreshSidebarToggleLayout(transition);
+          });
+          return;
+        }
+
+        sidebarLayoutFrame = null;
+        sidebarLayoutWrapper.classed("is-sidebar-transitioning", false);
+        sidebarPreviewGraph.style("--sidebar-chart-scale", null);
+        refreshSidebarControlLayout(!isToggled);
+        if (graph) {
+          reDrawPcChart({ immediate: true });
+          if (!syncExistingScatterChartState()) refreshScatterChartLayout();
+        }
+      }
+
       // side bar for sliders
       $("#menu-toggle").off("click").prop("disabled", false).click(function (e) {
+        if (sidebarLayoutFrame !== null) window.cancelAnimationFrame(sidebarLayoutFrame);
         isToggled = !isToggled;
-        d3.select("#wrapper").classed("toggled", isToggled);
+        sidebarLayoutWrapper.classed("toggled", isToggled);
         this.setAttribute("aria-expanded", String(!isToggled));
-        refreshSidebarControlLayout(!isToggled);
-        schedulePcLayoutRefresh();
+
+        var transition = sidebarLayoutWrapper.node().getAnimations?.()
+          .find(animation => animation.transitionProperty === "padding-left");
+        sidebarLayoutWrapper.classed("is-sidebar-transitioning", !!transition);
+        refreshSidebarToggleLayout(transition);
       });
 
       $("#scatterVisibility-toggle").click(function (e) {
