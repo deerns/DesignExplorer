@@ -14330,7 +14330,7 @@
         if (ids.indexOf(id) != -1) {
           selectedData = allDataCollector[id].cleanedParams;
           activeSelectedData = selectedData;
-          //console.log(selectedData);
+          setStarValue(selectedData.Rating);
 
           // update chart
           graph.highlight([selectedData]);
@@ -15189,12 +15189,14 @@
       // Rating system
       var firstRating = true;
 
-      // submit the value on change
       $(".star").rating({
-        callback: function (value, link) {
-          // 'value' is the value selected
+        callback: function (value) {
+          var selected = getSelectedDatum();
+          if (!graph || !selected) return;
+
+          selected.Rating = Number(value) || 0;
+
           if (firstRating === true) {
-            //turn on rating rectangle
             d3.selectAll("#legend rect").attr("class", function (d) {
               if (d.name == "Rating") {
                 d.enabled = true;
@@ -15205,28 +15207,21 @@
             });
             updateLegendCheckboxVisuals();
 
-            // add Rating to dimensions
-            graph.dimensions(
-              toDimensionObject(Object.keys(cleanedKeys4pc), graph.dimensions())
-            );
+            var chartDimensions = graph.dimensions();
+            if (!chartDimensions.Rating) {
+              graph.dimensions(
+                toDimensionObject(graph.getOrderedDimensionKeys().concat("Rating"), chartDimensions)
+              );
+            }
             graph.scale("Rating", [0, 5]);
             graph.updateAxes();
             firstRating = false;
           }
 
-          // check if this is the first rating
-
-          // update rating value
-          graph.highlighted()[0].Rating = value;
-
-          // this method is not really optimized. I couldn't find a solution just to change          //I agree
-          // extent of dimensions for just rating axis
-
           graph.update().interactive().reorderable();
-          //if(graph.brushed()) graph.clear("foreground");
-
-          // highlight selected option
-          graph.highlight(graph.highlighted());
+          graph.highlight([selected]);
+          renderTablePage();
+          updateIterationData([selected]);
         },
       });
 
