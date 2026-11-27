@@ -63,9 +63,12 @@ ScatterMatrix.prototype.render = function () {
     .select(this.__dom_id)
     .append("div")
     .attr("class", "scatter-matrix-container");
+  var controlClass = this.__controlsHidden === false
+    ? "scatter-matrix-control"
+    : "scatter-matrix-control toggled";
   var control = container
     .append("div")
-    .attr("class", "scatter-matrix-control toggled")
+    .attr("class", controlClass)
     .style("background-color", "#ffffff");
   var svg = container
     .append("div")

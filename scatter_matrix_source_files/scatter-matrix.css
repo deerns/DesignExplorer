@@ -61,20 +61,27 @@
 	overflow-y: auto;
 	overflow-x: hidden;
 	z-index: 2;
-	-webkit-transition: width 0.25s ease, max-width 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
-	-moz-transition: width 0.25s ease, max-width 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
-	-o-transition: width 0.25s ease, max-width 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
-	transition: width 0.25s ease, max-width 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
+	clip-path: inset(0 0 0 0);
 }
 
 .scatter-matrix-control.toggled {
-	width: 0;
-	max-width: 0;
-	padding-left: 0;
-	padding-right: 0;
+	clip-path: inset(0 0 0 100%);
 	opacity: 0;
 	visibility: hidden;
-	overflow: hidden;
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.scatter-matrix-control {
+		--scatter-controls-duration: 300ms;
+		transition: clip-path var(--scatter-controls-duration) ease-out,
+			opacity var(--scatter-controls-duration) ease-out,
+			visibility 0s;
+	}
+
+	.scatter-matrix-control.toggled {
+		transition-delay: 0s, 0s, var(--scatter-controls-duration);
+	}
 }
 .scatter-matrix-control div {width: 180px; max-width: 180px;}
 

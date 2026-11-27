@@ -662,13 +662,6 @@
         border-left: 1px solid #dddddd;
         padding-left: 16px;
       }
-      #showSetting {
-        align-items: flex-start;
-        justify-content: center;
-        padding-top: 20px;
-        padding-bottom: 20px;
-        overflow-y: auto;
-      }
       #dataSetting {
         box-sizing: border-box;
         display: flex;
@@ -691,8 +684,7 @@
         position: sticky;
         bottom: 0;
         z-index: 2;
-        background: #ffffff;
-        border-top: 1px solid #dddddd;
+        border-top: 1px solid rgba(23, 39, 63, .15);
       }
       #settingActions .btn {
         min-width: 100px;
@@ -1130,7 +1122,7 @@
       }
 
       #viewer2d .viewer2d-main .compare-pane-pinned .compare-badge {
-        color: #ffa300;
+        color: var(--pinned-option-color);
       }
 
       #viewer2d-mainimg,
@@ -1336,7 +1328,7 @@
       }
 
       .scatter-matrix-container circle.pinned {
-        fill: #ffa300 !important;
+        fill: var(--pinned-option-color) !important;
         fill-opacity: 1 !important;
         stroke: #d98600;
         stroke-width: 1.5px;
@@ -1386,12 +1378,12 @@
     <!-- <link rel="stylesheet" type="text/css" href="./radar_source_files/radar-chart.css" /> -->
 
     <!-- Scatter-matrix -->
-    <script src="./scatter_matrix_source_files/scatter-matrix.js"></script>
+    <script src="./scatter_matrix_source_files/scatter-matrix.js?v=20261127-1"></script>
     <!-- Scatter-matrix CSS -->
     <link
       type="text/css"
       rel="stylesheet"
-      href="./scatter_matrix_source_files/scatter-matrix.css?v=20260717-1"
+      href="./scatter_matrix_source_files/scatter-matrix.css?v=20261127-1"
     />
 
     <!-- Bootstrap Core CSS -->
@@ -1400,7 +1392,7 @@
 
     <!-- Custom CSS -->
     <link href="bootstrap_side_bar/css/simple-sidebar.css" rel="stylesheet" />
-    <link href="css/style.css?v=20261127-5" rel="stylesheet" />
+    <link href="css/style.css?v=20261127-10" rel="stylesheet" />
 
     <!-- Various libraries that vA3C depends upon -->
     <link
@@ -1443,7 +1435,7 @@
     ></script>
 
     <!-- Page loading: shared Deerns wave animation with Pace progress -->
-    <link rel="stylesheet" type="text/css" href="pace/pace.css?v=20261127-3" />
+    <link rel="stylesheet" type="text/css" href="pace/pace.css?v=20261127-4" />
     <script src="pace/deerns-loader.js?v=20261117-1"></script>
     <script type="text/javascript" src="pace/pace.min.js"></script>
     <script src="pace/pace-logo.js?v=20261117-1"></script>
@@ -4710,6 +4702,8 @@
                       class="btn btn-default btn-xs"
                       id="menu-toggle"
                       title="Show sliders"
+                      aria-controls="sidebar-wrapper"
+                      aria-expanded="false"
                     >
                       <span
                         class="glyphicon glyphicon-triangle-left"
@@ -4766,7 +4760,7 @@
                       style="width: auto; float: right"
                     >
                       <button
-                        id="dataSetting"
+                        id="showSettingsButton"
                         class="btn btn-default btn-xs"
                         onclick="dataSetting(graph)"
                         title="Setting"
@@ -4861,6 +4855,8 @@
                       class="btn btn-default btn-xs"
                       id="scatter-menu-toggle"
                       title="Show Dimensions"
+                      aria-controls="scatter-dimension-controls"
+                      aria-expanded="false"
                     >
                       <span
                         class="glyphicon glyphicon-triangle-right"
@@ -5279,68 +5275,55 @@
             id="loadDataContainer"
             hidden
           >
-            <button
-              class="btn btn-default btn-sm pull-right popupWindowClose"
-              type="button"
-              aria-label="Close Get Data"
-            >
-              <span class="glyphicon glyphicon-remove"></span>
-            </button>
-
-            <h4 id="loadDataTitle" class="text-center" style="margin: 100px 0 30px 0">
-              From the cloud:
-            </h4>
-            <p class="text-center">
-              <input
-                type="text"
-                id="folderLink"
-                class="btn btn-default btn-sm toggled"
-                name="imgfolder"
-                placeholder="Server link"
-              />
-              <input
-                type="text"
-                id="folderLinkID"
-                class="btn btn-default btn-hd"
-                name="imgfolder"
-                placeholder="FolderID"
-              />
-              <!--<button id="loadData" onclick="MP_getGoogleIDandLoad()" class="file-upload" style="background-color: #033899;color: #ffffff;border-radius:0 20px 20px 0;">Load Data</button>-->
+            <div class="load-data-header">
+              <h1 id="loadDataTitle">Get Data</h1>
               <button
-                id="loadData"
-                class="file-upload primary-data-action"
+                class="btn btn-default btn-sm popupWindowClose"
+                type="button"
+                aria-label="Close Get Data"
               >
-                Load Data
+                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
               </button>
-            </p>
-            <h5 class="text-center" style="color: #9d9d9d">
-              Please put data.csv, images, and 3D-json files into the same
-              folder.(<a
-                href="design_explorer_data/example/online/example.zip"
-                target="_blank"
-                >example.zip</a
-              >)
-            </h5>
+            </div>
 
-            <div id="loadFileLocally">
-              <h4 class="text-center" style="margin: 60px 0 60px 0">
-                Or local
-              </h4>
-              <p class="text-center">
+            <div class="load-data-section">
+              <h2>From the cloud</h2>
+              <div class="load-data-cloud-controls">
                 <input
-                  type="file"
-                  id="csv-file"
-                  class="btn btn-default btn-sm"
-                  name="files"
+                  type="text"
+                  id="folderLink"
+                  class="form-control"
+                  name="imgfolder"
+                  inputmode="url"
+                  placeholder="Server link"
+                  aria-label="Server link"
+                  aria-describedby="cloudDataHint"
                 />
+                <input type="hidden" id="folderLinkID" name="imgfolder" />
+                <button id="loadData" type="button" class="file-upload primary-data-action">
+                  Load Data
+                </button>
+              </div>
+              <p class="load-data-hint" id="cloudDataHint">
+                Put data.csv, images, and 3D JSON files in the same folder.
+                <a href="design_explorer_data/example/online/example.zip" target="_blank">Example ZIP</a>
               </p>
-              <h5 class="text-center" style="color: #9d9d9d">
-                Please put valid images and 3D-json files URL. (Example:<a
-                  href="design_explorer_data/example/LocalCSV_example.csv"
-                  target="_blank"
-                  >data.csv</a
-                >)
-              </h5>
+            </div>
+
+            <div id="loadFileLocally" class="load-data-section">
+              <h2>From your computer</h2>
+              <input
+                type="file"
+                id="csv-file"
+                class="form-control"
+                name="files"
+                aria-label="Local data file"
+                aria-describedby="localDataHint"
+              />
+              <p class="load-data-hint" id="localDataHint">
+                Use valid URLs for images and 3D JSON files.
+                <a href="design_explorer_data/example/LocalCSV_example.csv" target="_blank">Example CSV</a>
+              </p>
             </div>
           </div>
         </div>
@@ -5458,14 +5441,13 @@
         <div
           class="row-fluid col-lg-12 row-centered vertical-center fullscreen popupWindow"
           id="showSetting"
-          style="display: none"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settingsTitle"
+          hidden
         >
-          <div
-            class="col-sm-12 col-centered"
-            id="dataSetting"
-            style="width: 700px; height: 1080px; max-height: 90vh; overflow-y: auto"
-          >
-            <h1 style="margin: 30px 0 10px 0">Setting</h1>
+          <div class="col-sm-12 col-centered" id="dataSetting">
+            <h1 id="settingsTitle" tabindex="-1" style="margin: 30px 0 10px 0">Setting</h1>
             <h6 style="margin: 0 30px 30px 0">
               All settings will not be effective once this page is reloaded,
               unless save the setting file with data.csv on the cloud.
@@ -5813,7 +5795,7 @@
     </div>
     <!-- /#wrapper -->
 
-    <script src="js/explorerOverlays.js?v=20261127-1"></script>
+    <script src="js/explorerOverlays.js?v=20261127-2"></script>
 
     <!-- Bootstrap Core JavaScript -->
     <script src="bootstrap_side_bar/js/bootstrap.min.js"></script>
@@ -7169,6 +7151,7 @@
         var selectedData = getCurrentGraphDisplayData();
         selectedData = ensureScatterDataIds(selectedData);
         var sm = new ScatterMatrix("", selectedData, "#radarChart");
+        sm.__controlsHidden = isScatterToggled;
         sm.__viewportWidth = scatterMatrixWidth;
         sm.__viewportHeight = scatterViewportHeight;
         sm.__layout_width = scatterMatrixWidth;
@@ -7395,7 +7378,7 @@
       var chartHorizontalLayoutState = {
         scatterRatio: null,
         useAutoRatio: true,
-        minScatterWidth: 240,
+        minScatterWidth: 180,
         minPcWidth: 320,
         handleWidth: 16,
       };
@@ -7530,17 +7513,11 @@
       }
 
       function syncScatterControlLayoutState() {
-        var scatterWrapper = d3.select("#ScChartWrapper");
-        if (!scatterWrapper.empty()) {
-          scatterWrapper.classed("scatter-control-hidden", !!isScatterToggled);
-        }
-
-        var radarChart = d3.select("#radarChart");
-        if (!radarChart.empty()) {
-          radarChart.classed("scatter-control-hidden", !!isScatterToggled);
-        }
-
-        d3.select(".scatter-matrix-control").classed("toggled", isScatterToggled);
+        d3.select("#scatter-menu-toggle").attr("aria-expanded", String(!isScatterToggled));
+        var control = d3.select("#radarChart .scatter-matrix-control")
+          .attr("id", "scatter-dimension-controls")
+          .classed("toggled", isScatterToggled);
+        if (!control.empty()) control.node().inert = isScatterToggled;
       }
 
       function syncPcGraphToggleUi() {
@@ -7997,16 +7974,13 @@
 
       function getHeightDrivenScatterTargetWidth() {
         var scatterBaseHeight = getScatterChartBaseHeight();
-        var minimumWidth = isScatterToggled ? 120 : 150;
+        var minimumWidth = 120;
 
         if (!isFinite(scatterBaseHeight) || scatterBaseHeight <= 0) {
           return minimumWidth;
         }
 
-        var targetWidth = scatterBaseHeight - 10;
-        targetWidth += isScatterToggled ? -8 : 24;
-
-        return Math.max(targetWidth, minimumWidth);
+        return Math.max(scatterBaseHeight - 18, minimumWidth);
       }
 
       function getDefaultChartHorizontalRatio() {
@@ -8023,9 +7997,7 @@
           ratio = 4 / 12;
         }
 
-        if (isScatterToggled) {
-          ratio = Math.max(ratio - 0.04, 0.2);
-        }
+        ratio = Math.max(ratio - 0.04, 0.2);
 
         if (!isRightChartFullScreenToggled) {
           var availableWidth = getAvailableChartHorizontalWidth();
@@ -8180,11 +8152,7 @@
       function getChartHorizontalMinimumScatterWidth(totalWidth) {
         var minimumScatterWidth = chartHorizontalLayoutState.minScatterWidth;
         var heightDrivenWidth = getHeightDrivenScatterTargetWidth();
-        var minimumFloor = isScatterToggled ? 120 : 150;
-
-        if (isScatterToggled) {
-          minimumScatterWidth = Math.max(minimumScatterWidth - 60, minimumFloor);
-        }
+        var minimumFloor = 120;
 
         if (isFinite(heightDrivenWidth) && heightDrivenWidth > 0) {
           minimumScatterWidth = Math.min(minimumScatterWidth, heightDrivenWidth);
@@ -8202,7 +8170,7 @@
           isFinite(totalWidth) && totalWidth > 0
             ? totalWidth
             : getAvailableChartHorizontalWidth();
-        var minScatterFloor = isScatterToggled ? 160 : 180;
+        var minScatterFloor = 160;
         var minPcFloor = getActiveGraphDimensionCount() <= 2 ? 180 : 200;
         var minScatterWidth =
           getChartHorizontalMinimumScatterWidth(resolvedTotalWidth);
@@ -8271,7 +8239,7 @@
         return resolvedScatterWidth;
       }
 
-      function syncChartHorizontalSectionWidths(showScatterWrapper) {
+      function syncChartHorizontalSectionWidths(showScatterWrapper, options = {}) {
         var pcWrapper = d3.select("#PcChartWrapper");
         var scWrapper = d3.select("#ScChartWrapper");
         var resizeBar = d3.select("#chartHorizontalResizeBar");
@@ -8304,12 +8272,12 @@
         }
 
         var availableWidth = getAvailableChartHorizontalWidth();
-        var scatterWidth = setChartHorizontalLayoutScatterWidth(
-          getCurrentChartHorizontalScatterWidth(),
-          {
+        var scatterWidth = getCurrentChartHorizontalScatterWidth();
+        if (!options.preview) {
+          scatterWidth = setChartHorizontalLayoutScatterWidth(scatterWidth, {
             preserveAuto: chartHorizontalLayoutState.useAutoRatio,
-          }
-        );
+          });
+        }
         var pcWidth = Math.max(availableWidth - scatterWidth, 0);
 
         pcWrapper
@@ -8583,8 +8551,6 @@
       function getScatterChartLayoutMetrics() {
         var scatterBaseHeight = getScatterChartBaseHeight();
         var scatterContainerWidth = getEffectiveScatterContainerWidth();
-        var minimumViewportWidth = isScatterToggled ? 120 : 140;
-        var minimumViewportHeight = isScatterToggled ? 120 : 140;
         var hasMeasuredWidth =
           isFinite(scatterContainerWidth) && scatterContainerWidth >= 160;
 
@@ -8604,11 +8570,8 @@
           baseHeight: scatterBaseHeight,
           containerWidth: scatterContainerWidth,
           hasMeasuredWidth: hasMeasuredWidth,
-          viewportWidth: Math.max(scatterMatrixWidth, minimumViewportWidth),
-          viewportHeight: Math.max(
-            scatterBaseHeight - 30,
-            minimumViewportHeight
-          ),
+          viewportWidth: Math.max(scatterMatrixWidth, 120),
+          viewportHeight: Math.max(scatterBaseHeight - 30, 120),
         };
       }
 
@@ -9610,9 +9573,20 @@
         delays.forEach(function (delayMs) {
           setTimeout(function () {
             if (!graph || !shouldShowScatterPlots()) return;
-            scheduleDeferredScatterLayoutRefresh();
+            if (!scatterChartMatchesLayout(getScatterChartLayoutMetrics())) {
+              scheduleDeferredScatterLayoutRefresh();
+            }
           }, isFinite(delayMs) && delayMs > 0 ? delayMs : 0);
         });
+      }
+
+      function scatterChartMatchesLayout(metrics) {
+        return (
+          !!scatterChart &&
+          !window.__pendingScatterLayoutState &&
+          Math.abs(scatterChart.__layout_width - metrics.viewportWidth) <= 6 &&
+          Math.abs(scatterChart.__layout_height - metrics.viewportHeight) <= 6
+        );
       }
 
       function syncExistingScatterChartState() {
@@ -9658,12 +9632,7 @@
         var expectedHeight = layoutMetrics.viewportHeight;
         var overflowTolerance = 6;
         var layoutChanged =
-          !isFinite(scatterChart.__layout_width) ||
-          !isFinite(scatterChart.__layout_height) ||
-          Math.abs(scatterChart.__layout_width - expectedWidth) >
-            overflowTolerance ||
-          Math.abs(scatterChart.__layout_height - expectedHeight) >
-            overflowTolerance ||
+          !scatterChartMatchesLayout(layoutMetrics) ||
           (isFinite(currentWrapperWidth) &&
             currentWrapperWidth > expectedWidth + overflowTolerance) ||
           (isFinite(currentSvgWidth) &&
@@ -9785,12 +9754,44 @@
         }, 220);
       }
 
+      var sidebarLayoutFrame = null;
+      var sidebarLayoutWrapper = d3.select("#wrapper");
+      var sidebarPreviewGraph = d3.select("#graph");
+
+      function refreshSidebarToggleLayout(transition) {
+        if (transition && transition.playState === "running") {
+          syncChartHorizontalSectionWidths(shouldShowScatterPlots(), { preview: true });
+          if (graph && !isPcGraphCollapsed) {
+            // Scale the current drawing while the sidebar moves. Redraw the axes at the final width.
+            sidebarPreviewGraph.style("--sidebar-chart-scale", getPcChartBaseWidth() / graph.width());
+          }
+          sidebarLayoutFrame = window.requestAnimationFrame(function () {
+            refreshSidebarToggleLayout(transition);
+          });
+          return;
+        }
+
+        sidebarLayoutFrame = null;
+        sidebarLayoutWrapper.classed("is-sidebar-transitioning", false);
+        sidebarPreviewGraph.style("--sidebar-chart-scale", null);
+        refreshSidebarControlLayout(!isToggled);
+        if (graph) {
+          reDrawPcChart({ immediate: true });
+          if (!syncExistingScatterChartState()) refreshScatterChartLayout();
+        }
+      }
+
       // side bar for sliders
       $("#menu-toggle").off("click").prop("disabled", false).click(function (e) {
+        if (sidebarLayoutFrame !== null) window.cancelAnimationFrame(sidebarLayoutFrame);
         isToggled = !isToggled;
-        d3.select("#wrapper").classed("toggled", isToggled);
-        refreshSidebarControlLayout(!isToggled);
-        schedulePcLayoutRefresh();
+        sidebarLayoutWrapper.classed("toggled", isToggled);
+        this.setAttribute("aria-expanded", String(!isToggled));
+
+        var transition = sidebarLayoutWrapper.node().getAnimations?.()
+          .find(animation => animation.transitionProperty === "padding-left");
+        sidebarLayoutWrapper.classed("is-sidebar-transitioning", !!transition);
+        refreshSidebarToggleLayout(transition);
       });
 
       $("#scatterVisibility-toggle").click(function (e) {
@@ -9803,12 +9804,6 @@
         e.stopPropagation();
         isScatterToggled = !isScatterToggled;
         syncScatterControlLayoutState();
-        schedulePcLayoutRefresh({
-          immediate: true,
-          refreshSidebar: false,
-          refreshScatter: true,
-          forceScatterRefresh: false,
-        });
       });
       $("#radarChart")
         .off("click", ".scatter-matrix-control")
@@ -13806,7 +13801,7 @@
 
       function startGuidedTour() {
         closeWelcomePopup();
-        d3.select("#showSetting").style("display", "none");
+        closeSettingsPopup();
         moveGuidedTourLayersToBody();
         captureGuidedTourInitialState();
         guidedTourDemoSelection = getGuidedTourDemoSelection();
@@ -13927,17 +13922,16 @@
           }
         });
 
-        // Close welcome overlay with Esc
+        // Close the active popup with Esc
         document.addEventListener("keydown", function (e) {
           if ((e.key === "Escape" || e.keyCode === 27) && !explorerLoading) {
             closeWelcomePopup();
-            d3.select("#showSetting").style("display", "none");
+            closeSettingsPopup();
             syncMainVerticalResizeHandleState();
           }
         });
 
         d3.select("#showLoadData").on("click", function () {
-          d3.select("#loadFileLocally").style("display", "block");
           d3.select("#showStaticLink").classed("Show", false);
 
           //clean previous inputs
@@ -15256,10 +15250,7 @@
     <!--dataSetting-->
     <script type="text/javascript">
       function dataSetting(chart) {
-        // ensure load-data overlay is dismissed when settings open
-        closeWelcomePopup();
-
-        d3.select("#showSetting").style("display", "flex");
+        showSettingsPopup();
         if (typeof syncMainVerticalResizeHandleState === "function") {
           syncMainVerticalResizeHandleState();
         }
@@ -17163,7 +17154,7 @@
             newUserSetting.imageLabels || _userSetting.imageLabels || {}
           );
           syncRadioLabelsFromCurrentInputs();
-          d3.select("#showSetting").style("display", "none");
+          closeSettingsPopup();
           syncMainVerticalResizeHandleState();
           if (typeof window !== "undefined") {
             window.__activeSettingsDraft = null;

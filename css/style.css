@@ -1,4 +1,8 @@
 
+:root {
+    --pinned-option-color: #ffa300;
+}
+
 body {
     font-family: sans-serif;
     font-size: 12px;
@@ -37,10 +41,38 @@ body {
     overflow-y: auto;
 }
 
+#inputSliders .irs-bar,
+#inputSliders .irs-bar-edge {
+    top: 26px;
+    height: 5px;
+    background: var(--pinned-option-color);
+}
+
+#inputSliders .irs-bar-edge {
+    border-radius: 3px 0 0 3px;
+}
+
 #wrapper,
 #sidebar-wrapper,
 #page-content-wrapper {
     transition: none !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    #wrapper {
+        --sidebar-transition: 500ms ease-in-out;
+        transition: padding-left var(--sidebar-transition) !important;
+    }
+
+    #sidebar-wrapper {
+        transition: width var(--sidebar-transition) !important;
+    }
+}
+
+#wrapper.is-sidebar-transitioning #graph {
+    max-width: none;
+    transform: scaleX(var(--sidebar-chart-scale, 1));
+    transform-origin: left center;
 }
 
 #page-content-wrapper {
@@ -190,19 +222,13 @@ body.is-chart-horizontal-resizing * {
     }
 
     #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper {
-        flex: 0 0 clamp(300px, 24vw, 360px);
-        width: clamp(300px, 24vw, 360px);
-        max-width: clamp(300px, 24vw, 360px);
+        flex: 0 0 clamp(280px, 21vw, 320px);
+        width: clamp(280px, 21vw, 320px);
+        max-width: clamp(280px, 21vw, 320px);
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
         min-height: 0;
-    }
-
-    #chartLayoutRow:not(.rightChartFullScreenToggled):not(.scatter-hidden) > #ScChartWrapper.scatter-control-hidden {
-        flex: 0 0 clamp(280px, 21vw, 320px);
-        width: clamp(280px, 21vw, 320px);
-        max-width: clamp(280px, 21vw, 320px);
     }
 }
 
@@ -611,35 +637,6 @@ body.is-main-vertical-resizing * {
     }
 }
 
-#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden .chartSide {
-    align-items: center;
-}
-
-#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden #radarChart {
-    width: 100%;
-    max-width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    overflow-x: visible;
-}
-
-#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden #radarChart .scatter-matrix-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 100%;
-}
-
-#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden #radarChart .scatter-matrix-svg {
-    margin-left: auto;
-    margin-right: auto;
-}
-
-#ScChartWrapper:not(.rightChartFullScreenToggled).scatter-control-hidden #radarChart .scatter-matrix-container svg {
-    margin: 0 auto;
-}
-
 #legend text.legend-label,
 #inputSliders .inputSliderLabelText {
     fill: #222222;
@@ -1030,25 +1027,6 @@ rect.disabled {
 }
 
 
-.file-upload {
-    position: relative;
-    overflow: hidden;
-    height: 2.2em;
-    border-width: 0px;
-    width: 10em;
-    border-radius: 0 20px 20px 0;
-    margin-left: -4px;
-}
-
-input#csv-file {
-    /* text-align: center; */
-    margin: 0 auto 0 auto;
-    border-radius: 20px;
-    height: 2.6em;
-    width: 420px;
-}
-
-
 a#copyRightButton {
     overflow: hidden;
 }
@@ -1072,47 +1050,47 @@ a#copyRightButton {
     --explorer-loading-fade-duration: 300ms;
 }
 
-#welcome {
+:is(#welcome, #showSetting) {
     padding: 16px;
     background-color: rgba(23, 39, 63, .40);
     overscroll-behavior: contain;
 }
 
-#welcome[inert]:not([hidden]) {
+:is(#welcome, #showSetting)[inert]:not([hidden]) {
     background-color: rgba(23, 39, 63, .52);
 }
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-    #welcome {
+    :is(#welcome, #showSetting) {
         background-color: rgba(23, 39, 63, .23);
         -webkit-backdrop-filter: blur(4px);
         backdrop-filter: blur(4px);
     }
 
-    #welcome[inert]:not([hidden]) {
+    :is(#welcome, #showSetting)[inert]:not([hidden]) {
         background-color: rgba(23, 39, 63, .34);
         -webkit-backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
         backdrop-filter: blur(var(--explorer-loading-backdrop-blur));
     }
 }
 
-#welcome[hidden],
+:is(#welcome, #showSetting)[hidden],
 #welcome > [hidden] {
     display: none;
 }
 
-#welcome[hidden] {
+:is(#welcome, #showSetting)[hidden] {
     pointer-events: none;
     background-color: transparent;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
 
-#welcome[hidden] > .col-centered {
+:is(#welcome, #showSetting)[hidden] > .col-centered {
     opacity: 0;
 }
 
-#welcome > .col-centered {
+:is(#welcome, #showSetting) > .col-centered {
     width: min(680px, 100%);
     height: auto;
     min-width: 0;
@@ -1126,18 +1104,18 @@ a#copyRightButton {
     box-shadow: 0 16px 48px rgba(23, 39, 63, .20);
 }
 
-#welcome[inert]:not([hidden]) > .col-centered {
+:is(#welcome, #showSetting)[inert]:not([hidden]) > .col-centered {
     background-color: rgba(228, 234, 242, .80);
     filter: blur(7px);
 }
 
-#welcome[inert]:not([hidden]) > .col-centered > * {
+:is(#welcome, #showSetting)[inert]:not([hidden]) > .col-centered > * {
     opacity: .46;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    #welcome:not([inert]),
-    #welcome[hidden] {
+    :is(#welcome, #showSetting):not([inert]),
+    :is(#welcome, #showSetting)[hidden] {
         transition:
             display var(--explorer-loading-fade-duration),
             background-color var(--explorer-loading-fade-duration) ease-out,
@@ -1146,25 +1124,34 @@ a#copyRightButton {
         transition-behavior: allow-discrete;
     }
 
-    #welcome:not([inert]) > .col-centered,
-    #welcome[hidden] > .col-centered {
+    :is(#welcome, #showSetting):not([inert]) > .col-centered,
+    :is(#welcome, #showSetting)[hidden] > .col-centered {
         transition:
             opacity var(--explorer-loading-fade-duration) ease-out,
             background-color var(--explorer-loading-fade-duration) ease-out,
             filter var(--explorer-loading-fade-duration) ease-out;
     }
 
-    #welcome:not([inert]) > .col-centered > * {
+    :is(#welcome, #showSetting):not([inert]) > .col-centered > * {
         transition: opacity var(--explorer-loading-fade-duration) ease-out;
+    }
+
+    .explorer-popup-visible :is(#welcome, #showSetting)[hidden] {
+        transition: none;
     }
 }
 
-#welcome > #welcomeContainer {
+#welcome > #welcomeContainer:not([hidden]) {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: 16px;
     height: clamp(420px, 75vh, 580px);
+}
+
+#showSetting > #dataSetting {
+    width: min(700px, 100%);
+    height: min(1080px, 90vh);
 }
 
 #welcomeContainer .popupWindowClose {
@@ -1191,8 +1178,93 @@ a#copyRightButton {
     gap: 8px 16px;
 }
 
-#welcome input#csv-file {
-    max-width: 100%;
+#welcome > #loadDataContainer:not([hidden]) {
+    display: grid;
+    width: min(560px, 100%);
+    gap: 20px;
+}
+
+.load-data-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+#loadDataTitle {
+    margin: 0;
+    font-size: clamp(24px, 4vw, 30px);
+}
+
+.load-data-section {
+    display: grid;
+    min-width: 0;
+    gap: 8px;
+}
+
+.load-data-section + .load-data-section {
+    padding-top: 16px;
+    border-top: 1px solid rgba(23, 39, 63, .15);
+}
+
+.load-data-section h2 {
+    margin: 0;
+    color: #17345f;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.load-data-cloud-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+}
+
+#loadDataContainer .form-control {
+    min-width: 0;
+    min-height: 40px;
+    border-color: #c8d5e5;
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+#loadDataContainer .form-control:focus {
+    outline: 2px solid #5881bc;
+    outline-offset: 2px;
+}
+
+#loadData {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+#csv-file {
+    padding: 5px 8px;
+}
+
+#csv-file::file-selector-button {
+    margin-right: 8px;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: 4px;
+    background-color: #eaf2ff;
+    color: #17345f;
+    font: inherit;
+    cursor: pointer;
+}
+
+.load-data-hint {
+    margin: 0;
+    color: #4b5f76;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.load-data-hint a {
+    white-space: nowrap;
 }
 
 #welcomeContainer .col-sm-4 {
@@ -1464,12 +1536,6 @@ g.cell text {
 .scatter-matrix-svg svg {
     display: block;
     overflow: visible;
-}
-
-#folderLink{
-    border-radius: 20px 0 0 20px;
-    width: 300px;
-    height: 2.2em;
 }
 
 #dimSettingList{
