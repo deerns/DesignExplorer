@@ -1,22 +1,40 @@
 .pace {
-  pointer-events: none;
   user-select: none;
   position: fixed;
+  inset: 0;
   z-index: 2000;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 168px;
-  padding: 24px 20px 20px;
-  border: 1px solid #dce7f1;
-  border-radius: 12px;
-  background: #f3f7fcf5;
-  box-shadow: 0 8px 30px #00308714;
+  display: grid;
+  place-items: center;
+  background-color: rgba(23, 39, 63, .52);
+  cursor: progress;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .pace {
+    background-color: rgba(23, 39, 63, .34);
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
+  }
+}
+
+/* The welcome backdrop already softens the main interface when both layers are open. */
+.explorer-welcome-visible > .pace {
+  background-color: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .pace .pace-progress {
   display: flex;
   justify-content: center;
+  width: 168px;
+  padding: 24px 20px 20px;
+  border: 1px solid #dce7f1;
+  border-radius: 12px;
+  background: #f3f7fc;
+  box-shadow: 0 12px 36px rgba(23, 39, 63, .24);
   /* Pace normally translates a horizontal bar. The logo stays in place. */
   transform: none !important;
   -webkit-transform: none !important;
